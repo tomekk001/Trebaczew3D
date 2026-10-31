@@ -44,6 +44,9 @@ async function boot(saved){
   const BLD=[];
   DATA_B.split(';').forEach(s=>{ const q=s.indexOf('"'); const name=q>=0?s.slice(q+1,s.lastIndexOf('"')):''; const nums=(q>=0?s.slice(0,q):s).split(',').filter(x=>x!=='').map(Number);
     const [x,z,w,d,deg,code,lv]=nums; BLD.push({x,z,w,d,a:deg*Math.PI/180,code,lv:lv||0,name}); });
+  const BPARTS={}; if(typeof DATA_PARTS!=='undefined'&&DATA_PARTS) DATA_PARTS.split(';').forEach(e=>{ const [i,r]=e.split(':'); BPARTS[+i]=r.split('|').map(q=>{ const [x,z,w,d]=q.split(',').map(Number); return {x,z,w,d}; }); });
+  if(typeof DATA_ADDR!=='undefined'&&DATA_ADDR) DATA_ADDR.split(';').forEach(e=>{ const k=e.indexOf(':'); const b=BLD[+e.slice(0,k)]; if(!b)return; const [st2,num]=e.slice(k+1).split('|'); b.addr=(st2?st2+' ':'')+num; });
+  BLD.forEach((b,i)=>{ if(BPARTS[i]) b.parts=BPARTS[i]; });
   const BPOLY=DATA.BP.map(([code,lv,name,d])=>({code,lv,name,pts:decRel(d)}));
   const PARCELS=DATA_PARC.split(';').map(s=>{ const p=dec(s.split(',').map(Number)); return {p,bb:bbox(p)}; });
   function sampleLine(pts,len,d){ const L=len[len.length-1]; d=clamp(d,0,L); let i=1; while(i<len.length-1&&len[i]<d)i++; const a=pts[i-1],b=pts[i],t=(d-len[i-1])/((len[i]-len[i-1])||1); const tx=b[0]-a[0],tz=b[1]-a[1],l=Math.hypot(tx,tz)||1; return {x:a[0]+tx*t,z:a[1]+tz*t,tx:tx/l,tz:tz/l}; }
@@ -187,7 +190,7 @@ async function boot(saved){
   const WALLS=['#efe6d4','#e8dcc4','#f4eee2','#dccaa8','#ebd6b4','#d2c6b4','#f2e0bc','#ddd6cc','#cbb393','#e6d0aa','#d8dde2','#e9cba0','#f1e8d8','#c9d2c2','#e3c9b8'];
   const ROOFS=['#9a3d2a','#843424','#5a5f66','#3a3f45','#a64d33','#6e3a28','#4a4f57','#b05b3b','#2d3136','#86402f','#5a412f'];
   const inSchool=(x,z)=>inPoly(x,z,SCHOOL.pts), inKinder=(x,z)=>inPoly(x,z,KINDER.pts);
-  const HALL_B=BLD.find(b=>b.code===5&&b.w===56);
+  const HALL_B=BLD.find(b=>b.code===5&&Math.max(b.w,b.d)>50);
   const houses=[];
   BLD.forEach((b,bi)=>{ const ar=b.w*b.d, ratio=Math.max(b.w,b.d)/Math.min(b.w,b.d);
     // wysokość posadowienia: środek i najniższy narożnik
@@ -205,7 +208,16 @@ async function boot(saved){
     else if(ar>320){ kind='farm'; h=6.5; rt='gable'; rh=2.4; wall=pick(['#b8bec4','#c9c2b4','#d9d4c8']); roof=pick(['#8d9399','#6e7378']); }
     else { h=b.lv?b.lv*2.9+0.5:(rnd()<.5?3.4:6); rt=rnd()<.6?'hip':'gable'; rh=Math.max(2.2,Math.min(4.2,Math.min(b.w,b.d)*.33)); wall=pick(WALLS); roof=pick(ROOFS); }
     { const rc=roofColor(bi); if(rc&&kind!=='hall'&&kind!=='school') roof=rc; }
-    Object.assign(b,{h,rt,rh,wall,roof,kind}); houses.push(b);
+    Object.assign(b,{h,rt,rh,wall,roof,kind});
+    if(b.parts&&['house','out','farm','garage','shop'].includes(kind)){   // dokładny obrys z OSM: bryła złożona z prostokątów
+      const ps=b.parts.slice().sort((p,q)=>q.w*q.d-p.w*p.d);
+      ps.forEach((p,k)=>{ const mn=Math.min(p.w,p.d); const prh=kind==='house'?(k?Math.min(rh,Math.max(1.1,mn*.38)):Math.max(2.2,Math.min(4.2,mn*.33))):Math.min(rh,Math.max(.6,mn*.3));
+        const hm=Math.min(...[[1,1],[1,-1],[-1,1],[-1,-1]].map(([u,v])=>H(p.x+u*p.w/2*c-v*p.d/2*s,p.z+u*p.w/2*s+v*p.d/2*c)));
+        const hp=k&&kind==='house'&&mn<3.2?Math.max(2.6,h-2.6):h;          // małe przybudówki: ganki, wiatrołapy, parterowe dobudowy
+        houses.push(Object.assign({},b,{x:p.x,z:p.z,w:p.w,d:p.d,hmin:hm,h:hp,rh:prh,rt:k&&mn<3.2?'flat':rt,isPart:k>0,src:b,parts:null}));
+        addSolid({x:p.x,z:p.z,hw:p.w/2,hd:p.d/2,c,s,r:Math.hypot(p.w,p.d)/2}); });
+      return; }
+    houses.push(b);
     addSolid({x:b.x,z:b.z,hw:b.w/2,hd:b.d/2,c,s,r:Math.hypot(b.w,b.d)/2}); });
   BPOLY.forEach(p=>{ const c=centroid(p.pts); p.hc=H(c[0],c[1]); p.hmin=Math.min(...p.pts.map(v=>H(v[0],v[1]))); addSolid({x:c[0],z:c[1],poly:p.pts,r:Math.max(...p.pts.map(v=>Math.hypot(v[0]-c[0],v[1]-c[1])))}); });
   const plasterTex=tex(128,128,(x,w,h)=>{ x.fillStyle='#d8d8d8'; x.fillRect(0,0,w,h); noise(x,w,h,4000,170,250,.35,1.6); x.fillStyle='rgba(0,0,0,.18)'; x.fillRect(0,h-10,w,10); x.fillStyle='rgba(0,0,0,.08)'; x.fillRect(0,0,w,3); });
@@ -234,10 +246,10 @@ async function boot(saved){
     else if(h.rt==='barrel'){ dum.position.y=top-0.01; dum.scale.set(h.w,h.d*0.42,h.d); dum.updateMatrix(); barrels.setMatrixAt(k,dum.matrix); barrels.setColorAt(k,col.set(h.roof)); } });
   const winTex=tex(64,80,(x,w,h)=>{ x.fillStyle='#f4f4f0'; x.fillRect(0,0,w,h); x.fillStyle='#ffffff'; x.fillRect(4,4,w-8,h-8); x.fillStyle='#d8d8d8'; x.fillRect(6,6,w-12,h-12); x.fillStyle='#f4f4f0'; x.fillRect(w/2-2,4,4,h-8); x.fillRect(4,h*0.38,w-8,3); x.fillStyle='rgba(255,255,255,.35)'; x.beginPath(); x.moveTo(8,8); x.lineTo(24,8); x.lineTo(8,30); x.fill(); });
   const wins=[], doors=[];
-  houses.forEach(h=>{ if(['out','garage','farm'].includes(h.kind))return; const floors=Math.max(1,Math.round(h.h/3)); const along=h.w>=h.d; const L=along?h.w:h.d, D=along?h.d:h.w;
+  houses.forEach(h=>{ if(['out','garage','farm'].includes(h.kind)||(h.isPart&&Math.min(h.w,h.d)<3))return; const floors=Math.max(1,Math.round(h.h/3)); const along=h.w>=h.d; const L=along?h.w:h.d, D=along?h.d:h.w;
     const ww=h.kind==='school'||h.kind==='hall'?2.2:1.2;
     for(let f=0;f<floors;f++){ if(h.kind==='hall'&&f>0)break; const y=h.hc+(h.kind==='hall'?5.8:1.25+f*3); const n=Math.max(2,Math.floor(L/(h.kind==='school'?3.2:3.8)));
-      for(let k=0;k<n;k++){ const t=-L/2+(k+.5)*(L/n); [1,-1].forEach(sd=>{ const lx=along?t:sd*(D/2+.03), lz=along?sd*(D/2+.03):t; if(f===0&&k===Math.floor(n/2)&&sd===1&&h.kind==='house'){ doors.push({h,lx,lz,rot:along?0:Math.PI/2}); return; } wins.push({h,lx,lz,y,rot:along?(sd>0?0:Math.PI):(sd>0?Math.PI/2:-Math.PI/2),ww}); }); } } });
+      for(let k=0;k<n;k++){ const t=-L/2+(k+.5)*(L/n); [1,-1].forEach(sd=>{ const lx=along?t:sd*(D/2+.03), lz=along?sd*(D/2+.03):t; if(f===0&&k===Math.floor(n/2)&&sd===1&&h.kind==='house'&&!h.isPart){ doors.push({h,lx,lz,rot:along?0:Math.PI/2}); return; } wins.push({h,lx,lz,y,rot:along?(sd>0?0:Math.PI):(sd>0?Math.PI/2:-Math.PI/2),ww}); }); } } });
   const winMat=new THREE.MeshPhongMaterial({color:0xffffff,map:winTex,emissive:0x000000,shininess:80,specular:0x666666});
   const winIM=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1.35),winMat,Math.max(1,wins.length)); scene.add(winIM);
   const placeOnWall=(h,lx,lz,y,rot,sx)=>{ const c=Math.cos(h.a), s=Math.sin(h.a); dum.position.set(h.x+lx*c-lz*s,y,h.z+lx*s+lz*c); dum.rotation.set(0,-h.a+rot,0); dum.scale.set(sx,1,1); dum.updateMatrix(); return dum.matrix; };
@@ -664,7 +676,7 @@ async function boot(saved){
   const cD=trees.filter(t=>!t.con), cC=trees.filter(t=>t.con);
   const leafTex=tex(128,128,(x,w,h)=>{ x.fillStyle='#bdbdbd'; x.fillRect(0,0,w,h); for(let i=0;i<500;i++){ const v=Math.floor(R(120,255)); x.fillStyle=`rgb(${v},${v},${v})`; x.beginPath(); x.arc(R(0,w),R(0,h),R(2,6),0,7); x.fill(); } },true);
   const crownGeo=(()=>{ const P=[[0,.05,0,.72],[.42,-.12,.2,.55],[-.4,-.1,.25,.55],[.1,-.15,-.45,.55],[-.2,.38,-.1,.5],[.28,.32,.18,.48],[-.05,-.4,.05,.55],[.45,.15,-.3,.45],[-.45,.18,-.25,.45]];
-    const parts=P.map(([x,y,z,r],i)=>{ const g=new THREE.IcosahedronGeometry(r,2); const p=g.attributes.position; for(let k=0;k<p.count;k++){ const hh=Math.sin((i*97+Math.round(p.getX(k)*40)*13.1+Math.round(p.getY(k)*40)*7.7+Math.round(p.getZ(k)*40)*3.3)*127.1+311.7)*43758.5453; const f=1+(hh-Math.floor(hh)-.5)*.22; p.setXYZ(k,p.getX(k)*f,p.getY(k)*f,p.getZ(k)*f); } const nn=g.attributes.normal; for(let k=0;k<p.count;k++){ const vx=p.getX(k),vy=p.getY(k),vz=p.getZ(k),l=Math.hypot(vx,vy,vz)||1; nn.setXYZ(k,vx/l,vy/l,vz/l); } g.translate(x,y,z); return [g,0xffffff]; }); return mergeParts(parts); })();
+    const parts=P.map(([x,y,z,r],i)=>{ const g=new THREE.IcosahedronGeometry(r,1); const p=g.attributes.position; for(let k=0;k<p.count;k++){ const hh=Math.sin((i*97+Math.round(p.getX(k)*40)*13.1+Math.round(p.getY(k)*40)*7.7+Math.round(p.getZ(k)*40)*3.3)*127.1+311.7)*43758.5453; const f=1+(hh-Math.floor(hh)-.5)*.22; p.setXYZ(k,p.getX(k)*f,p.getY(k)*f,p.getZ(k)*f); } const nn=g.attributes.normal; for(let k=0;k<p.count;k++){ const vx=p.getX(k),vy=p.getY(k),vz=p.getZ(k),l=Math.hypot(vx,vy,vz)||1; nn.setXYZ(k,vx/l,vy/l,vz/l); } g.translate(x,y,z); return [g,0xffffff]; }); return mergeParts(parts); })();
   const coneGeo=(()=>{ const parts=[[1,.0,.55],[.82,.25,.5],[.62,.48,.42],[.4,.68,.32]].map(([r,y,h])=>[new THREE.ConeGeometry(r,h,9).translate(0,y+h/2,0),0xffffff]); return mergeParts(parts); })();
   const crownD=new THREE.InstancedMesh(crownGeo,new THREE.MeshLambertMaterial({color:0xffffff,map:leafTex}),Math.max(1,cD.length));
   const crownC=new THREE.InstancedMesh(coneGeo,new THREE.MeshLambertMaterial({color:0xffffff,map:leafTex}),Math.max(1,cC.length));
@@ -850,7 +862,7 @@ async function boot(saved){
   for(let i=0;i<10;i++){ const gC=makeCar(CARCOL[i%CARCOL.length],i%4===3?'van':''); scene.add(gC); cars.push({g:gC,d:R(0,DK.L),dir:i%2?1:-1,v:R(13,19),x:0,z:0}); }
   const parked=[];
   function park(x,z,h){ if(blocked(x,z,1.8))return false; if(parked.some(p=>Math.hypot(p.x-x,p.z-z)<7))return false; const c={g:makeCar(pick(CARCOL),rnd()<.12?'van':''),x,z,h,v:0,steer:0}; seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); return true; }
-  houses.filter(h=>h.kind==='house').forEach(h=>{ if(rnd()>.28||parked.length>150)return; const nr=nearestRoad(h.x,h.z,r=>r.t!=='track'); if(!nr.r||nr.d>40)return; const a=nr.r.pts[nr.seg],b=nr.r.pts[nr.seg+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz); const tx=dx/L,tz=dz/L; let nx=-tz,nz=tx; const t=clamp((h.x-a[0])*tx+(h.z-a[1])*tz,0,L); const px=a[0]+tx*t,pz=a[1]+tz*t; if((h.x-px)*nx+(h.z-pz)*nz<0){nx=-nx;nz=-nz;}
+  houses.filter(h=>h.kind==='house'&&!h.isPart).forEach(h=>{ if(rnd()>.28||parked.length>150)return; const nr=nearestRoad(h.x,h.z,r=>r.t!=='track'); if(!nr.r||nr.d>40)return; const a=nr.r.pts[nr.seg],b=nr.r.pts[nr.seg+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz); const tx=dx/L,tz=dz/L; let nx=-tz,nz=tx; const t=clamp((h.x-a[0])*tx+(h.z-a[1])*tz,0,L); const px=a[0]+tx*t,pz=a[1]+tz*t; if((h.x-px)*nx+(h.z-pz)*nz<0){nx=-nx;nz=-nz;}
     const off=nr.r.w/2+(SIDEWALK.has(nr.r.n)?6:3.6); park(px+nx*off+tx*R(4,8),pz+nz*off+tz*R(4,8),Math.atan2(nz,nx)+Math.PI); });
   LEW_SPOTS.forEach(sp=>park(sp.x,sp.z,sp.h));
   AREAS.filter(a=>a.t==='am:parking').forEach(a=>{ if(a===PLAC)return; const m=mar(a.pts); for(let i=0;i<4;i++){ const x=m.cx+R(-m.w/3,m.w/3), z=m.cz+R(-m.d/3,m.d/3); if(inPoly(x,z,a.pts)) park(x,z,m.an+Math.PI/2); } });
@@ -1000,7 +1012,10 @@ async function boot(saved){
   function fmt(n){ return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' zł'; }
   function addMoney(v){ st.money+=v; moneyEl.classList.remove('pop'); void moneyEl.offsetWidth; moneyEl.classList.add('pop'); }
   function setWanted(n){ st.wanted=clamp(n,0,5); st.wantedT=0; }
+  const ADDR_B=BLD.filter(b=>b.addr); let lastAddr=null;
+  function nearAddr(){ if(st.car)return null; let best=null,bd=1e9; for(const b of ADDR_B){ const dx=st.x-b.x,dz=st.z-b.z; if(Math.abs(dx)>40||Math.abs(dz)>40)continue; const c=Math.cos(b.a),s=Math.sin(b.a); const lx=Math.abs(dx*c+dz*s)-b.w/2, lz=Math.abs(-dx*s+dz*c)-b.d/2; const d=Math.hypot(Math.max(0,lx),Math.max(0,lz)); if(d<bd){bd=d;best=b;} } return bd<4?best:null; }
   function updHud(){ const ln=locationName(); if(ln&&ln!==lastLoc){ lastLoc=ln; locMain.textContent=ln; locSub.textContent='Trębaczew'; locEl.classList.add('on'); locTimer=4; }
+    const ab=nearAddr(); if(ab&&ab!==lastAddr){ locMain.textContent=(/^\d/.test(ab.addr)?'Trębaczew ':'ul. ')+ab.addr; locSub.textContent=ab.name&&ab.name!=='shelter'?ab.name:'Trębaczew'; locEl.classList.add('on'); locTimer=3; lastLoc=null; } lastAddr=ab;
     starsEl.innerHTML='<b>'+'★'.repeat(st.wanted)+'</b>'+'★'.repeat(5-st.wanted); starsEl.classList.toggle('flash',st.wanted>0);
     hpb.style.width=st.hp+'%';
     let hint=extHint()||''; if(!hint&&!st.car){ const c=nearestParked(); if(c) hint='Naciśnij <kbd>F</kbd>, aby wsiąść do auta'; else { const pk=LOCKERS.find(l=>Math.hypot(l.x-st.x,l.z-st.z)<4); if(pk) hint='Paczkomat · '+pk.n; } } hintEl.innerHTML=hint; hintEl.classList.toggle('on',!!hint);
@@ -1278,7 +1293,7 @@ async function boot(saved){
   addEventListener('keydown',e=>{ if(!SHOP_OPEN)return; const n=parseInt(e.key,10); if(n>=1&&n<=9){ buy(n-1); e.preventDefault(); } if(e.key==='Escape'){ closeShop(); } },true);
 
   /* ---------- misje ---------- */
-  const resHouses=houses.filter(h=>h.kind==='house');
+  const resHouses=houses.filter(h=>h.kind==='house'&&!h.isPart);
   const housesBy=(f)=>resHouses.filter(f);
   const MISSIONS=[
     {id:'paczka',n:'Paczka z paczkomatu',start:()=>{ const l=LOCKERS[0]; return [l.x,l.z]; },desc:'Odbierz paczkę i dostarcz ją pod wskazany dom.',time:150,reward:300,
