@@ -1,0 +1,167 @@
+<title>Trębaczew 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: pełnoekranowa scena 3D, HUD przypięty do rogów jak w grach z otwartym światem */
+:root{
+  --hp:#5aa34a; --armor:#3d8fd6; --money:#7fd06b; --star:#f4f1e8;
+  --ink:#f6f4ef; --muted:#b9c0c6; --panel:rgba(10,12,14,.72); --line:rgba(255,255,255,.16); --accent:#f2c230;
+  --font-display:'Anton','Impact','Arial Narrow',sans-serif;
+  --font-sign:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --font-ui:'Barlow','Segoe UI',Arial,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:#0b0d10;color:var(--ink);font-family:var(--font-ui)}
+[hidden]{display:none!important}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+.hud{position:fixed;pointer-events:none;z-index:5}
+.outl{text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 3px 6px rgba(0,0,0,.6)}
+/* radar */
+.radarBox{left:max(22px,env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:5px;align-items:stretch;width:230px}
+#radar{width:230px;height:150px;border-radius:6px;background:#1c2620;box-shadow:0 0 0 3px rgba(0,0,0,.55),0 6px 18px rgba(0,0,0,.5);pointer-events:auto;cursor:pointer}
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.bar{height:8px;background:rgba(0,0,0,.6);border:1px solid rgba(0,0,0,.8);overflow:hidden}
+.bar i{display:block;height:100%}
+#hpb{background:var(--hp)} #arb{background:var(--armor)}
+/* prawa góra */
+.tr{top:calc(14px + env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+#stars{font-size:30px;letter-spacing:2px;color:rgba(255,255,255,.28);font-family:var(--font-display)}
+#stars b{color:var(--star);font-weight:400}
+#stars.flash b{animation:fl .5s steps(2) infinite}
+@keyframes fl{50%{color:#d33}}
+#money{font-family:var(--font-display);font-size:34px;color:var(--money);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+#money.pop{animation:pop .5s ease}
+@keyframes pop{30%{transform:scale(1.18)}}
+#veh{font-family:var(--font-sign);font-weight:700;font-style:italic;font-size:22px;color:#f2f2f2}
+/* lokalizacja */
+.loc{right:max(22px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));text-align:right;transition:opacity .8s;opacity:0}
+.loc.on{opacity:1}
+#locMain{font-family:var(--font-display);font-size:40px;line-height:1;letter-spacing:.03em;text-transform:uppercase}
+#locSub{font-family:var(--font-sign);font-style:italic;font-weight:600;font-size:22px;color:#e9e4d6}
+/* podpowiedź */
+#hint{left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(0,0,0,.72);border-radius:4px;padding:9px 14px;font-size:15px;max-width:min(520px,80vw);opacity:0;transition:opacity .3s}
+#hint.on{opacity:1}
+#hint kbd{font-family:var(--font-ui);background:#f2f2f2;color:#111;border-radius:3px;padding:0 6px;font-weight:600}
+/* przyciski */
+.tl{top:calc(14px + env(safe-area-inset-top,0px));left:max(18px,env(safe-area-inset-left,0px));display:flex;gap:6px;flex-wrap:wrap;pointer-events:auto;max-width:60vw}
+.btn{font-family:var(--font-sign);font-size:16px;font-weight:600;letter-spacing:.03em;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 11px;cursor:pointer;text-transform:uppercase}
+.btn:hover{background:rgba(30,34,38,.9)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* mapa pełnoekranowa */
+#mapView{position:fixed;inset:0;z-index:10;background:rgba(6,8,10,.86);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#mapView h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:30px;letter-spacing:.04em}
+.mapWrap{display:flex;gap:14px;align-items:flex-start;max-width:100%;min-width:0}
+#bigmap{max-width:min(78vw,1100px);max-height:72vh;border:3px solid #000;box-shadow:0 8px 30px rgba(0,0,0,.6);cursor:crosshair;min-width:0}
+#poiList{display:flex;flex-direction:column;gap:1px;max-height:72vh;overflow:auto;min-width:210px}
+#poiList button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px;padding:5px 8px;border-radius:3px;color:var(--ink)}
+#poiList button:hover,#poiList button:focus-visible{background:rgba(255,255,255,.12)}
+#poiList i{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 2px #000}
+.mapNote{font-size:13px;color:var(--muted)}
+/* pomoc */
+.help{position:fixed;z-index:6;left:max(268px,calc(env(safe-area-inset-left,0px) + 268px));bottom:calc(22px + env(safe-area-inset-bottom,0px));background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:9px 12px;font-size:13px;line-height:1.55;color:var(--muted);max-width:300px}
+.help h2{margin:0 0 3px;font-family:var(--font-display);font-weight:400;font-size:19px;color:var(--ink);letter-spacing:.03em}
+.help kbd{font-family:var(--font-ui);font-size:12px;color:var(--ink);background:rgba(255,255,255,.14);border-radius:3px;padding:0 5px}
+.help .x{all:unset;float:right;cursor:pointer;color:var(--muted);font-size:13px}
+.help .src{margin-top:5px;font-size:11.5px;color:#8b949c}
+/* dotyk */
+#joy{position:fixed;left:calc(28px + env(safe-area-inset-left,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(10,12,14,.35);border:2px solid rgba(255,255,255,.35);z-index:6;pointer-events:none}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.75)}
+.tbtns{position:fixed;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(100px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;gap:10px}
+.tbtns .btn{width:70px;height:70px;border-radius:50%;padding:0;font-size:15px}
+#run.on{background:var(--accent);color:#111}
+@media (pointer:fine){ #joy,.tbtns{display:none} }
+@media (pointer:coarse){ .radarBox{bottom:auto;top:calc(56px + env(safe-area-inset-top,0px));width:150px} #radar{width:150px;height:100px} .help{display:none} .loc{bottom:calc(190px + env(safe-area-inset-bottom,0px))} #locMain{font-size:28px} }
+@media (max-width:760px){ .help{display:none} #bigmap{max-width:92vw} #poiList{display:none} }
+#mp{pointer-events:auto;margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 10px;min-width:190px;max-width:240px}
+#mpCount{font-family:var(--font-sign);font-weight:700;font-size:17px;color:#ffd23a;letter-spacing:.02em}
+#mpList{display:flex;flex-direction:column;gap:2px;margin:4px 0 6px;font-family:var(--font-sign);font-size:16px;color:#eee;max-height:140px;overflow:auto}
+.mpi{display:flex;align-items:center;gap:7px}.mpi i{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(0,0,0,.5)}.mpi span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mprow{display:flex;gap:6px}#nickIn,#chatIn{font:16px var(--font-ui);background:rgba(0,0,0,.45);color:#fff;border:1px solid var(--line);border-radius:4px;padding:5px 8px;min-width:0;flex:1}
+.mprow .btn{font-size:13px;padding:5px 8px;white-space:nowrap}
+#chatLog{left:max(268px,calc(env(safe-area-inset-left,0px) + 268px));bottom:calc(200px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:3px;font-family:var(--font-sign);font-size:19px;max-width:min(520px,60vw);text-shadow:0 1px 2px #000,0 0 6px #000}
+#chatLog b{font-weight:700}
+#chatRow{position:fixed;z-index:9;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;width:min(560px,calc(100vw - 32px))}
+@media (pointer:coarse){ #chatLog{left:16px;bottom:calc(240px + env(safe-area-inset-bottom,0px))} #mp{max-width:180px;min-width:0} }
+#clock{font-family:var(--font-display);font-size:24px;color:#f2f2f2;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+#mission{left:50%;top:calc(62px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(0,0,0,.7);border-left:4px solid #ffd23a;padding:8px 14px;display:flex;gap:14px;align-items:baseline;font-size:15px;white-space:nowrap;max-width:92vw}
+#mission b{font-family:var(--font-sign);font-size:19px;letter-spacing:.03em;color:#ffd23a}
+#mission em{font-style:normal;font-family:var(--font-display);font-size:22px;color:#fff;font-variant-numeric:tabular-nums}
+#toast{left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);text-align:center;font-family:var(--font-sign);font-size:22px;line-height:1.3;opacity:0;transition:opacity .3s;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000;max-width:88vw}
+#toast b{font-family:var(--font-display);font-weight:400;font-size:32px;color:#ffd23a;letter-spacing:.04em}
+#toast.on{opacity:1}
+#shop{position:fixed;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(10,12,14,.92);border:1px solid var(--line);border-top:4px solid #ffd23a;padding:18px 20px;min-width:min(340px,90vw);display:flex;flex-direction:column;gap:6px}
+#shop h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:28px;letter-spacing:.04em}
+#shop .sub{margin:0 0 6px;color:var(--muted);font-size:14px}
+#shop button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:3px;font-size:16px;background:rgba(255,255,255,.06)}
+#shop button span{margin-left:auto;color:var(--money);font-family:var(--font-sign);font-size:18px}
+#shop button:hover,#shop button:focus-visible{background:rgba(255,255,255,.16)}
+#shop button.close{justify-content:center;background:transparent;color:var(--muted)}
+#shop kbd,#mission kbd{font-family:var(--font-ui);background:#f2f2f2;color:#111;border-radius:3px;padding:0 6px;font-weight:600;font-size:13px}
+.tl{max-width:min(60vw,760px)}
+@media (max-width:760px){ #bWeather,#bSeason,#bQual{display:none} }
+#dead{position:fixed;inset:0;z-index:8;display:grid;place-items:center;background:rgba(0,0,0,.45);font-family:var(--font-display);font-size:min(16vw,110px);color:#b81d1d;letter-spacing:.06em;text-shadow:0 4px 0 #000;pointer-events:none}
+#load{position:fixed;inset:0;display:grid;place-items:center;background:#0b0d10;z-index:20;font-family:var(--font-display);font-size:30px;letter-spacing:.05em;color:#f2f2f2}
+</style>
+
+<canvas id="c" tabindex="0" aria-label="Trójwymiarowa gra: Trębaczew"></canvas>
+<div id="load">WCZYTYWANIE TRĘBACZEWA…</div>
+
+<div class="hud tl">
+  <button class="btn" id="bMap" title="Klawisz M">Mapa</button>
+  <button class="btn" id="bCam" title="Klawisz C">Kamera</button>
+  <button class="btn" id="bNight" title="Klawisz N">Noc</button>
+  <button class="btn" id="bWeather">Pogoda</button>
+  <button class="btn" id="bSeason">Pora roku</button>
+  <button class="btn" id="bSound">Dźwięk</button>
+  <button class="btn" id="bQual">Grafika</button>
+</div>
+
+<div class="hud tr">
+  <div id="stars" aria-label="Poziom poszukiwania">★★★★★</div>
+  <div id="clock" class="outl">14:00</div>
+  <div id="money" class="outl">0 zł</div>
+  <div id="veh" class="outl" hidden></div>
+  <div id="mp" hidden><div id="mpCount">Online</div><div id="mpList"></div><div class="mprow"><input id="nickIn" placeholder="Twój nick" maxlength="24" aria-label="Twój nick"><button class="btn" id="bChat">Czat · T</button></div></div>
+</div>
+<div class="hud" id="chatLog"></div>
+<div id="chatRow" hidden><input id="chatIn" maxlength="140" placeholder="Napisz do innych graczy… (Enter)" aria-label="Wiadomość czatu"><button class="btn" id="chatSend">Wyślij</button></div>
+
+<div class="hud" id="hint"></div>
+<div class="hud" id="mission" hidden></div>
+<div class="hud" id="toast"></div>
+<div id="shop" hidden></div>
+<div id="dead" hidden>ZGINĄŁEŚ</div>
+
+<div class="hud radarBox">
+  <canvas id="radar" width="460" height="300" title="Kliknij, aby otworzyć mapę"></canvas>
+  <div class="bars"><div class="bar"><i id="hpb" style="width:100%"></i></div><div class="bar"><i id="arb" style="width:60%"></i></div></div>
+</div>
+
+<div class="hud loc" id="loc"><div id="locMain" class="outl">Zielona</div><div id="locSub" class="outl">Trębaczew</div></div>
+
+<div class="help" id="helpBox">
+  <button class="x" id="hideHelp" aria-label="Ukryj pomoc">ukryj</button>
+  <h2>TRĘBACZEW</h2>
+  <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ruch · <kbd>Shift</kbd> sprint · mysz: rozglądanie<br>
+  <kbd>F</kbd> wsiądź / wysiądź (auto, rower, motor, ciągnik) · <kbd>Spacja</kbd> ręczny · <kbd>R</kbd> radio<br>
+  <kbd>E</kbd> misja / zakupy · żółte znaczniki to misje · <kbd>M</kbd> mapa · <kbd>C</kbd> kamera · <kbd>N</kbd> przewiń czas<br><kbd>T</kbd> czat z innymi graczami · <kbd>H</kbd> klakson (gra wieloosobowa)
+  <div class="src">Ulice i budynki: © OpenStreetMap contributors (ODbL). Rzeźba terenu: NMT, działki: ULDK © GUGiK (geoportal.gov.pl). Część nazw z Google Maps.</div>
+</div>
+
+<div id="mapView" hidden>
+  <h2>MAPA TRĘBACZEWA</h2>
+  <div class="mapWrap"><canvas id="bigmap"></canvas><div id="poiList"></div></div>
+  <div class="mapNote">Kliknij na mapie lub wybierz miejsce, by się tam przenieść. <kbd>M</kbd> lub <button class="btn" id="closeMap">Zamknij</button></div>
+</div>
+
+<div id="joy"><div id="knob"></div></div>
+<div class="tbtns"><button class="btn" id="bAct">Akcja</button><button class="btn" id="bEnter">Auto</button><button class="btn" id="bRadio">Radio</button><button class="btn" id="run">Bieg</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
