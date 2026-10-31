@@ -35,10 +35,14 @@ build.py          składa index.html ze źródeł
 src/head.html     HTML, CSS interfejsu, biblioteki (three.js r128 z CDN)
 src/game.js       cały kod gry (świat, pojazdy, postacie, misje, multiplayer)
 src/data.js       OSM: drogi, obszary, budynki-wielokąty (kościół itp.), punkty
-src/data_b.js     OSM: wszystkie budynki (prostokąt, bryły z dokładnego obrysu, adresy)
-src/data_h.js     siatka wysokości terenu (NMT GUGiK, 20 m)
-src/data_p.js     granice działek (ULDK GUGiK)
+src/data_b.js     budynki: obrysy z OSM, liczba kondygnacji i funkcja z BDOT10k, adresy
+src/data_h.js     siatka wysokości terenu (NMT GUGiK, 20 m) dla całego obszaru
+src/data_p.js     granice działek we wsi (ULDK GUGiK)
 src/data_r.js     kolory dachów odczytane z ortofotomapy
+src/data_x.js     rozszerzony świat: DK42, drogi i tory poza wsią, lasy, woda, miejscowości
+src/data_o.js     ortofotomapa (GUGiK) – tekstura terenu poza centrum wsi
+tools/build_world.py   generuje dane z plików w tools/raw/
+tools/raw/        surowe dane: zrzut OSM, budynki BDOT10k, NMT, ortofotomapa
 ```
 
 Po zmianach w `src/` uruchom:
@@ -47,14 +51,19 @@ Po zmianach w `src/` uruchom:
 python3 build.py
 ```
 
-## Aktualizacja budynków z OpenStreetMap
+## Obszar i aktualizacja danych
 
-1. Pobierz obszar z API OSM (w przeglądarce, odpowiedź JSON):
-   `https://api.openstreetmap.org/api/0.6/map.json?bbox=18.9051,51.1207,18.9352,51.1379`
-2. Zakoduj budynki do `tools/osm_buildings.txt` (format opisany w `tools/osm_buildings.py`).
-3. Uruchom `python3 tools/osm_buildings.py`, a potem `python3 build.py`.
+Świat obejmuje ok. 5,7 × 2,9 km: Trębaczew, Sadowiec-Wrzosy, Posmykowiznę, Wydrzynów, północną część Działoszyna z dworcem, zakłady przy Przemysłowej, lasy i kopalnię wapienia.
 
-Skrypt przelicza obrysy do układu gry, dzieli budynki w kształcie L, T i U na prostokątne bryły (każda dostaje własny dach), przenosi liczbę kondygnacji (`building:levels`) i adresy, a kolory dachów zachowuje z ortofotomapy.
+Źródła surowych danych (zapisane w `tools/raw/`):
+1. OSM: `https://api.openstreetmap.org/api/0.6/map.json?bbox=18.8780,51.1118,18.9575,51.1381` → `osm_area.json.gz`
+2. BDOT10k powiatu pajęczańskiego: `https://opendata.geoportal.gov.pl/bdot10k/schemat2021/10/1009_GML.zip`, klasa `OT_BUBD_A` (budynki z liczbą kondygnacji) → `bdot_area.json`
+3. NMT: `services.gugik.gov.pl/nmt/?request=GetHByPointList` w siatce 20 m → `nmt.txt`
+4. Ortofotomapa: WMS `mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolutionTime` 2,5 m/piksel → `orto.jpg`
+
+Potem `python3 tools/build_world.py` i `python3 build.py`.
+
+Skrypt przelicza wszystko do układu gry, dzieli budynki w kształcie L, T i U na prostokątne bryły (każda dostaje własny dach), bierze liczbę kondygnacji i funkcję budynku z BDOT10k, dodaje budynki obecne tylko w BDOT10k, a kolory dachów odczytuje z ortofotomapy. Dopracowane ręcznie centrum wsi (sklepy, kościół, przedszkole, OSP) zostaje bez zmian.
 
 ## Układ współrzędnych
 
@@ -64,7 +73,7 @@ Skrypt przelicza obrysy do układu gry, dzieli budynki w kształcie L, T i U na 
 ## Źródła danych
 
 - Ulice, budynki, obszary: © współtwórcy OpenStreetMap, licencja ODbL (https://www.openstreetmap.org/copyright)
-- Numeryczny model terenu, działki ewidencyjne (ULDK), ortofotomapa: © GUGiK, geoportal.gov.pl
+- Numeryczny model terenu, działki ewidencyjne (ULDK), ortofotomapa, BDOT10k: © GUGiK, geoportal.gov.pl
 - Część nazw miejsc: Google Maps
 
 Kod gry korzysta z biblioteki three.js (licencja MIT).
