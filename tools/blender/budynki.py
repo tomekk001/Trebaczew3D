@@ -223,5 +223,6 @@ def osrodek():
     for x in (SX0 + .05, SX1 - .05): M.prism([(x, FL + 1.0, TZ - .05), (x, .1 + .9, TZ + 1.05), (x, .1 + .85, TZ + 1.05), (x, FL + .95, TZ - .05)], (.04, 0, 0), iron)
     M.finish(res=1024, quality=72, ao_dist=2.0)
 
-for f in (osrodek, delikatesy, dworzec, mineral, swietlica, orlen_sklep, orlen_wiata, biedronka, lidl):
-    if len(sys.argv) < 2 or f.__name__ in sys.argv[1:]: f()
+if __name__ == '__main__':
+  for f in (osrodek, delikatesy, dworzec, mineral, swietlica, orlen_sklep, orlen_wiata, biedronka, lidl):
+      if len(sys.argv) < 2 or f.__name__ in sys.argv[1:]: f()

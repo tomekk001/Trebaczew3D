@@ -149,6 +149,7 @@ Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyt
 - `regal_apteka.py`: regał z lekami.
 - `sklep.py`: regał z alkoholem, gondola, lodówka i lada Żabki.
 - `pociagi.py`: elektryczny zespół trakcyjny (człony czołowe i środkowe) oraz lokomotywa i węglarki pociągu towarowego.
+- `budynki2.py`: kolejne miejsca ze zdjęć: szkoła podstawowa (obrys w kształcie litery L), domy przy Wyzwolenia 159–163 naprzeciw kościoła, kwiaciarnia „Sas-Anka” (Szkolna 9), dom przy Szkolnej 3, OSP, budynek Żabki, trzy bryły przedszkola i elektrownia wiatrowa z obracającym się wirnikiem.
 - `budynki.py`: budynki według zdjęć: ośrodek zdrowia z Apteką Magnolia (Szkolna 12, taras ze schodami, ganek z dwojgiem drzwi), Delikatesy Premium, dworzec PKP, Minerał, świetlica, ORLEN (sklep i wiata), Biedronka, Lidl. Można zbudować wybrane, np. `python3 tools/blender/budynki.py lidl orlen_wiata`.
 
 ```
