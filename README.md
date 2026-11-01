@@ -128,3 +128,13 @@ Minigry są częścią misji (m4, m5, m8, s6–s8). Można też zagrać w nie w 
 ## Statystyki
 
 `statystyki.html` pokazuje anonimowe liczniki z serwera (`/stats`): graczy, uruchomienia, czas gry, misje, minigry i rankingi.
+
+## Multiplayer: emotki i wyścigi
+
+- **1–4**: emotki 👋 👍 😂 ⚽ nad głową; na telefonie są przyciski w panelu graczy.
+- **G**: wyzwij najbliższego gracza (do 30 m) na wyścig. Wyzwany przyjmuje klawiszem **Y** albo odrzuca klawiszem **N**. Obaj dostają tę samą metę, a zwycięzca zgarnia 200 zł.
+- **Enter**: otwiera czat.
+
+## Zgłoszenia błędów
+
+Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyta je na stronie `zgloszenia.html`, po podaniu klucza dostępu. W kodzie jest tylko skrót SHA-256 tego klucza. Jeśli w `zglos.html` ustawisz `ACCESS_KEY` z Web3Forms, zgłoszenia dodatkowo przyjdą e-mailem.

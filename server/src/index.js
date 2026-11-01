@@ -3,6 +3,8 @@
 import { DurableObject } from 'cloudflare:workers';
 
 const MAX = 30;
+// skrót SHA-256 klucza do podglądu zgłoszeń (sam klucz zna tylko właściciel gry)
+const REPORT_HASH = 'a9ec3e12248619df754f448947d3957ab891bb8f9b9782ca6c298c0f04127c1a';
 const ROOMS = /^t[1-9]$/;
 const BAD = ['kurw','chuj','huj','pierdol','jeb','pizd','cip','skurw','dziwk','pedal','pedał','spierdal','zajeb','wypierdal','fiut','kutas','szmat','debil','cwel','nigg','nigg'];
 const clean = (t, n) => String(t == null ? '' : t).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g, '').slice(0, n).trim();
@@ -10,6 +12,7 @@ function censor(t) {
   return t.split(/(\s+)/).map(w => { const l = w.toLowerCase().replace(/[^a-ząćęłńóśźż0-9]/g, '').replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/@/g, 'a');
     return BAD.some(b => l.includes(b)) ? w[0] + '*'.repeat(Math.max(2, w.length - 1)) : w; }).join('');
 }
+const clean2 = (t, n) => String(t == null ? '' : t).replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').slice(0, n).trim();
 const num = (v, a, b) => { v = +v; return Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : 0; };
 const hex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : null;
 const VEH = ['car', 'van', 'moto', 'tractor', 'bus', 'bike', 'fire'];
@@ -32,6 +35,17 @@ export default {
       const body = await req.text(); if (body.length > 2000) return new Response('za duże', { status: 413, headers: cors });
       const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/hit', { method: 'POST', body });
       return new Response(null, { status: r.status === 200 ? 204 : r.status, headers: cors });
+    }
+    if (url.pathname === '/report' && req.method === 'POST') {
+      const body = await req.text(); if (body.length > 8000) return new Response('za duże', { status: 413, headers: cors });
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/report', { method: 'POST', body, headers: { 'x-ip': req.headers.get('cf-connecting-ip') || '' } });
+      return new Response(await r.text(), { status: r.status, headers: { ...cors, 'content-type': 'application/json' } });
+    }
+    if (url.pathname === '/reports') {
+      const k = url.searchParams.get('k') || ''; const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(k)))].map(b => b.toString(16).padStart(2, '0')).join('');
+      if (h !== REPORT_HASH) return new Response('{"error":"zły klucz"}', { status: 403, headers: { ...cors, 'content-type': 'application/json' } });
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/reports' + (url.searchParams.get('del') ? '?del=' + encodeURIComponent(url.searchParams.get('del')) : ''));
+      return new Response(await r.text(), { headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
     }
     if (url.pathname === '/stats') {
       const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/stats');
@@ -80,6 +94,9 @@ export class Room extends DurableObject {
         const t = censor(clean(m.d && m.d.t, 140)); if (!t) return; a.chat = now; ws.serializeAttachment(a);
         this.bcast({ t: 'e', peer: a.id, topic: 'chat', d: { t } }, ws); this.send(ws, { t: 'e', peer: a.id, topic: 'chat', d: { t }, me: 1 }); return;
       }
+      if (m.topic === 'emote') { if (now - (a.ev || 0) < 700) return; a.ev = now; ws.serializeAttachment(a); const e = Math.max(0, Math.min(7, (m.d && m.d.e) | 0)); const o = { t: 'e', peer: a.id, topic: 'emote', d: { e } }; this.bcast(o, ws); this.send(ws, { ...o, me: 1 }); return; }
+      if (m.topic === 'duel') { if (now - (a.ev || 0) < 400) return; a.ev = now; ws.serializeAttachment(a); const d = m.d || {}; const to = String(d.to || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12); const act = ['ask', 'yes', 'no', 'win', 'quit'].includes(d.a) ? d.a : null; if (!to || !act) return;
+        const tgt = this.socks().find(w => { const x = w.deserializeAttachment(); return x && x.id === to; }); if (tgt) this.send(tgt, { t: 'e', peer: a.id, topic: 'duel', d: { to, a: act, s: Math.max(0, Math.min(1e9, Math.floor(+d.s || 0))) } }); return; }
       if (m.topic === 'klakson') { if (now - a.chat < 400) return; a.chat = now - 1100; ws.serializeAttachment(a); this.bcast({ t: 'e', peer: a.id, topic: 'klakson', d: {} }, ws); return; }
     }
     ws.serializeAttachment(a);
@@ -97,13 +114,24 @@ export class Stats extends DurableObject {
             CREATE TABLE IF NOT EXISTS seen(day TEXT, id TEXT, PRIMARY KEY(day,id));
             CREATE TABLE IF NOT EXISTS players(id TEXT PRIMARY KEY, first TEXT, mob INTEGER);
             CREATE TABLE IF NOT EXISTS scores(g TEXT, nick TEXT, s INTEGER, t INTEGER);
-            CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);`);
+            CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);
+            CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kat TEXT, opis TEXT, kontakt TEXT, info TEXT);`);
+    this.rrl = new Map();
     this.rl = new Map(); this.cache = null;
   }
   add(day, k, v) { this.ctx.storage.sql.exec('INSERT INTO daily(day,k,v) VALUES(?,?,?) ON CONFLICT(day,k) DO UPDATE SET v=v+excluded.v', day, k, v); }
   async fetch(req) {
     const url = new URL(req.url); const q = this.ctx.storage.sql; const day = new Date(Date.now() + 3600e3).toISOString().slice(0, 10);
     if (url.pathname === '/peak') { const v = +(await req.text()) || 0; q.exec('INSERT INTO meta(k,v) VALUES(\'peak\',?) ON CONFLICT(k) DO UPDATE SET v=MAX(v,excluded.v)', v); this.cache = null; return new Response('ok'); }
+    if (url.pathname === '/report') {
+      const ip = req.headers.get('x-ip') || '?', now = Date.now(); const r = this.rrl.get(ip) || { t: now, n: 0 }; if (now - r.t > 3600e3) { r.t = now; r.n = 0; } if (++r.n > 8) return new Response('{"ok":false,"error":"Za dużo zgłoszeń – spróbuj za godzinę"}', { status: 429 }); this.rrl.set(ip, r); if (this.rrl.size > 3000) this.rrl.clear();
+      let m; try { m = JSON.parse(await req.text()); } catch (e) { return new Response('{"ok":false}', { status: 400 }); }
+      if (m.botcheck) return new Response('{"ok":true}'); const opis = clean2(m.opis, 3000); if (opis.length < 5) return new Response('{"ok":false,"error":"Za krótki opis"}', { status: 400 });
+      q.exec('INSERT INTO reports(t,kat,opis,kontakt,info) VALUES(?,?,?,?,?)', now, clean(m.kat, 40), opis, clean(m.kontakt, 120), clean2(m.info, 2000));
+      q.exec('DELETE FROM reports WHERE id NOT IN (SELECT id FROM reports ORDER BY id DESC LIMIT 1000)'); return new Response('{"ok":true}');
+    }
+    if (url.pathname === '/reports') { const del = +url.searchParams.get('del') || 0; if (del) q.exec('DELETE FROM reports WHERE id=?', del);
+      return new Response(JSON.stringify(q.exec('SELECT id,t,kat,opis,kontakt,info FROM reports ORDER BY id DESC LIMIT 300').toArray())); }
     if (url.pathname === '/hit') {
       let m; try { m = JSON.parse(await req.text()); } catch (e) { return new Response('zły JSON', { status: 400 }); }
       const id = clean(m.id, 40).replace(/[^a-z0-9-]/gi, ''); if (id.length < 8 || !EVS.includes(m.ev)) return new Response('złe dane', { status: 400 });
@@ -119,7 +147,7 @@ export class Stats extends DurableObject {
       if (m.ev === 'mission') { this.add(day, 'missions', 1); if (d.main) this.add(day, 'main', 1); }
       if (m.ev === 'mp') this.add(day, 'mp', 1);
       if (m.ev === 'mini') {
-        const g = ['paczkomat', 'flanki', 'karne'].includes(d.g) ? d.g + (d.m ? '-' + clean(d.m, 10).replace(/[^a-z]/g, '') : '') : null; if (!g) return new Response('zła gra', { status: 400 });
+        const g = ['paczkomat', 'flanki', 'karne', 'pilka', 'zonglerka'].includes(d.g) ? d.g + (d.m ? '-' + clean(d.m, 10).replace(/[^a-z]/g, '') : '') : null; if (!g) return new Response('zła gra', { status: 400 });
         this.add(day, 'mini', 1); this.add(day, 'mini:' + g, 1); if (d.w) this.add(day, 'miniwin', 1);
         const s = Math.max(0, Math.min(5000, Math.round(+d.s || 0))); const nick = censor(clean(d.n, 18)) || 'Anonim';
         if (s > 0 && d.w) { q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', g, nick, s, now); q.exec('DELETE FROM scores WHERE g=? AND rowid NOT IN (SELECT rowid FROM scores WHERE g=? ORDER BY s DESC, t ASC LIMIT 25)', g, g); }

@@ -88,7 +88,7 @@ a{color:var(--accent)}
 const API='https://trebaczew-mp.kontakt-3e3.workers.dev';
 const $=id=>document.getElementById(id);
 const nf=new Intl.NumberFormat('pl-PL');
-const GAMES={'paczkomat-nadaj':'Paczkomat – nadawanie','paczkomat-odbierz':'Paczkomat – odbiór','flanki':'Flanki w parku','karne-orlik':'Karne na orliku','karne-lzs':'Karne – LZS Trębaczew'};
+const GAMES={'paczkomat-nadaj':'Paczkomat – nadawanie','paczkomat-odbierz':'Paczkomat – odbiór','flanki':'Flanki w parku','karne-orlik':'Karne na orliku','karne-lzs':'Karne – LZS Trębaczew','pilka':'Mecz na orliku','zonglerka':'Żonglerka LZS'};
 function plural(n,a,b,c){ n=Math.abs(n); if(n===1)return a; const d=n%10,h=n%100; return d>=2&&d<=4&&(h<12||h>14)?b:c; }
 function fmtDay(d){ const [y,m,dd]=d.split('-'); return `${+dd}.${m}`; }
 function bars(el,days,key,unit){

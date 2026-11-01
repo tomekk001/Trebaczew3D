@@ -84,6 +84,12 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b0d10;color:var(--in
 @media (pointer:fine){ #joy,.tbtns{display:none} }
 @media (pointer:coarse){ .radarBox{bottom:auto;top:calc(56px + env(safe-area-inset-top,0px));width:150px} #radar{width:150px;height:100px} .help{display:none} .loc{bottom:calc(190px + env(safe-area-inset-bottom,0px))} #locMain{font-size:28px} }
 @media (max-width:760px){ .help{display:none} #bigmap{max-width:92vw} #poiList{display:none} }
+.mpEmo{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.mpEmo .btn{padding:4px 7px;font-size:15px;text-transform:none}
+.mpEmo #bDuel{font-size:12px;flex:1}
+#duelBox{position:fixed;z-index:14;top:calc(70px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(18,21,24,.95);border:1px solid var(--line);border-top:3px solid #ff3a3a;padding:10px 14px;color:var(--ink);font-size:15px;max-width:min(92vw,360px);text-align:center;pointer-events:auto}
+#duelBox .row{display:flex;gap:8px;margin-top:8px;justify-content:center}
+#duelBox .btn.hot{background:var(--accent);color:#111;border-color:var(--accent)}
 #mp{pointer-events:auto;margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 10px;min-width:190px;max-width:240px}
 #mpCount{font-family:var(--font-sign);font-weight:700;font-size:17px;color:#ffd23a;letter-spacing:.02em}
 #mpList{display:flex;flex-direction:column;gap:2px;margin:4px 0 6px;font-family:var(--font-sign);font-size:16px;color:#eee;max-height:140px;overflow:auto}
@@ -257,7 +263,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
   <div id="money" class="outl">0 zł</div>
   <div id="veh" class="outl" hidden></div>
   <div id="fuelBox" hidden><span class="ic">⛽</span><div class="fb"><i id="fuelBar"></i></div><span id="fuelTxt" class="outl"></span></div>
-  <div id="mp" hidden><div id="mpCount">Online</div><div id="mpList"></div><div class="mprow"><input id="nickIn" placeholder="Twój nick" maxlength="24" aria-label="Twój nick"><button class="btn" id="bChat">Czat · T</button></div></div>
+  <div id="mp" hidden><div id="mpCount">Online</div><div id="mpList"></div><div class="mprow"><input id="nickIn" placeholder="Twój nick" maxlength="24" aria-label="Twój nick"><button class="btn" id="bChat">Czat · Enter</button></div></div>
 </div>
 <div class="hud" id="chatLog"></div>
 <div id="chatRow" hidden><input id="chatIn" maxlength="140" placeholder="Napisz do innych graczy… (Enter)" aria-label="Wiadomość czatu"><button class="btn" id="chatSend">Wyślij</button></div>

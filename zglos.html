@@ -58,6 +58,7 @@ a{color:var(--accent)}
 // Klucz dostępu Web3Forms (bezpieczny do umieszczenia na stronie – nie ujawnia adresu e-mail).
 // Wygeneruj go na https://web3forms.com (wpisz swój adres, klucz przyjdzie mailem) i wklej poniżej.
 const ACCESS_KEY = '';
+const SERVER = 'https://trebaczew-mp.kontakt-3e3.workers.dev';
 const q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
 if (q.get('kat')) { [...$('kat').options].forEach(o => { if (o.text === q.get('kat')) o.selected = true; }); }
@@ -68,14 +69,17 @@ $('f').addEventListener('submit', async e => {
   e.preventDefault(); const msg = $('msg'); msg.className = 'msg'; msg.textContent = '';
   const opis = $('opis').value.trim();
   if (opis.length < 5) { msg.className = 'msg err'; msg.textContent = 'Opisz problem w kilku słowach.'; $('opis').focus(); return; }
-  if (!ACCESS_KEY) { msg.className = 'msg err'; msg.textContent = 'Formularz nie jest jeszcze skonfigurowany (brak klucza Web3Forms). Spróbuj później.'; return; }
   $('send').disabled = true; $('send').textContent = 'Wysyłanie…';
+  const data = { kat: $('kat').value, opis, kontakt: $('kontakt').value.trim(), info, botcheck: $('f').botcheck.checked };
   try {
-    const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ access_key: ACCESS_KEY, subject: `[Trębaczew] ${$('kat').value}`, from_name: 'Symulator życia w Trębaczewie', kategoria: $('kat').value, opis, kontakt: $('kontakt').value.trim(), informacje_z_gry: info, botcheck: $('f').botcheck.checked }) });
+    // 1) serwer gry – zgłoszenie trafia do skrzynki autora (zawsze)
+    const r = await fetch(SERVER + '/report', { method: 'POST', body: JSON.stringify(data) });
     const j = await r.json().catch(() => ({}));
-    if (r.ok && j.success !== false) { msg.className = 'msg ok'; msg.textContent = 'Dziękuję! Zgłoszenie zostało wysłane.'; $('opis').value = ''; }
-    else throw new Error(j.message || 'błąd serwera');
+    if (!r.ok || j.ok === false) throw new Error(j.error || 'błąd serwera');
+    // 2) dodatkowo e-mail przez Web3Forms, jeśli klucz jest ustawiony
+    if (ACCESS_KEY) fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ access_key: ACCESS_KEY, subject: `[Trębaczew] ${data.kat}`, from_name: 'Symulator życia w Trębaczewie', kategoria: data.kat, opis, kontakt: data.kontakt, informacje_z_gry: info, botcheck: data.botcheck }) }).catch(() => {});
+    msg.className = 'msg ok'; msg.textContent = 'Dziękuję! Zgłoszenie zostało wysłane.'; $('opis').value = '';
   } catch (err) { msg.className = 'msg err'; msg.textContent = 'Nie udało się wysłać (' + err.message + '). Spróbuj ponownie za chwilę.'; }
   $('send').disabled = false; $('send').textContent = 'Wyślij zgłoszenie';
 });
