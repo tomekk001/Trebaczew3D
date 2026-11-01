@@ -1701,7 +1701,7 @@ async function boot(saved){
     cricket(){ const t=AU.ctx.currentTime; for(let i=0;i<6;i++) tone('square',4400,t+i*.05,.03,.008); },
     dog(){ const t=AU.ctx.currentTime; for(let i=0;i<2;i++){ tone('sawtooth',420,t+i*.28,.18,.05,null,180); noiseHit(t+i*.28,.15,.06,'bandpass',700); } },
     bell(n){ const t=AU.ctx.currentTime; for(let k=0;k<n;k++) [1,2,2.4,3,4.2].forEach((m,j)=>tone('sine',196*m,t+k*1.6,3,.05/(j+1))); },
-    horn(){ const t=AU.ctx.currentTime; tone('sawtooth',311,t,1.4,.05); tone('sawtooth',370,t,1.4,.05); },
+    horn(v){ v=v===undefined?1:v; if(v<.02)return; const t=AU.ctx.currentTime; tone('sawtooth',311,t,1.4,.05*v); tone('sawtooth',370,t,1.4,.05*v); },
     cash(){ const t=AU.ctx.currentTime; tone('square',1320,t,.08,.05); tone('square',1760,t+.08,.18,.05); },
     win(){ const t=AU.ctx.currentTime; [523,659,784,1047].forEach((f,i)=>tone('square',f,t+i*.12,.25,.05)); } };
   /* ---------- muzyka w aucie: 4 stacje z prawdziwą perkusją, basem, akordami i melodią ---------- */
@@ -1861,7 +1861,7 @@ async function boot(saved){
       if(BUS.g.visible&&!st.car&&!st.inside&&Math.hypot(BUS.x-st.x,BUS.z-st.z)<4){ { const dx=st.x-BUS.x,dz=st.z-BUS.z,l=Math.hypot(dx,dz)||1; st.vx=dx/l*8; st.vz=dz/l*8; st.hp=Math.max(0,st.hp-dt*40); } } }
     // pociąg towarowy (wolniejszy, w przeciwnej fazie)
     { const FL=freightLen[freightLen.length-1], cyc=FL+3000, h0=((tAll+90)*17)%cyc; FREIGHT.forEach((w,i)=>{ const d=FL-(h0-i*14); if(d<0||d>FL){ w.visible=false; return; } w.visible=true; const s=sampleLine(freightPath,freightLen,d); w.position.set(s.x,H(s.x,s.z)+.22,s.z); w.rotation.y=-Math.atan2(s.tz,s.tx); });
-      const lead=FREIGHT[0]; if(lead.visible&&Math.hypot(lead.position.x-st.x,lead.position.z-st.z)<350&&tAll-lastHorn>25&&AU.ctx&&AU.on){ lastHorn=tAll; sfx.horn(); } }
+      const lead=FREIGHT[0]; const px=st.car?st.car.x:st.x, pz=st.car?st.car.z:st.z, dh=Math.hypot(lead.position.x-px,lead.position.z-pz); if(lead.visible&&!st.inside&&dh<200&&tAll-lastHorn>25&&AU.ctx&&AU.on){ lastHorn=tAll; const k=1-dh/200; sfx.horn(k*k*(st.car?.6:1)); } }
     // policja
     if(st.car&&!['bike'].includes(st.car.kind)){ cars.forEach(t=>{ if(Math.hypot(t.x-st.car.x,t.z-st.car.z)<3.8&&tAll-trafficHitT>4){ trafficHitT=tAll; if(rnd()<.5) setWanted(Math.max(st.wanted,1)); } }); }
     const want=Math.min(3,st.wanted); if(COPS.length<want&&rnd()<dt*2) spawnCop();
@@ -2226,7 +2226,7 @@ async function boot(saved){
     const lights=CRS.phase!=='idle'; const on=Math.floor(tAll*1.6)%2;
     CROSS.forEach(c=>{ c.arm.rotation.z=CRS.armA; c.lamps[0].material.color.set(lights&&on?0xff2a1a:0x330000); c.lamps[1].material.color.set(lights&&!on?0xff2a1a:0x330000); });
     BOOMS.forEach(o=>o.off=CRS.armA<-.35);
-    if(lights&&AU.ctx&&AU.on){ const dp=Math.hypot(st.x-cx,st.z-cz); if(dp<300){ CRS.bell-=dt; if(CRS.bell<=0){ CRS.bell=.55; const t=AU.ctx.currentTime, v=.05*clamp(1-dp/300,0,1); tone('triangle',1320,t,.25,v); tone('sine',2640,t,.12,v*.4); } } } };
+    if(lights&&AU.ctx&&AU.on&&!st.inside){ const dp=Math.hypot((st.car?st.car.x:st.x)-cx,(st.car?st.car.z:st.z)-cz); if(dp<150){ CRS.bell-=dt; if(CRS.bell<=0){ CRS.bell=.55; const t=AU.ctx.currentTime, v=.05*Math.pow(clamp(1-dp/150,0,1),2); tone('triangle',1320,t,.25,v); tone('sine',2640,t,.12,v*.4); } } } };
   // ruch na DK42: odstępy między autami i zatrzymanie przed przejazdem
   function trafficSpeeds(dt){ const closed=crossClosed(); [1,-1].forEach(dir=>{ const L=cars.filter(c=>c.dir===dir).sort((a,b)=>(a.d-b.d)*dir);
       for(let i=0;i<L.length;i++){ const c=L[i]; if(c.v0===undefined) c.v0=c.v; let tv=c.v0; const nx=L[i+1];
@@ -2391,7 +2391,7 @@ async function boot(saved){
   function addEnt(room,label,p,n){ const nl=Math.hypot(n[0],n[1])||1; n=[n[0]/nl,n[1]/nl]; const e={label,room,p,n,f:[p[0]-n[0]*1.4,p[1]-n[1]*1.4]}; e.enter=()=>enterRoom(e); ENTS.push(e); room.ent=e; return e; }
   function entFromShop(shopName,room,label,center){ const s=SHOPS.find(q=>q.n===shopName); if(!s)return; s.room=room; const p=s.p; const n=[p[0]-center[0],p[1]-center[1]]; addEnt(room,label,p,n); room.items=s.items; room.shopName=s.n; }
   const logoT=(bg,fg,txt,font)=>tex(512,128,(c,w,h)=>{ c.fillStyle=bg; c.fillRect(0,0,w,h); c.fillStyle=fg; c.font=font||'800 74px Barlow, Arial'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(txt,w/2,h/2+4); });
-  { const r=defRoom({kind:'zabka',W:12,D:10,HT:3.6,col:0x1a8a3a,wall:0xe6e6e2,floor:'#cfcdc6',wallE:0x121212,floorE:0x0c0c0c,noLights:true,logoW:2.4,logoX:3.4,logoY:2.6,walkers:2,logo:logoT('#1a8a3a','#ffffff','żabka')}); entFromShop('Żabka',r,'Żabki',[B_ZAB.x,B_ZAB.z]); }
+  { const r=defRoom({kind:'zabka',W:12,D:10,HT:3.6,doorX:1.0,col:0x1a8a3a,wall:0xe6e6e2,floor:'#cfcdc6',wallE:0x121212,floorE:0x0c0c0c,noLights:true,logoW:2.4,logoX:3.4,logoY:2.6,walkers:2,logo:logoT('#1a8a3a','#ffffff','żabka')}); entFromShop('Żabka',r,'Żabki',[B_ZAB.x,B_ZAB.z]); }
   { const r=defRoom({kind:'shop',W:13,D:11,col:0x2b2b2b,rows:2,checkouts:1,walkers:2,logo:logoT('#1b1b1b','#e8c25a','Delikatesy Premium','700 54px Barlow, Arial')}); entFromShop('Delikatesy Premium',r,'Delikatesów',CB.delik?[CB.delik.x,CB.delik.z]:[-150,-336]); }
   { const r=defRoom({kind:'pharm',W:10,D:9,HT:3.7,logoW:3.4,logoY:3.08,col:0x2a9a5a,wall:0xaebdb2,floor:'#8f877b',ceil:0xc9c9c3,ceilE:0x161615,wallE:0x0e100e,floorE:0x0c0b0a,walkers:1,logo:logoT('#1b2a22','#57d68d','✚ APTEKA MAGNOLIA','700 50px Barlow, Arial')}); const a=typeof APT!=='undefined'&&APT?centroid(APT.pts):[-100,-200]; entFromShop('Apteka Magnolia',r,'apteki',a); }
   { const r=defRoom({kind:'rest',W:14,D:12,col:0xd8261e,logo:logoT('#d8261e','#ffffff','EUFORIA')}); entFromShop('Euforia Trębaczew',r,'Euforii',[-146,-356]); }
@@ -2406,7 +2406,7 @@ async function boot(saved){
   function roomShopObj(o){ if(!o.items||!o.counter)return null; return {n:o.shopName||'Sklep',sub:o.sub,get p(){ return [o.x+o.counter[0],o.z+o.counter[1]]; },items:o.items}; }
   function enterRoom(e){ if(st.car||st.inside)return; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do środka',2.5); return; } IN.lastSwap=tAll; const o=e.room;
     fadeTo(()=>{ buildRoom(o); o.shop=roomShopObj(o); o.ret={x:e.p[0]+e.n[0]*1.6,z:e.p[1]+e.n[1]*1.6,yaw:Math.atan2(-e.n[0],-e.n[1]),face:Math.atan2(e.n[0],e.n[1])}; o.doorW=[o.x+o.doorX,o.z+o.D/2-.6]; o.worldPos=e.p;
-      CUR=o; st.inside=true; o.g.visible=true; st.x=o.x+o.doorX; st.z=o.z+o.D/2-2.2; st.vx=st.vz=0; st.yaw=0; st.face=Math.PI; st.pitch=.22; st.dist=Math.min(st.dist,3.4); st.distS=st.dist; if(st.mode===2) st.mode=0;
+      CUR=o; st.inside=true; o.g.visible=true; st.x=o.x+o.doorX; st.z=o.z+o.D/2-2.2; if(curBlocked(st.x,st.z,.4)){ let ok=false; for(let r=.4;r<5&&!ok;r+=.3) for(let a2=0;a2<6.28&&!ok;a2+=.4){ const x=st.x+Math.cos(a2)*r, z=st.z+Math.sin(a2)*r; if(!curBlocked(x,z,.4)){ st.x=x; st.z=z; ok=true; } } } st.vx=st.vz=0; st.yaw=0; st.face=Math.PI; st.pitch=.22; st.dist=Math.min(st.dist,3.4); st.distS=st.dist; if(st.mode===2) st.mode=0;
       locMain.textContent=o.title||e.label; locSub.textContent='wnętrze'; locEl.classList.add('on'); locTimer=3; }); }
   function exitRoom(){ const o=CUR; if(o===IN){ exitStore(); return; } IN.lastSwap=tAll; fadeTo(()=>{ lampPool.forEach(l=>{ l.color.set(0xffc070); l.distance=26; }); st.inside=false; o.g.visible=false; const r=o.ret; st.x=r.x; st.z=r.z; if(blocked(st.x,st.z,.45)){ const q=walkSpot([st.x,st.z],false); st.x=q[0]; st.z=q[1]; } st.yaw=r.yaw; st.face=r.face; st.vx=st.vz=0; if(SHOP_OPEN) closeShop(); CUR=IN; }); }
   function roomsUpdate(dt){ if(!st.inside||CUR===IN||!CUR.built)return; const o=CUR;
