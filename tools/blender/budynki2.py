@@ -151,14 +151,18 @@ def szkola():
     portal = M.mat('portal', '#9a3d2c', brick=(.25, .075, '#d6c9b6', .012))
     # skrzydło zachodnie (długie) i wschodnie (szersze)
     walls(M, m, 0, 0, H, x0=-19.9, x1=6.9, z0=-3.9, z1=8.6); walls(M, m, 0, 0, H, x0=6.5, x1=19.9, z0=-11.4, z1=9.2)
-    hip(M, -19.9, 6.9, -3.9, 8.6, H, 3.0, m['roof'], ov=.6); hip(M, 6.5, 19.9, -11.4, 9.2, H, 3.6, m['roof'], ov=.6)
+    # płaski dach: attyka z obróbką i ciemna papa
+    flat = M.mat('papa', '#4a4a48', noise=.12); cap = M.mat('blacha', '#9a9c9a', noise=.03)
+    for x0, x1, z0, z1 in ((-19.9, 6.9, -3.9, 8.6), (6.5, 19.9, -11.4, 9.2)):
+        M.box(x0 - .08, x1 + .08, H, H + .55, z0 - .08, z1 + .08, m['wall']); M.box(x0 - .14, x1 + .14, H + .55, H + .63, z0 - .14, z1 + .14, cap)
+        M.box(x0 + .2, x1 - .2, H + .2, H + .3, z0 + .2, z1 - .2, flat)
     M.box(-19.95, 6.95, H - .35, H, -3.95, 8.65, m['white']); M.box(6.45, 19.95, H - .35, H, -11.45, 9.25, m['white'])
     # wejście główne od północy: ganek z płaskim dachem, ceglany portal, drzwi
     M.box(-6.9, -1.6, BASE, 3.6, 8.6, 11.2, m['wall']); M.box(-7.1, -1.4, 3.6, 3.9, 8.4, 11.5, m['white'])
     M.box(-5.6, -2.9, 0, 3.2, 11.2, 11.3, portal); M.box(-5.0, -3.5, 0, 2.6, 11.3, 11.36, M.mat('sdoor', '#5a3324')); M.box(-5.0, -3.5, 2.6, 3.0, 11.3, 11.36, m['glass'])
     for k in range(4): M.box(-6.2, -2.3, BASE, .5 - k * .15, 11.2, 11.2 + .35 * (k + 1), M.mat('step', '#b3ada3', noise=.05))
     # klatka schodowa od południa
-    M.box(-5.1, -1.6, BASE, H + .4, -5.6, -3.9, m['wall']); hip(M, -5.1, -1.6, -5.6, -3.9, H + .4, 1.0, m['roof'], ov=.3)
+    M.box(-5.1, -1.6, BASE, H + 1.1, -5.6, -3.9, m['wall']); M.box(-5.18, -1.52, H + 1.1, H + 1.18, -5.68, -3.82, cap)
     for y in (1.75, 1.75 + F): win(M, -3.35, y + .8, -5.6, 1.0, 1.4, m['frame'], m['glass'], '-z', m['sill'])
     # okna: dwie kondygnacje, białe ramy, na całej długości
     def row(x0, x1, z, face, step=2.9):
@@ -172,8 +176,7 @@ def szkola():
         n = int((z1 - z0) / 3.1)
         for i in range(n):
             for y in (1.7, 1.7 + F): win(M, x, y, z0 + (z1 - z0) * (i + .5) / n, 1.5, 1.55, m['frame'], m['glass'], face, m['sill'])
-    for x in (-12, 0.5, 13): chimney(M, m, x, 2.0 if x < 6 else -1, H + 1.4, H + 3.6, .7, .9)
-    gutters_x(M, m, -20.5, 7.5, 9.2, H - .05); gutters_x(M, m, -20.5, 7.5, -4.5, H - .05); gutters_x(M, m, 5.9, 20.5, 9.8, H - .05); gutters_x(M, m, 5.9, 20.5, -12.0, H - .05)
+    for x in (-12, 0.5, 13): chimney(M, m, x, 2.0 if x < 6 else -1, H + .2, H + 1.6, .7, .9)
     M.finish(res=1024, quality=68, ao_dist=2.0)
 
 # ---------------- OSP Trębaczew ----------------

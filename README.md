@@ -159,13 +159,23 @@ python3 tools/glb2js.py && python3 build.py
 
 ## Rozmowy z postaciami (AI)
 
-Trzy postacie mają własne zadania i rozmawiają przez model językowy na serwerze (Cloudflare Workers AI, `server/src/index.js`, adres `/npc`):
+Dziewięć postaci ma własne zadania i rozmawia przez model językowy na serwerze (Cloudflare Workers AI, `server/src/index.js`, adres `/npc`). Każda stoi na wolnym miejscu, z dala od bram, furtek, drzwi, jezdni i alejek, więc nikt nie blokuje przejścia:
 
-- **Mietek** pod Lewiatanem: stoi w przejściu i nie przepuści bez kiełbasy z grilla przy remizie OSP.
-- **Seba** przy przystanku PKS na Wyzwolenia: obok jego Passata B5 FL. Trzeba docenić furę (obraza kończy rozmowę) i przynieść klucz 10 mm i trytytki ze skrzynki przy garażu.
-- **Pani Jadzia** przy płocie niedaleko remizy: trzeba podsłuchać strażaków i wrócić z prawdziwą plotką. Kłamstwo kończy się obrazą i zadanie zaczyna się od nowa.
+- **Mietek** pod Lewiatanem: chce kiełbasę z grilla przy remizie OSP.
+- **Seba** w parku, na placu od Zielonej, obok swojego Passata B5 FL. Trzeba docenić furę (obraza kończy rozmowę) i przynieść klucz 10 mm i trytytki ze skrzynki przy garażu.
+- **Pani Jadzia** przed domem niedaleko remizy: trzeba podsłuchać strażaków i wrócić z prawdziwą plotką. Kłamstwo kończy się obrazą i zadanie zaczyna się od nowa.
+- **Andrzej** przy przystanku przy kościele: wesoły i lekko podchmielony, zgubił klucze od domu na trawniku przy kościele. Po zadaniu idzie do domu na herbatę.
+- **Sołtys Zdzisław** przy bibliotece: ogłoszenie o zebraniu wiejskim do przypięcia na tablicy przy Żabce.
+- **Babcia Halina**: kot Mruczek uciekł do parku, pod plac zabaw.
+- **Rolnik Stasiek** przy ciągniku: kanister ropy do odebrania z TRANS-BUD-u.
+- **Kasia** przy orliku: słuchawki zostały na ławce w parku.
+- **Listonosz Wiesiek** przy Szkolnej: paczka do skrzynki przy plebanii.
 
 Przebieg zadań i nagrody są zaprogramowane w grze. Model prowadzi tylko swobodną rozmowę i dostaje od gry wyłącznie identyfikator postaci, etap zadania, listę przedmiotów i treść pytania. Osobowości i zasady (bez wulgaryzmów, tylko zmyślone osoby, bez danych prawdziwych mieszkańców) są zapisane na serwerze. Limity: 12 wiadomości na minutę i 80 dziennie z jednego adresu oraz 900 dziennie dla całej gry (pierwsze ~250 rozmów obsługuje lepszy po polsku Mistral Small, potem Llama 8B – razem mieści się w darmowym limicie Cloudflare). Gdy serwer jest niedostępny albo limit się wyczerpie, postacie odpowiadają gotowymi kwestiami.
+
+## Szkoła podstawowa
+
+Szkoła ma płaski dach z attyką (model `szkola` w `tools/blender/budynki2.py`). Głównymi drzwiami w ganku wchodzi się do dużego, dwukondygnacyjnego wnętrza. Na obu piętrach jest długi korytarz z salami po obu stronach: klasy z ławkami, krzesłami, tablicami z tematem lekcji, biurkiem nauczyciela i plakatami, pracownie (biologiczna, chemiczna, komputerowa, geograficzna), świetlica, pokój nauczycielski i gabinet dyrektora. Na piętro prowadzą schody z poręczą z holu. W sklepiku szkolnym u Pani Krysi są gumy Turbo z historyjkami (gra liczy kolekcję), Prince Polo, drożdżówki, Kubuś i oranżada w proszku. Misja poboczna „Zastępstwo w podstawówce” prowadzi przez pokój nauczycielski na piętrze, sklepik i klasę 1a.
 
 ## Postacie
 
