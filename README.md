@@ -160,7 +160,7 @@ python3 tools/glb2js.py && python3 build.py
 
 `tools/blender/postac.py` modeluje człowieka z części zgodnych ze szkieletem gry: tułów (mężczyzna i kobieta × kurtka, t-shirt, bluza z kapturem, płaszcz), głowę z twarzą (oczy z tęczówkami i źrenicami, powieki, brwi, nos, usta, uszy), 6 fryzur, ramię, przedramię z dłonią i palcami, udo i łydkę z butem (podeszwa, sznurówki). Każda ściana ma region koloru, a w wierzchołkach zapisane jest zacienienie (AO). Wynik trafia do `src/data_hum.js`.
 
-W grze każda osoba to jedna siatka ze szkieletem (`THREE.SkinnedMesh`, 9 kości). Przy stawach wagi się przenikają, więc łokcie, kolana i barki zginają się gładko. Kolory ubrań, skóry, oczu i włosów są losowane osobno dla każdej osoby. Do tego dochodzą rumieńce, cienie oczodołów, zarost u części mężczyzn, faktura tkanin i pasm włosów oraz lekko różny wzrost i tusza.
+W grze każda osoba to jedna siatka ze szkieletem (`THREE.SkinnedMesh`, 11 kości: biodra, klatka, głowa, ręce i nogi). Osoby stojące oddychają, rozglądają się i przenoszą ciężar z nogi na nogę, a przy chodzie barki skręcają się przeciwnie do bioder. Przy stawach wagi się przenikają, więc łokcie, kolana i barki zginają się gładko. Kolory ubrań, skóry, oczu i włosów są losowane osobno dla każdej osoby. Do tego dochodzą rumieńce, cienie oczodołów, zarost u części mężczyzn, faktura tkanin i pasm włosów oraz lekko różny wzrost i tusza.
 
 ```
 python3 tools/blender/postac.py && python3 build.py
