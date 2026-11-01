@@ -138,3 +138,18 @@ Minigry są częścią misji (m4, m5, m8, s6–s8). Można też zagrać w nie w 
 ## Zgłoszenia błędów
 
 Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyta je na stronie `zgloszenia.html`, po podaniu klucza dostępu. W kodzie jest tylko skrót SHA-256 tego klucza. Jeśli w `zglos.html` ustawisz `ACCESS_KEY` z Web3Forms, zgłoszenia dodatkowo przyjdą e-mailem.
+
+## Modele z Blendera
+
+`tools/blender/common.py` zawiera wspólne narzędzia: proceduralne materiały, wypalanie koloru i AO oraz eksport GLB. Modele:
+
+- `lewiatan.py`: budynek Lewiatana.
+- `kosciol.py`, `dzwonnica.py`: kościół pw. Nawiedzenia NMP z rozetą, kruchtą i tarasem oraz wolnostojąca dzwonnica.
+- `kosciol_in.py`: wnętrze kościoła (nawa w kształcie litery A, żebra, prezbiterium, ławki).
+- `regal_apteka.py`: regał z lekami.
+- `sklep.py`: regał z alkoholem, gondola, lodówka i lada Żabki.
+
+```
+for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep}.py; do python3 $f; done
+python3 tools/glb2js.py && python3 build.py
+```
