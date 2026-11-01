@@ -63,6 +63,11 @@ async function boot(saved){
   const area=t=>AREAS.find(a=>a.t===t);
   const SCHOOL=area('am:school'), KINDER=area('am:kindergarten');
   const COURT=AREAS.find(a=>a.surf==='tartan'&&a.t==='lei:pitch'); COURT.pts=COURT.pts.map(p=>[p[0],p[1]+5.5]); { const c=centroid(COURT.pts); COURT.pts=COURT.pts.map(p=>[c[0]-(p[1]-c[1]),c[1]+(p[0]-c[0])]); }
+  // orlik nie może wchodzić na jezdnię: odsuń ogrodzenie (z zapasem 2 m) od wszystkich dróg
+  for(let it=0;it<40;it++){ const m=mar(COURT.pts), hw=m.w/2+1+2, hd=m.d/2+1+2, c=Math.cos(m.an), sn=Math.sin(m.an); let mx=0,mz=0,hit=false;
+    for(let k=0;k<64;k++){ const t=k/64*4; let u,v; if(t<1){u=-hw+2*hw*t;v=-hd;} else if(t<2){u=hw;v=-hd+2*hd*(t-1);} else if(t<3){u=hw-2*hw*(t-2);v=hd;} else {u=-hw;v=hd-2*hd*(t-3);}
+      const x=m.cx+u*c-v*sn, z=m.cz+u*sn+v*c; ROADS.forEach(r=>{ if(r.t==='track'||r.t==='rail'||r.t==='path'||r.t==='foot')return; const d=roadDist(r,x,z); if(d<r.w/2){ hit=true; const nr=nearestRoad(x,z,q=>q===r); const a2=r.pts[nr.seg], b2=r.pts[nr.seg+1]; const L=Math.hypot(b2[0]-a2[0],b2[1]-a2[1])||1; let nx=-(b2[1]-a2[1])/L, nz=(b2[0]-a2[0])/L; if((m.cx-a2[0])*nx+(m.cz-a2[1])*nz<0){ nx=-nx; nz=-nz; } const need=r.w/2-d+.3; if(Math.abs(nx*need)>Math.abs(mx)) mx=nx*need; if(Math.abs(nz*need)>Math.abs(mz)) mz=nz*need; } }); }
+    if(!hit) break; COURT.pts=COURT.pts.map(p=>[p[0]+mx,p[1]+mz]); }
   const PITCH2=AREAS.find(a=>a.sport==='multi'), TRACK=area('lei:track');
   const PARK=AREAS.find(a=>a.n==='Park w Trębaczewie'), CEM=area('lu:cemetery'), OSPA=area('am:fire_station');
   const PLAYS=AREAS.filter(a=>a.t==='lei:playground');
@@ -552,7 +557,9 @@ async function boot(saved){
       if(opts.hoops){ const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,3.6,8).translate(0,1.8,0),steel); pole.position.set(s*(m.w/2+.3),0,0); const brd=new THREE.Mesh(new THREE.BoxGeometry(.06,1.05,1.8),new THREE.MeshLambertMaterial({color:0xf2f2f2})); brd.position.set(s*(m.w/2-.2),3.4,0); const ring=new THREE.Mesh(new THREE.TorusGeometry(.23,.025,6,16).rotateX(Math.PI/2),new THREE.MeshLambertMaterial({color:0xe06a1f})); ring.position.set(s*(m.w/2-.5),3.05,0); grp.add(pole,brd,ring); } });
     if(opts.benches){ const bm=new THREE.MeshLambertMaterial({color:0x9a9fa3}); for(let i=0;i<3;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(2.4,.45,.5).translate(0,.22,0),bm); b.position.set(-m.w/4+i*m.w/4, 0, -m.d/2-0.4); grp.add(b);} }
     grp.traverse(o=>{ if(o.isMesh&&o!==surf) o.castShadow=true; }); scene.add(grp); return {m,grp,fw,fd}; }
-  const orlik=buildCourt(COURT,'tartan',{fence:4.2,hoops:true,benches:true,solid:true,gates:[{side:'z+',u:-8},{side:'z-',u:8}]});
+  const ORLIK_GATES=(()=>{ const m=mar(COURT.pts), pc=centroid(PARK.pts); const c=Math.cos(m.an), sn=Math.sin(m.an); const dx=pc[0]-m.cx, dz=pc[1]-m.cz; const lx=dx*c+dz*sn, lz=-dx*sn+dz*c; // park w układzie boiska
+    const side=Math.abs(lx)/(m.w/2)>Math.abs(lz)/(m.d/2)?(lx>0?'x+':'x-'):(lz>0?'z+':'z-'); const G=[{side:'z+',u:-8},{side:'z-',u:8}].filter(g=>g.side!==side); G.push({side,u:side[0]==='x'?6:0}); return G; })();
+  const orlik=buildCourt(COURT,'tartan',{fence:4.2,hoops:true,benches:true,solid:true,gates:ORLIK_GATES});
   const ORLIK_RD=(()=>{ let best=null,bd=1e9; ROADS.forEach(r=>{ if(['track','rail','path','foot','footway','service'].includes(r.t)||!r.L)return; for(let d=0;d<r.L;d+=3){ const q=sampleLine(r.pts,r.len,d); const dd=Math.hypot(q.x-orlik.m.cx,q.z-orlik.m.cz); if(dd<bd){bd=dd;best=[q.x,q.z];} } }); return best||[orlik.m.cx,orlik.m.cz-40]; })();
   const ORLIK_DOOR=()=>ORLIK_GAPS.length?ORLIK_GAPS[0].out:[orlik.m.cx,orlik.m.cz+30];
   buildCourt(PITCH2,'grass',{fence:3.5,hoops:false});
@@ -1237,8 +1244,8 @@ async function boot(saved){
   for(let i=0;i<45;i++){ const w=pick(WALKS); const L=w.len[w.len.length-1]; const s=sampleLine(w.pts,w.len,R(0,L)); const m=new THREE.Mesh(cashGeo,cashMat); const y=H(s.x,s.z)+.9; m.position.set(s.x,y,s.z); scene.add(m); pickups.push({m,x:s.x,z:s.z,y,val:Math.round(R(1,10))*50}); }
 
   /* ---------- stan gry ---------- */
-  // punkt startu: ul. Szkolna przy szkole podstawowej, kamera skierowana na kościół
-  const SPAWN=(()=>{ const sc=centroid(SCHOOL.pts), ch=centroid(CHURCH.pts); let best=null; ROADS.filter(r=>r.n==='Szkolna'&&r.t!=='track').forEach(r=>{ for(let d=0;d<r.L;d+=2){ const q=sampleLine(r.pts,r.len,d); const dd=Math.hypot(q.x-sc[0],q.z-sc[1]); if(!best||dd<best.dd) best={q,dd,r}; } });
+  // punkt startu: ul. Szkolna (najbliżej kościoła, koło Lewiatana), kamera skierowana na kościół
+  const SPAWN=(()=>{ const ch=centroid(CHURCH.pts); let best=null; ROADS.filter(r=>r.n==='Szkolna'&&r.t!=='track').forEach(r=>{ for(let d=0;d<r.L;d+=2){ const q=sampleLine(r.pts,r.len,d); if(ROADS.some(o=>o!==r&&o.t!=='track'&&o.n!=='Szkolna'&&roadDist(o,q.x,q.z)<o.w/2+14))continue; const dd=Math.hypot(q.x-ch[0],q.z-ch[1]); if(!best||dd<best.dd) best={q,dd,r}; } }); const sc=[2*best.q.x-ch[0],2*best.q.z-ch[1]]; /* chodnik po stronie przeciwnej do kościoła – widok przez ulicę */
     if(!best){ const zel=ROADS.find(r=>r.n==='Zielona'); const q=sampleLine(zel.pts,zel.len,95); return {x:q.x,z:q.z,yaw:Math.atan2(q.tx,q.tz)}; }
     const q=best.q, o=best.r.w/2+1.35; let nx=-q.tz, nz=q.tx; if((sc[0]-q.x)*nx+(sc[1]-q.z)*nz<0){ nx=-nx; nz=-nz; } let x=q.x+nx*o, z=q.z+nz*o; if(blocked(x,z,.5)){ x=q.x+nx*(best.r.w/4); z=q.z+nz*(best.r.w/4); }
     return {x,z,yaw:Math.atan2(x-ch[0],z-ch[1])}; })();
