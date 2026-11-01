@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zgłoś błąd · Symulator Trębaczewa</title>
+<meta name="description" content="Formularz zgłaszania błędów w grze Symulator Trębaczewa.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="src/favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{--ink:#f6f4ef;--muted:#b9c0c6;--accent:#f2c230;--panel:#121518;--line:rgba(255,255,255,.14);--ok:#7fd06b;--err:#ff6b6b}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#0b0d10;color:var(--ink);font-family:Barlow,'Segoe UI',Arial,sans-serif}
+body{background:linear-gradient(180deg,rgba(11,13,16,.55),#0b0d10 60%),url(og.jpg) center top/cover no-repeat fixed}
+main{max-width:620px;margin:0 auto;padding:clamp(24px,6vh,64px) 16px 48px}
+.kick{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;font-size:18px}
+h1{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:clamp(40px,9vw,64px);line-height:.95;margin:4px 0 10px;text-shadow:0 4px 0 #000}
+p.lead{color:var(--muted);font-size:16px;line-height:1.5;margin:0 0 22px}
+form{background:rgba(18,21,24,.92);border:1px solid var(--line);border-top:4px solid var(--accent);padding:20px}
+label{display:block;font-size:14px;color:var(--muted);margin:14px 0 6px}
+label:first-child{margin-top:0}
+select,textarea,input{width:100%;background:rgba(255,255,255,.07);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:10px 11px;font:inherit;font-size:16px}
+textarea{min-height:150px;resize:vertical}
+select:focus,textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.hint{font-size:13px;color:#8b949c;margin-top:6px}
+button{margin-top:18px;width:100%;background:var(--accent);color:#111;border:0;border-radius:3px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.msg{margin-top:14px;font-size:15px;line-height:1.45}
+.msg.ok{color:var(--ok)} .msg.err{color:var(--err)}
+details{margin-top:12px;color:var(--muted);font-size:13px}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;color:#9aa3aa;margin:6px 0 0}
+.hp{position:absolute;left:-9999px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <div class="kick">Symulator</div>
+  <h1>ZGŁOŚ BŁĄD</h1>
+  <p class="lead">Coś nie działa, coś nachodzi na drogę albo masz pomysł? Opisz to tutaj. Zgłoszenie trafi prosto do autora gry.</p>
+  <form id="f" novalidate>
+    <label for="kat">Czego dotyczy?</label>
+    <select id="kat" name="kategoria"><option>Grafika / budynki</option><option>Sterowanie</option><option>Misje</option><option>Pojazdy / kolizje</option><option>Telefon</option><option>Pomysł / propozycja</option><option>Inne</option></select>
+    <label for="opis">Opis</label>
+    <textarea id="opis" name="opis" maxlength="3000" required placeholder="Co robiłeś, co się stało, czego się spodziewałeś…"></textarea>
+    <label for="kontakt">Kontakt (opcjonalnie)</label>
+    <input id="kontakt" name="kontakt" type="email" maxlength="120" placeholder="adres e-mail, jeśli chcesz odpowiedzi">
+    <div class="hint">Nie musisz podawać żadnych danych. Adres przyda się tylko wtedy, gdy chcesz dostać odpowiedź.</div>
+    <input class="hp" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <details><summary>Informacje z gry dołączone do zgłoszenia</summary><pre id="info">—</pre></details>
+    <button id="send" type="submit">Wyślij zgłoszenie</button>
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
+  </form>
+  <p class="hint" style="margin-top:18px"><a href="./">← Wróć do gry</a></p>
+</main>
+<script>
+// Klucz dostępu Web3Forms (bezpieczny do umieszczenia na stronie – nie ujawnia adresu e-mail).
+// Wygeneruj go na https://web3forms.com (wpisz swój adres, klucz przyjdzie mailem) i wklej poniżej.
+const ACCESS_KEY = '';
+const q = new URLSearchParams(location.search);
+const $ = id => document.getElementById(id);
+if (q.get('kat')) { [...$('kat').options].forEach(o => { if (o.text === q.get('kat')) o.selected = true; }); }
+if (q.get('opis')) $('opis').value = q.get('opis').slice(0, 3000);
+const info = (q.get('info') || '').trim() || `ekran: ${innerWidth}×${innerHeight}\nprzeglądarka: ${navigator.userAgent}`;
+$('info').textContent = info;
+$('f').addEventListener('submit', async e => {
+  e.preventDefault(); const msg = $('msg'); msg.className = 'msg'; msg.textContent = '';
+  const opis = $('opis').value.trim();
+  if (opis.length < 5) { msg.className = 'msg err'; msg.textContent = 'Opisz problem w kilku słowach.'; $('opis').focus(); return; }
+  if (!ACCESS_KEY) { msg.className = 'msg err'; msg.textContent = 'Formularz nie jest jeszcze skonfigurowany (brak klucza Web3Forms). Spróbuj później.'; return; }
+  $('send').disabled = true; $('send').textContent = 'Wysyłanie…';
+  try {
+    const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ access_key: ACCESS_KEY, subject: `[Trębaczew] ${$('kat').value}`, from_name: 'Symulator Trębaczewa', kategoria: $('kat').value, opis, kontakt: $('kontakt').value.trim(), informacje_z_gry: info, botcheck: $('f').botcheck.checked }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.success !== false) { msg.className = 'msg ok'; msg.textContent = 'Dziękuję! Zgłoszenie zostało wysłane.'; $('opis').value = ''; }
+    else throw new Error(j.message || 'błąd serwera');
+  } catch (err) { msg.className = 'msg err'; msg.textContent = 'Nie udało się wysłać (' + err.message + '). Spróbuj ponownie za chwilę.'; }
+  $('send').disabled = false; $('send').textContent = 'Wyślij zgłoszenie';
+});
+</script>
+</body>
+</html>

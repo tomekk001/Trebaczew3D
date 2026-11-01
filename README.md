@@ -14,6 +14,11 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 - Na Orlenie w Działoszynie (przy DK42) można zatankować.
 - Każdy dom ma płot z furtką, a przy podjazdach są bramy, które otwiera się klawiszem E.
 
+- Można wejść do środka: Lewiatan, Żabka, Delikatesy, apteka, pizzeria Euforia, kościół, biblioteka (wypożyczanie książek), a w Działoszynie ORLEN, Biedronka i Lidl. W środku chodzą ludzie, są kasjerki i klienci.
+- Auta mają bak i wskaźnik paliwa. Gdy paliwo się skończy, auto nie pojedzie. Tankuje się na ORLENIE w Działoszynie (ul. Piłsudskiego), a na stacji można też kupić kanister.
+- Ceny paliw na pylonie i przy dystrybutorze pochodzą z pliku `ceny_paliw.json`, który codziennie aktualizuje GitHub Action (`.github/workflows/ceny-paliw.yml`, skrypt `tools/ceny_paliw.py`). Gdy pliku nie da się pobrać, gra używa cen wpisanych w kod.
+- Przejazd kolejowy na DK42: przed pociągiem migają czerwone światła i dzwoni sygnalizator, potem opuszczają się rogatki, a auta czekają w kolejce. Po przejeździe pociągu rogatki się podnoszą.
+
 ## Sterowanie (domyślne, można zmienić w Opcjach)
 
 | Klawisz | Akcja |
@@ -32,6 +37,10 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 | Esc | pauza / menu |
 
 Na telefonie: wirtualny joystick i przyciski na ekranie (akcja, auto, radio, bieg, skok, misje, menu). Na urządzeniach dotykowych gra domyślnie startuje z niską jakością grafiki.
+
+## Zgłoszenia błędów
+
+Przycisk „Zgłoś błąd” w menu otwiera stronę `zglos.html` z formularzem. Formularz wysyła zgłoszenie na e-mail przez Web3Forms, a adres e-mail nie pojawia się na stronie ani w kodzie. Aby formularz działał, trzeba raz wygenerować klucz na https://web3forms.com i wpisać go w `zglos.html` w stałej `ACCESS_KEY`.
 
 ## Gra wieloosobowa
 
