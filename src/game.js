@@ -1813,7 +1813,7 @@ async function boot(saved){
     if(MP.user&&ids.length){ try{ prof=await MP.user.profiles(ids); }catch(e){} }
     list.forEach(r=>{ const pr=(MP.room.peers().find(p=>p.peer===r.peer)||{}).presence||{}; const nm=cleanTxt(pr.nick,24)||(r.by&&prof[r.by]&&prof[r.by].name)||'Gracz'; if(nm!==r.name){ r.name=nm; r.tag.material.map.dispose(); r.tag.material.map=tagTex(nm,r.col); r.tag.material.needsUpdate=true; } });
     renderList(); }
-  function renderList(){ if(!MP.on)return; const n=MP.remote.size+1; mpCount.textContent=n===1?'Tylko Ty w Trębaczewie':`${n} graczy w Trębaczewie`; mpList.textContent='';
+  function renderList(){ if(!MP.on)return; const n=MP.remote.size+1; mpCount.textContent=MP.room&&MP.room.connected&&!MP.room.connected()?'Łączenie z serwerem…':n===1?'Tylko Ty w Trębaczewie':`${n} graczy w Trębaczewie`; mpList.textContent='';
     const add=(name,col,me)=>{ const li=document.createElement('div'); li.className='mpi'; const d=document.createElement('i'); d.style.background=col; li.appendChild(d); const s=document.createElement('span'); s.textContent=name+(me?' (Ty)':''); li.appendChild(s); mpList.appendChild(li); };
     add(myNick||'Ty',MYCOL,true); [...MP.remote.values()].forEach(r=>add(r.name||'Gracz',r.col,false)); }
   function addChat(name,col,text){ const row=document.createElement('div'); row.className='cl'; const b=document.createElement('b'); b.textContent=name+': '; b.style.color=col; row.appendChild(b); row.appendChild(document.createTextNode(text)); chatLog.appendChild(row); while(chatLog.children.length>6) chatLog.removeChild(chatLog.firstChild); MP.chat.push({row,t:12}); }
@@ -1821,7 +1821,28 @@ async function boot(saved){
   const meR={body:player,bubble:null,bubT:0};
   function myPresence(){ const c=st.car; const kind=c?(c.kind||'car'):null; let vc=null; if(c&&(!c.kind||c.kind==='van')){ const m=c.g.children[0]&&c.g.children[0].material; if(m&&m.color) vc='#'+m.color.getHexString(); }
     return {x:+(c?c.x:st.x).toFixed(2),z:+(c?c.z:st.z).toFixed(2),h:+(c?c.h:st.face).toFixed(3),v:kind,vc,s:+(c?Math.abs(c.v):Math.hypot(st.vx||0,st.vz||0)).toFixed(1),col:MYCOL,nick:myNick||null}; }
-  async function mpInit(){ try{ if(!window.claude||!window.claude.use)return; const room=await window.claude.use('room'); if(!room)return; MP.room=room; try{ MP.user=await window.claude.use('user'); }catch(e){}
+  const MP_URL='wss://trebaczew-mp.kontakt-3e3.workers.dev';
+  // połączenie z serwerem gry (Cloudflare) – ten sam interfejs co pokój Claude
+  function wsRoom(base){ const peers=new Map(), subP=[], subE={}; let ws=null, ok=false, ever=false, room=1, lastP=null, retry=0, ping=null, tries=0, warned=false;
+    const fire=ch=>subP.forEach(f=>{ try{ f(ch); }catch(e){ console.warn(e); } }); const none={joined:[],left:[],updated:[]};
+    function connect(){ try{ ws=new WebSocket(base+'/room/t'+room); }catch(e){ return later(); }
+      ws.onmessage=e=>{ if(e.data==='pong')return; let m; try{ m=JSON.parse(e.data); }catch(_){ return; }
+        if(m.t==='full'){ tries++; room=room%9+1; ws.onclose=null; try{ ws.close(); }catch(_){} if(tries<9) setTimeout(connect,150); else { toast('Wszystkie pokoje są pełne – spróbuj za chwilę',3); later(); } return; }
+        if(m.t==='hello'){ ok=true; ever=true; retry=0; tries=0; const left=[...peers.values()]; peers.clear(); if(left.length) fire({...none,left});
+          const j=(m.peers||[]).map(p=>({peer:p.peer,presence:p.presence,kind:'viewer'})); j.forEach(p=>peers.set(p.peer,p)); if(lastP) ws.send(JSON.stringify({t:'p',d:lastP})); fire({...none,joined:j});
+          clearInterval(ping); ping=setInterval(()=>{ if(ws.readyState===1) ws.send('ping'); },25000); toast(`🌐 Połączono · pokój ${room}`,2); return; }
+        if(m.t==='p'){ const had=peers.has(m.peer); const p={peer:m.peer,presence:m.d,kind:'viewer'}; peers.set(m.peer,p); fire(had?{...none,updated:[p]}:{...none,joined:[p]}); return; }
+        if(m.t==='l'){ const p=peers.get(m.peer); if(p){ peers.delete(m.peer); fire({...none,left:[p]}); } return; }
+        if(m.t==='e'){ (subE[m.topic]||[]).forEach(f=>{ try{ f({peer:m.peer,data:m.d,sameTab:!!m.me}); }catch(err){ console.warn(err); } }); return; }
+        if(m.t==='err'&&m.code==='slow') toast('Za szybko piszesz – chwila przerwy',1.5); };
+      ws.onclose=()=>{ const was=ok; ok=false; clearInterval(ping); fire(none); if(was) toast('Utracono połączenie – łączę ponownie…',2); later(); }; ws.onerror=()=>{}; }
+    function later(){ retry=Math.min(retry+1,6); if(!ever&&retry>=3&&!warned){ warned=true; toast('Nie mogę połączyć się z serwerem gry.<br>Tryb wieloosobowy działa na <b>trebaczew.io</b>',5); } setTimeout(connect,1500*retry); }
+    connect();
+    return { peers:()=>[...peers.values()], connected:()=>ok&&!!ws&&ws.readyState===1, onPeers(f){ subP.push(f); }, on(t,f){ (subE[t]=subE[t]||[]).push(f); },
+      emit(t,d){ if(!ok||ws.readyState!==1) return Promise.reject({code:'offline'}); ws.send(JSON.stringify({t:'e',topic:t,d})); return Promise.resolve(); },
+      presence(p){ lastP=p; if(ok&&ws.readyState===1) ws.send(JSON.stringify({t:'p',d:p})); return Promise.resolve(); } }; }
+  async function mpInit(useWs){ try{ let room; if(useWs){ room=wsRoom(MP_URL); } else { if(!window.claude||!window.claude.use)return; room=await window.claude.use('room'); if(!room)return; try{ MP.user=await window.claude.use('user'); }catch(e){} } MP.room=room;
+      if(!myNick&&CHAR.name) myNick=cleanTxt(CHAR.name,24);
       if(!myNick&&MP.user){ try{ const me=await MP.user.me(); if(me&&me.name) myNick=cleanTxt(me.name.split(' ')[0],24); }catch(e){} }
       MP.on=true; mpEl.hidden=false; nickIn.value=myNick; renderList();
       room.onPeers(ch=>{ ch.left.forEach(p=>{ const r=MP.remote.get(p.peer); if(!r)return; [r.body,r.tag,r.veh,r.bubble].forEach(o=>o&&scene.remove(o)); MP.remote.delete(p.peer); if(r.name) toast(`👋 ${r.name.replace(/[<>&]/g,'')} wychodzi z gry`,2); });
@@ -2438,7 +2459,7 @@ async function boot(saved){
   $('mLog').addEventListener('click',()=>{ openPanel(''); menuEl.hidden=true; LOG_FROM_MENU=true; toggleLog(true); });
   $('mChar').addEventListener('click',()=>openPanel($('pChar').hidden?'pChar':''));
   $('mBug').addEventListener('click',()=>openPanel($('pBug').hidden?'pBug':''));
-  $('mMulti').addEventListener('click',()=>{ const s=$('mMulti').querySelector('small'); s.textContent='wkrótce – jeszcze niedostępny'; });
+  $('mMulti').addEventListener('click',()=>{ if(!MP.on) mpInit(true); $('mPlay').click(); });
   let newArm=0; $('mNew').addEventListener('click',()=>{ if(Date.now()-newArm>3000){ newArm=Date.now(); $('mNew').firstChild.textContent='Na pewno? Kliknij jeszcze raz '; setTimeout(()=>{ $('mNew').firstChild.textContent='Nowa gra'; },3000); return; }
     try{ localStorage.removeItem('trebaczew-gra'); }catch(e){} location.reload(); });
   ['bMenu','bMenuT'].forEach(id=>$(id).addEventListener('click',()=>showMenu(true)));

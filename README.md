@@ -100,3 +100,11 @@ Skrypt przelicza wszystko do układu gry, dzieli budynki w kształcie L, T i U n
 - Część nazw miejsc: Google Maps
 
 Kod gry korzysta z biblioteki three.js (licencja MIT).
+
+## Tryb wieloosobowy
+
+Serwer znajduje się w folderze `server/` (Cloudflare Worker + Durable Object). Wgrywa się sam przez GitHub Action `Serwer multiplayer` przy każdej zmianie w `server/`. Do wgrania potrzebne są sekrety `CLOUDFLARE_API_TOKEN` i `CLOUDFLARE_ACCOUNT_ID`.
+
+- Status pokoi: `https://trebaczew-mp.kontakt-3e3.workers.dev/status`
+- W jednym pokoju gra do 30 osób. Gdy pokój jest pełny, gra sama przechodzi do następnego.
+- Serwer przesyła pozycje, pojazdy, czat (z filtrem wulgaryzmów i limitem) i klakson (H).
