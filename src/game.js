@@ -400,19 +400,36 @@ async function boot(saved){
     for(let c=0;c<7;c++)for(let r=0;r<2;r++){ const sx=L*0.06+4.4+c*1.08; if(sx>L/2-1)continue; const sp=.38+r*.3; const pv=new THREE.Mesh(new THREE.PlaneGeometry(1.02,1.6),pvM); pv.position.set(sx,WH+4*sp+.07,run*(1-sp)-.0); pv.rotation.x=ang-Math.PI/2; g.add(pv); }
     // żółty pas szyldu na daszku
     const bl=L*0.66, bxC=-L/2+.3+bl/2;
-    const lewTex=tex(2048,160,(x,w,h)=>{ x.fillStyle='#f6c315'; x.fillRect(0,0,w,h); x.fillStyle='#e3a50f'; x.fillRect(0,h-12,w,12); x.textBaseline='middle'; x.textAlign='center'; x.fillStyle='#173e93'; x.font='italic 800 96px Barlow, Arial'; x.fillText('LEWIATAN',w*0.13,h/2-2); x.font='italic 800 112px Barlow, Arial'; x.fillText('LEWIATAN',w*0.5,h/2-2); x.fillStyle='#d23a2a'; x.font='800 96px Barlow, Arial'; x.fillText('MARKET',w*0.87,h/2-2); });
+    const lewTex=tex(2048,160,(x,w,h)=>{ x.fillStyle='#f6c315'; x.fillRect(0,0,w,h); x.fillStyle='#e3a50f'; x.fillRect(0,h-12,w,12); x.textBaseline='middle'; x.textAlign='center'; const lx=w*0.40; x.fillStyle='#173e93'; x.beginPath(); x.ellipse(lx,h/2-4,62,56,0,0,7); x.fill(); x.fillStyle='#f6c315'; x.font='italic 900 92px Barlow, Arial'; x.fillText('L',lx-2,h/2-2); x.fillStyle='#173e93'; x.font='italic 900 112px Barlow, Arial'; x.textAlign='left'; x.fillText('LEWIATAN',lx+82,h/2-2); });
     const signM=new THREE.MeshLambertMaterial({map:lewTex,emissive:0x000000}); brandLights.push(signM);
     bx(g,bl,.18,1.7,bxC,2.75,GZ+.85,white); bx(g,bl,1.15,.35,bxC,2.75,GZ+1.6,new THREE.MeshLambertMaterial({color:0xf6c315}));
     pl(g,bl,1.15,bxC,2.75+.575,GZ+1.79,signM);
     // wejście, witryna z plakatami, drzwi, okna w brązowych ramach
-    const ex0=-L/2+3.2; { const wD=L2W(b.x,b.z,f.rot); b.door=wD(ex0,GZ+1.5); b.doorF=wD(ex0,GZ+.3); b.doorOut=wD(ex0,GZ+2.8); } pl(g,2.6,2.4,ex0,1.2,GZ+.02,new THREE.MeshPhongMaterial({map:glassTex,shininess:110,specular:0x8899aa}));
-    pl(g,1.3,2.0,ex0+2.2,1.2,GZ+.02,new THREE.MeshLambertMaterial({color:0xd9773a})); pl(g,1.1,2.2,-L/2+8.2,1.1,GZ+.02,brownF); pl(g,.9,2.0,-L/2+8.2,1.1,GZ+.03,glassD);
+    const ex0=-L/2+3.2; { const wD=L2W(b.x,b.z,f.rot); b.door=wD(ex0,GZ+1.5); b.doorF=wD(ex0,GZ+.3); b.doorOut=wD(ex0,GZ+2.8); } 
+    { const SW=4.6, SH=2.75, fr=new THREE.MeshLambertMaterial({color:0x3b3a38}), zf=GZ+.03;
+      const inside=tex(512,320,(x,w,h)=>{ const gr=x.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#d9dde0'); gr.addColorStop(.5,'#c2c7ca'); gr.addColorStop(1,'#8d9296'); x.fillStyle=gr; x.fillRect(0,0,w,h);
+        for(let i=0;i<5;i++){ x.fillStyle='rgba(255,255,250,.9)'; x.fillRect(30+i*100,14,60,6); }
+        const C=['#d8452a','#f2c230','#3a7bd5','#5aa34a','#e86aa0','#f5f5f0','#ff8c1a'];
+        [[20,150],[150,120],[300,150],[420,110]].forEach(([sx,sw])=>{ x.fillStyle='#9aa0a6'; x.fillRect(sx,70,sw,190); for(let r=0;r<4;r++){ for(let k=0;k<sw-8;k+=9){ x.fillStyle=C[(k*7+r*3+sx)%C.length]; x.fillRect(sx+4+k,80+r*45,7,30); } x.fillStyle='#6d7276'; x.fillRect(sx,112+r*45,sw,4); } });
+        x.fillStyle='#c4221e'; x.fillRect(230,180,38,26); x.fillStyle='#555'; x.fillRect(222,206,56,40);
+        const rf=x.createLinearGradient(0,0,w,h); rf.addColorStop(0,'rgba(255,255,255,.28)'); rf.addColorStop(.35,'rgba(255,255,255,0)'); rf.addColorStop(.6,'rgba(255,255,255,.12)'); rf.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=rf; x.fillRect(0,0,w,h); });
+      const gm=new THREE.MeshLambertMaterial({map:inside,emissive:0x2a2a28,emissiveMap:inside}); brandLights.push(gm);
+      pl(g,SW,SH,ex0,SH/2,GZ+.015,gm);
+      // rama: obrys, słupki przy drzwiach, nadświetle
+      bx(g,SW+.16,.12,.14,ex0,SH-.06,zf,fr,true); bx(g,SW+.16,.1,.14,ex0,0,zf,fr,true); [-SW/2,SW/2,-.95,.95].forEach(u=>bx(g,.1,SH,.14,ex0+u,0,zf,fr,true)); bx(g,SW,.09,.12,ex0,2.22,zf,fr,true);
+      // dwa skrzydła drzwi przesuwnych (szkło z cienką ramą)
+      const leafG=new THREE.MeshPhongMaterial({color:0x9fb8c4,transparent:true,opacity:.22,shininess:120,specular:0xffffff});
+      [-.47,.47].forEach(u=>{ pl(g,.9,2.15,ex0+u,1.08,zf+.04,leafG); bx(g,.05,2.15,.05,ex0+u+(u<0?.43:-.43),0,zf+.06,fr,true); bx(g,.9,.05,.05,ex0+u,2.12,zf+.06,fr,true); bx(g,.9,.05,.05,ex0+u,.03,zf+.06,fr,true); });
+      // wycieraczka, plakaty z promocjami po bokach
+      const mat=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.2).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({color:0x2a2a2c})); mat.position.set(ex0,.15,GZ+.75); g.add(mat);
+      const pos=tex(128,180,(x,w,h)=>{ x.fillStyle='#fff7d6'; x.fillRect(0,0,w,h); x.fillStyle='#f6c315'; x.fillRect(0,0,w,46); x.fillStyle='#173e93'; x.font='800 26px Barlow, Arial'; x.textAlign='center'; x.fillText('PROMOCJE',w/2,32); x.fillStyle='#d23a2a'; x.font='800 40px Barlow, Arial'; x.fillText('-20%',w/2,108); x.fillStyle='#333'; x.font='600 18px Barlow, Arial'; x.fillText('w tym tygodniu',w/2,150); });
+      [-(SW/2+.75),SW/2+.75].forEach(u=>pl(g,.62,.86,ex0+u,1.55,GZ+.02,new THREE.MeshLambertMaterial({map:pos}))); } pl(g,1.1,2.2,-L/2+8.2,1.1,GZ+.02,brownF); pl(g,.9,2.0,-L/2+8.2,1.1,GZ+.03,glassD);
     for(let x=L*0.06+4.6;x<L/2-1;x+=3.3){ pl(g,1.45,1.15,x,1.9,D/2+.01,brownF); pl(g,1.25,.95,x,1.9,D/2+.02,glassD); }
     gables.forEach(([cx,wd],i)=>{ if(i===1){ [-1.6,1.6].forEach(o=>{ pl(g,1.45,1.15,cx+o,1.9,GZ+.01,brownF); pl(g,1.25,.95,cx+o,1.9,GZ+.02,glassD); }); } });
     for(let z=-D/2+2;z<D/2-1;z+=3.3){ [-1,1].forEach(sd=>{ const w1=pl(g,1.45,1.15,sd*(L/2+.01),1.9,z,brownF,sd*Math.PI/2); const w2=pl(g,1.25,.95,sd*(L/2+.02),1.9,z,glassD,sd*Math.PI/2); }); }
     // czerwone kosze, szafka, rowery
-    const red=new THREE.MeshLambertMaterial({color:0xc62a24}); bx(g,.55,1.0,.55,ex0-2.2,0,GZ+.6,red); bx(g,.55,1.0,.55,ex0+3.3,0,GZ+.6,red);
-    bx(g,.8,1.7,.5,ex0+4.6,0,GZ+.35,new THREE.MeshLambertMaterial({color:0xe6e6e2}));
+    const red=new THREE.MeshLambertMaterial({color:0xc62a24}); bx(g,.5,1.0,.5,ex0-3.0,0,GZ+.45,red); bx(g,.5,1.0,.5,ex0+3.1,0,GZ+.45,red);
+    bx(g,.8,1.7,.5,ex0+4.4,0,GZ+.35,new THREE.MeshLambertMaterial({color:0xe6e6e2}));
     for(let k=0;k<4;k++){ const bk=bikeM(); bk.position.set(-L/2-1.5-k*.65,0,GZ+.6); bk.rotation.y=Math.PI/2+.25; g.add(bk); }
     g.traverse(o=>{ if(o.isMesh&&o.geometry.type!=='PlaneGeometry')o.castShadow=true; });
     // plac przed sklepem (kostka) + miejsca parkingowe
