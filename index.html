@@ -171,7 +171,9 @@ body.inmenu .hud, body.inmenu .tbtns, body.inmenu #joy, body.inmenu .help, body.
 .mItem small{white-space:nowrap}
 .menuL{overflow-y:auto}
 @media (max-height:520px){ .menuL{justify-content:flex-start;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:12px} .mKick{font-size:13px} .mTitle{font-size:46px;margin-bottom:2px} .mSub{display:none} .mItem{font-size:21px;padding:3px 0 3px 14px} .mFoot{margin-top:8px} .mPanel{max-height:calc(100vh - 20px)} }
-@media (pointer:coarse){ #bMenu,#bLog,#bCam,#bNight{display:none!important} }
+@media (pointer:coarse){ #bLog,#bCam,#bNight{display:none!important} #bMenu{display:inline-block!important}
+  .tbtns.more,#bEnter,#bJump,#bLogT{display:none!important}
+  .tbtns #bAct:not(.show),.tbtns #bRadio:not(.show){display:none!important} }
 .tbtns .btn#bAct.hot{background:var(--accent);color:#111;border-color:#fff;animation:actPulse 1.1s ease-in-out infinite}
 @keyframes actPulse{0%,100%{box-shadow:0 0 0 0 rgba(242,194,48,.7)}50%{box-shadow:0 0 0 10px rgba(242,194,48,0)}}
 @media (pointer:coarse) and (max-height:520px){ .tbtns{bottom:calc(10px + env(safe-area-inset-bottom,0px));gap:6px} .tbtns .btn{width:54px;height:54px;font-size:12px} .tbtns.more{right:calc(82px + env(safe-area-inset-right,0px))} #joy{bottom:calc(14px + env(safe-area-inset-bottom,0px))} .loc{right:calc(160px + env(safe-area-inset-right,0px))!important;bottom:calc(14px + env(safe-area-inset-bottom,0px))!important} #locMain{font-size:22px!important} }
@@ -270,6 +272,7 @@ body.inmenu .hud, body.inmenu .tbtns, body.inmenu #joy, body.inmenu .help, body.
     <h1 class="mTitle">TRĘBACZEWA</h1>
     <p class="mSub">gm. Działoszyn · pow. pajęczański · 51°07′ N 18°55′ E</p>
     <button class="mItem" id="mPlay">Tryb jednoosobowy <small id="mPlaySub"></small></button>
+    <button class="mItem" id="mLog" hidden>Misje <small id="mLogSub"></small></button>
     <button class="mItem" id="mMulti" aria-disabled="true" title="Wkrótce">Tryb wieloosobowy <small>wkrótce</small></button>
     <button class="mItem" id="mOpt">Opcje</button>
     <button class="mItem" id="mChar">Kreator postaci</button>
@@ -288,7 +291,7 @@ body.inmenu .hud, body.inmenu .tbtns, body.inmenu #joy, body.inmenu .help, body.
   </div>
   <div class="mPanel" id="pChar" hidden>
     <h2>KREATOR POSTACI</h2>
-    <label for="cName">Imię</label><input type="text" id="cName" maxlength="20" placeholder="np. Tomek">
+    <label for="cName">Imię</label><input type="text" id="cName" maxlength="20" placeholder="">
     <label>Płeć</label><div class="chips" id="cSex"><button data-v="m">Mężczyzna</button><button data-v="k">Kobieta</button></div>
     <label>Fryzura</label><div class="chips" id="cHair"></div>
     <label>Kolor włosów</label><div class="sw" id="cHairC"></div>
@@ -394,6 +397,9 @@ async function boot(saved){
   const BPARTS={}; if(typeof DATA_PARTS!=='undefined'&&DATA_PARTS) DATA_PARTS.split(';').forEach(e=>{ const [i,r]=e.split(':'); BPARTS[+i]=r.split('|').map(q=>{ const [x,z,w,d]=q.split(',').map(Number); return {x,z,w,d}; }); });
   if(typeof DATA_ADDR!=='undefined'&&DATA_ADDR) DATA_ADDR.split(';').forEach(e=>{ const k=e.indexOf(':'); const b=BLD[+e.slice(0,k)]; if(!b)return; const [st2,num]=e.slice(k+1).split('|'); b.addr=(st2?st2+' ':'')+num; });
   BLD.forEach((b,i)=>{ if(BPARTS[i]) b.parts=BPARTS[i]; });
+  // hala sportowa: osobny budynek między szkołą a boiskiem (wg ortofotomapy), bez łącznika ze szkołą
+  { const hb=BLD.find(b=>b.code===5&&Math.hypot(b.x+173,b.z+74)<3); if(hb){ Object.assign(hb,{x:-174,z:-79,w:26,d:16,a:336*Math.PI/180,lv:1,isHall:true}); delete hb.parts; }
+    const cn=BLD.find(b=>b.code===5&&Math.hypot(b.x+173,b.z+64)<2); if(cn) cn.skip=true; }
   const BPOLY=DATA.BP.map(([code,lv,name,d])=>({code,lv,name,pts:decRel(d)}));
   const PARCELS=DATA_PARC.split(';').map(s=>{ const p=dec(s.split(',').map(Number)); return {p,bb:bbox(p)}; });
   function roadNearF(x,z,m){ return ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+m); }
@@ -551,10 +557,10 @@ async function boot(saved){
   const WALLS=['#efe6d4','#e8dcc4','#f4eee2','#dccaa8','#ebd6b4','#d2c6b4','#f2e0bc','#ddd6cc','#cbb393','#e6d0aa','#d8dde2','#e9cba0','#f1e8d8','#c9d2c2','#e3c9b8'];
   const ROOFS=['#9a3d2a','#843424','#5a5f66','#3a3f45','#a64d33','#6e3a28','#4a4f57','#b05b3b','#2d3136','#86402f','#5a412f'];
   const inSchool=(x,z)=>inPoly(x,z,SCHOOL.pts), inKinder=(x,z)=>inPoly(x,z,KINDER.pts);
-  const HALL_B=BLD.find(b=>b.code===5&&Math.max(b.w,b.d)>50);
+  const HALL_B=BLD.find(b=>b.isHall)||BLD.find(b=>b.code===5&&Math.max(b.w,b.d)>50);
   const houses=[];
   const CB={}; [['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
-  BLD.forEach((b,bi)=>{ const ar=b.w*b.d, ratio=Math.max(b.w,b.d)/Math.min(b.w,b.d);
+  BLD.forEach((b,bi)=>{ if(b.skip){ b.kind='skip'; return; } const ar=b.w*b.d, ratio=Math.max(b.w,b.d)/Math.min(b.w,b.d);
     // wysokość posadowienia: środek i najniższy narożnik
     const c=Math.cos(b.a), s=Math.sin(b.a); b.hc=H(b.x,b.z); b.hmin=Math.min(...[[1,1],[1,-1],[-1,1],[-1,-1]].map(([u,v])=>H(b.x+u*b.w/2*c-v*b.d/2*s,b.z+u*b.w/2*s+v*b.d/2*c)));
     if(b.name==='shelter'){ b.kind='shelter'; return; }
@@ -2012,7 +2018,7 @@ async function boot(saved){
   $('bSeason').addEventListener('click',()=>{ ENV.season=(ENV.season+1)%4; applySeason(); saveGame(); });
   $('bSound').addEventListener('click',audioStart);
   $('bQual').addEventListener('click',()=>{ ENV.quality=1-ENV.quality; renderer.shadowMap.enabled=!!ENV.quality; sun.castShadow=!!ENV.quality; if(bloom)bloom.enabled=!!ENV.quality; pr=ENV.quality?DPR:Math.min(DPR,.75); renderer.setPixelRatio(pr); resize(); scene.traverse(o=>{ if(o.material&&!Array.isArray(o.material)) o.material.needsUpdate=true; }); updButtons(); });
-  $('bAct').addEventListener('click',()=>extInteract()); $('bRadio').addEventListener('click',()=>{ if(!AU.ctx)audioStart(); extRadio(); });
+  $('bAct').addEventListener('click',()=>{ if(IS_TOUCH&&(lastAct==='Wsiądź'||lastAct==='Wysiądź')) enterExit(); else extInteract(); setTimeout(()=>{ if(IS_TOUCH) actLabel(); },50); }); $('bRadio').addEventListener('click',()=>{ if(!AU.ctx)audioStart(); extRadio(); });
   applySeason(); updButtons();
 
   window.__treb={get GATES(){return GATES;},get MP(){return MP;},get AU(){return AU;},get CB(){return CB;},get TIR(){return TIR_LOT;},startMission:m=>startMission(MISSIONS.find(q=>q.id===m)),get CAMPAIGN(){return CAMPAIGN;},get IN(){return IN;},enterStore:()=>enterStore(),exitStore:()=>exitStore(),showMenu:v=>showMenu(v),get GAME(){return GAME;},addXP:v=>addXP(v),get ORLEN(){return ORLEN;},st,setWanted,openShop:i=>openShop(SHOPS[i]),buy,ENV,COPS,parked,enterExit,get MISSIONS(){return MISSIONS;},get active(){return ACTIVE;},get player(){return player;},LEW:B_LEW,get CHUNKS(){return CHUNKS;}};
@@ -2285,8 +2291,10 @@ async function boot(saved){
   function exitStore(){ if(!st.inside)return; IN.lastSwap=tAll; fadeTo(()=>{ st.inside=false; IN.g.visible=false; const r=IN.ret||{x:SHOPS[0].p[0],z:SHOPS[0].p[1],yaw:0,face:0}; st.x=r.x; st.z=r.z; st.yaw=r.yaw; st.face=r.face; st.vx=st.vz=0; if(SHOP_OPEN) closeShop(); }); }
   // drzwi automatyczne: wystarczy podejść do drzwi (ważne na telefonie)
   const bActEl=document.getElementById('bAct'); let lastAct='';
-  function actLabel(){ let t='Akcja'; if(SHOP_OPEN) t='Zamknij'; else { const sd=nearStoreDoor(); if(sd==='out') t='Wyjdź'; else if(sd==='in') t='Wejdź'; else if(!st.inside&&nearGate()) t=nearGate().open?'Zamknij':'Otwórz'; else if(nearMission()) t='Misja'; else if(!st.car&&nearShop()) t='Kasa'; }
-    if(t!==lastAct){ lastAct=t; bActEl.textContent=t; bActEl.classList.toggle('hot',t!=='Akcja'); } }
+  const bRadioEl=document.getElementById('bRadio');
+  function actLabel(){ let t=''; if(SHOP_OPEN) t='Zamknij'; else { const sd=nearStoreDoor(); if(sd==='out') t='Wyjdź'; else if(sd==='in') t='Wejdź'; else if(!st.inside&&nearGate()) t=nearGate().open?'Zamknij':'Otwórz'; else if(nearMission()) t='Misja'; else if(!st.car&&nearShop()) t='Kasa'; else if(st.car) t='Wysiądź'; else if(!st.inside&&nearestParked()) t='Wsiądź'; }
+    if(t!==lastAct){ lastAct=t; bActEl.textContent=t; bActEl.classList.toggle('show',!!t); bActEl.classList.toggle('hot',!!t&&t!=='Wysiądź'); }
+    bRadioEl.classList.toggle('show',!!st.car&&st.car.kind!=='bike'); }
   function storeDoorAuto(){ if(st.car||st.dead||GAME.paused||SHOP_OPEN||tAll-(IN.lastSwap||-9)<2.5) return; const v=Math.hypot(st.vx||0,st.vz||0); if(v<.8) return;
     if(st.inside){ const lx=st.x-IN.x-IN_DOOR[0], lz=st.z-IN.z; if(Math.abs(lx)<1.3&&lz>6.4&&(st.vz||0)>.6) exitStore(); return; }
     const d=B_LEW.doorF; if(!d) return; const f=B_LEW.front; if(Math.hypot(d[0]-st.x,d[1]-st.z)<1.9&&-(st.vx*f.nx+st.vz*f.nz)>.6) enterStore(); }
@@ -2412,12 +2420,13 @@ async function boot(saved){
     logEl.querySelector('.ql').innerHTML='<h3>Fabuła</h3>'+CAMPAIGN.map(row).join('')+'<h3>Poboczne</h3>'+SIDE.map(row).join('');
     logEl.querySelector('.qd').innerHTML=sel?`<h2>${sel.n}</h2><p class="meta">${sel.main?`Misja ${CAMPAIGN.indexOf(sel)+1} z 20 · poziom ${sel.lvl}`:'Misja poboczna · co 5 min'} · nagroda ${sel.reward?fmt(sel.main?sel.reward:Math.round(sel.reward*(1+st.level*.35))):'—'} · ${sel.xp} XP</p><p>${sel.desc}</p>${avail(sel)&&!ACTIVE?'<button class="btn" id="qWay">Pokaż na mapie</button>':''}${ACTIVE&&ACTIVE.m===sel?'<button class="btn" id="qAbort">Przerwij misję</button>':''}`:'';
     logEl.querySelectorAll('button.q').forEach(b=>b.addEventListener('click',()=>{ LOG_SEL=b.dataset.id; renderLog(); }));
-    const w=document.getElementById('qWay'); if(w) w.addEventListener('click',()=>{ try{ WAYPOINT=sel.start(); }catch(e){} toast('Cel zaznaczony na radarze (fioletowy)',2.5); toggleLog(false); });
+    const w=document.getElementById('qWay'); if(w) w.addEventListener('click',()=>{ try{ WAYPOINT=sel.start(); }catch(e){} toast('Cel zaznaczony na radarze (fioletowy)',2.5); const fm=LOG_FROM_MENU; LOG_FROM_MENU=false; toggleLog(false); if(fm) showMenu(false); });
     const ab=document.getElementById('qAbort'); if(ab) ab.addEventListener('click',()=>{ endMission(false); renderLog(); });
     $('qMoney').textContent=fmt(st.money); $('qLvl').textContent='Poziom '+st.level+' · '+st.xp+' XP'; }
-  function toggleLog(v){ logEl.hidden=v===undefined?!logEl.hidden:!v; if(!logEl.hidden){ keys.clear(); renderLog(); } }
+  let LOG_FROM_MENU=false;
+  function toggleLog(v){ logEl.hidden=v===undefined?!logEl.hidden:!v; if(!logEl.hidden){ keys.clear(); renderLog(); } else if(LOG_FROM_MENU){ LOG_FROM_MENU=false; showMenu(true); } }
   addEventListener('keydown',e=>{ if(e.code==='Escape'&&!logEl.hidden){ toggleLog(false); e.preventDefault(); e.stopPropagation(); } },true);
-  document.getElementById('qClose').addEventListener('click',()=>toggleLog(false));
+  document.getElementById('qClose').addEventListener('click',()=>toggleLog(false)); if(IS_TOUCH) document.getElementById('qClose').textContent='Zamknij';
 
   /* ---------- zapis postępu ---------- */
   function saveGame(){ try{ localStorage.setItem('trebaczew-gra',JSON.stringify({v:2,money:st.money,xp:st.xp,done:[...DONE],side:SIDE_T,season:ENV.season,time:ENV.time,weather:ENV.weather})); }catch(e){} }
@@ -2501,10 +2510,11 @@ async function boot(saved){
     if(id==='pOpt'){ renderKeys(); renderQ(); } if(id==='pChar'){ renderChar(); MENU.ca=st.yaw; MENU.t=0; } if(id==='pBug') $('bSend').href=bugHref(); WAITKEY=null; }
   menuEl.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>openPanel('')));
   let HAS_SAVE=false; try{ HAS_SAVE=!!localStorage.getItem('trebaczew-gra'); }catch(e){}
-  function playSub(){ const has=st.xp>0||DONE.size>0||HAS_SAVE; $('mPlaySub').textContent=GAME.started?'wznów grę':has?`kontynuuj · poziom ${st.level}`:'nowa gra'; $('mPlay').firstChild.textContent=GAME.started?'Wznów grę ':'Tryb jednoosobowy '; $('mNew').hidden=!has; }
-  function showMenu(v){ GAME.paused=v; menuEl.hidden=!v; document.body.classList.toggle('inmenu',v); keys.clear(); resetJoy(); if(v){ menuEl.classList.toggle('pause',GAME.started); playSub(); openPanel(''); if(!IS_TOUCH) setTimeout(()=>$('mPlay').focus(),30); } else { if(MENU.view==='creator') MENU.view=''; canvas.focus(); clock.getDelta(); } }
-  $('mPlay').addEventListener('click',()=>{ if(!GAME.started){ GAME.started=true; if(!AU.ctx) try{ audioStart(); }catch(e){} toast(CHAR.name?`Witaj w Trębaczewie, ${CHAR.name}!<br><kbd>${keyName(KEYMAP.q)}</kbd> dziennik misji · żółte znaczniki to misje fabularne`:`Witaj w Trębaczewie!<br><kbd>${keyName(KEYMAP.q)}</kbd> dziennik misji · żółte znaczniki to misje fabularne`,6); } showMenu(false); });
+  function playSub(){ const has=st.xp>0||DONE.size>0||HAS_SAVE; $('mPlaySub').textContent=GAME.started?'':has?`kontynuuj · poziom ${st.level}`:'nowa gra'; $('mPlay').firstChild.textContent=GAME.started?'Wznów grę ':'Tryb jednoosobowy '; $('mNew').hidden=!has; $('mLog').hidden=!GAME.started; $('mLogSub').textContent=`fabuła ${DONE.size}/20`; }
+  function showMenu(v){ GAME.paused=v; menuEl.hidden=!v; document.body.classList.toggle('inmenu',v); keys.clear(); resetJoy(); if(v){ menuEl.classList.toggle('pause',GAME.started); playSub(); openPanel(''); if(!IS_TOUCH) setTimeout(()=>$('mPlay').focus(),30); } else { if(MENU.view==='creator') MENU.view=''; if(MENU.vo){ camera.clearViewOffset(); MENU.vo=false; } canvas.focus(); clock.getDelta(); } }
+  $('mPlay').addEventListener('click',()=>{ if(!GAME.started){ GAME.started=true; if(!AU.ctx) try{ audioStart(); }catch(e){} { const how=IS_TOUCH?'Menu → Misje: lista zadań':`<kbd>${keyName(KEYMAP.q)}</kbd> dziennik misji`; toast(`Witaj w Trębaczewie${CHAR.name?', '+CHAR.name:''}!<br>${how} · żółte znaczniki to misje fabularne`,6); } } showMenu(false); });
   $('mOpt').addEventListener('click',()=>openPanel($('pOpt').hidden?'pOpt':''));
+  $('mLog').addEventListener('click',()=>{ openPanel(''); menuEl.hidden=true; LOG_FROM_MENU=true; toggleLog(true); });
   $('mChar').addEventListener('click',()=>openPanel($('pChar').hidden?'pChar':''));
   $('mBug').addEventListener('click',()=>openPanel($('pBug').hidden?'pBug':''));
   $('mMulti').addEventListener('click',()=>{ const s=$('mMulti').querySelector('small'); s.textContent='wkrótce – jeszcze niedostępny'; });
@@ -2519,9 +2529,13 @@ async function boot(saved){
     if(!menuEl.hidden){ if(!$('pOpt').hidden||!$('pChar').hidden||!$('pBug').hidden){ openPanel(''); return; } if(GAME.started) showMenu(false); return; }
     if(GAME.started) showMenu(true); });
   // co klatkę, gdy menu jest otwarte
-  function menuFrame(dt){ MENU.t+=dt;
-    if(MENU.view==='creator'){ const P=player.position; const fy=st.inside?IN.y:H(st.x,st.z); player.visible=true; P.set(st.x,fy+.1,st.z); player.rotation.y=MENU.ca+Math.PI+Math.sin(MENU.t*.6)*.9; animPerson(player,0,0);
-      const a=MENU.ca, nar=innerWidth<760; const d=nar?3.6:3.1; const offW=innerWidth<1100?1.25:.85; camera.position.set(st.x+Math.sin(a)*d,fy+1.3,st.z+Math.cos(a)*d); const rx=Math.cos(a), rz=-Math.sin(a), off=nar?0:offW; camera.lookAt(st.x+rx*off,fy+(nar?.55:1.0),st.z+rz*off); if(st.inside) inCam2();
+  function menuFrame(dt){ MENU.t+=dt; if(MENU.vo&&MENU.view!=='creator'){ camera.clearViewOffset(); MENU.vo=false; }
+    if(MENU.view==='creator'){ const P=player.position; const fy=st.inside?IN.y:H(st.x,st.z); player.visible=true; P.set(st.x,fy+.1,st.z); player.rotation.y=MENU.ca+Math.sin(MENU.t*.6)*.7; animPerson(player,0,0);
+      const Wd=innerWidth, Hd=innerHeight, pr0=$('pChar').getBoundingClientRect(); let fx0=0,fy0=0,fw=Wd,fh=Hd;
+      if(pr0.left>Wd*.3){ fw=Math.max(120,pr0.left-8); } else { fh=Math.max(120,pr0.top-8); }
+      const tanH=Math.tan(camera.fov*Math.PI/360), need=2.1; let d=need/(.82*(fh/Hd)*2*tanH); d=Math.max(d,need*.5/((fw/Wd)*2*tanH*camera.aspect)*1.0); d=clamp(d,2.2,12);
+      const a=MENU.ca; camera.position.set(st.x+Math.sin(a)*d,fy+1.05,st.z+Math.cos(a)*d); camera.lookAt(st.x,fy+.95,st.z);
+      camera.setViewOffset(Wd,Hd,Wd/2-(fx0+fw/2),Hd/2-(fy0+fh/2),Wd,Hd); MENU.vo=true; if(st.inside) inCam2();
       sun.position.set(st.x+SUNDIR.x*220,fy+SUNDIR.y*220,st.z+SUNDIR.z*220); sun.target.position.set(st.x,fy,st.z); }
     else if(!GAME.started){ const a=MENU.t*.035+.6, r=95, c=MENU.c, y=H(c[0],c[1]); camera.position.set(c[0]+Math.sin(a)*r,y+38,c[1]+Math.cos(a)*r); camera.lookAt(c[0],y+3,c[1]); sun.position.set(c[0]+SUNDIR.x*220,y+SUNDIR.y*220,c[1]+SUNDIR.z*220); sun.target.position.set(c[0],y,c[1]); }
     else return false;
