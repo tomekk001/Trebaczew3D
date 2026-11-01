@@ -1370,7 +1370,7 @@ async function boot(saved){
     let best=null; for(let r=6;r<40&&!best;r+=2){ for(let k=0;k<16;k++){ const an=Math.atan2(dir[1],dir[0])+(k%2?1:-1)*Math.ceil(k/2)*0.35; const x=p.x+Math.cos(an)*r, z=p.z+Math.sin(an)*r; if(!blocked(x,z,.6)){ best=[x,z]; break; } } }
     if(!best){ teleport(p.x,p.z); return; } st.x=best[0]; st.z=best[1]; st.vx=st.vz=0; st.yaw=Math.atan2(st.x-p.x,st.z-p.z); st.face=st.yaw+Math.PI; st.pitch=0.22; }
   function toggleMap(v){ keys.clear(); resetJoy(); mapView.hidden=v===undefined?!mapView.hidden:!v; if(!mapView.hidden){ mvCenter(st.x,st.z,2.2); drawBig(); } else canvas.focus(); }
-  document.getElementById('bMap').addEventListener('click',()=>toggleMap()); document.getElementById('closeMap').addEventListener('click',()=>toggleMap(false));
+  document.getElementById('bMap').addEventListener('click',()=>toggleMap()); document.getElementById('bMapM').addEventListener('click',()=>toggleMap()); document.getElementById('closeMap').addEventListener('click',()=>toggleMap(false));
   { const pts=new Map(); let moved=0, pinch0=0, z0=1;
     const cpx=e=>{ const r=big.getBoundingClientRect(); return [(e.clientX-r.left)*big.width/r.width,(e.clientY-r.top)*big.height/r.height]; };
     const zoomAt=(px,py,f)=>{ const mx=MV.ox+px/MV.z, my=MV.oy+py/MV.z; MV.z=clamp(MV.z*f,1,10); MV.ox=mx-px/MV.z; MV.oy=my-py/MV.z; mvClamp(); drawBig(); };
@@ -1951,7 +1951,7 @@ async function boot(saved){
     if(MP.user&&ids.length){ try{ prof=await MP.user.profiles(ids); }catch(e){} }
     list.forEach(r=>{ const pr=(MP.room.peers().find(p=>p.peer===r.peer)||{}).presence||{}; const nm=cleanTxt(pr.nick,24)||(r.by&&prof[r.by]&&prof[r.by].name)||'Gracz'; if(nm!==r.name){ r.name=nm; r.tag.material.map.dispose(); r.tag.material.map=tagTex(nm,r.col); r.tag.material.needsUpdate=true; } });
     renderList(); }
-  function renderList(){ if(!MP.on)return; const n=MP.remote.size+1; mpCount.textContent=MP.room&&MP.room.connected&&!MP.room.connected()?'Łączenie z serwerem…':n===1?'Tylko Ty w Trębaczewie':`${n} graczy w Trębaczewie`; mpList.textContent='';
+  function renderList(){ if(!MP.on)return; const n=MP.remote.size+1; { const bp=document.getElementById('bPeople'); if(bp) bp.textContent=n>1?'👥'+n:'👥'; } mpCount.textContent=MP.room&&MP.room.connected&&!MP.room.connected()?'Łączenie z serwerem…':n===1?'Tylko Ty w Trębaczewie':`${n} graczy w Trębaczewie`; mpList.textContent='';
     const add=(name,col,me)=>{ const li=document.createElement('div'); li.className='mpi'; const d=document.createElement('i'); d.style.background=col; li.appendChild(d); const s=document.createElement('span'); s.textContent=name+(me?' (Ty)':''); li.appendChild(s); mpList.appendChild(li); };
     add(myNick||'Ty',MYCOL,true); [...MP.remote.values()].forEach(r=>add(r.name||'Gracz',r.col,false)); }
   function addChat(name,col,text){ const row=document.createElement('div'); row.className='cl'; const b=document.createElement('b'); b.textContent=name+': '; b.style.color=col; row.appendChild(b); row.appendChild(document.createTextNode(text)); chatLog.appendChild(row); while(chatLog.children.length>6) chatLog.removeChild(chatLog.firstChild); MP.chat.push({row,t:12}); }
@@ -1987,7 +1987,7 @@ async function boot(saved){
   async function mpInit(useWs){ try{ let room; if(useWs){ room=wsRoom(MP_URL); statEvent('mp'); } else { if(!window.claude||!window.claude.use)return; room=await window.claude.use('room'); if(!room)return; try{ MP.user=await window.claude.use('user'); }catch(e){} } MP.room=room;
       if(!myNick&&CHAR.name) myNick=cleanTxt(CHAR.name,24);
       if(!myNick&&MP.user){ try{ const me=await MP.user.me(); if(me&&me.name) myNick=cleanTxt(me.name.split(' ')[0],24); }catch(e){} }
-      MP.on=true; mpEl.hidden=false; nickIn.value=myNick; renderList();
+      MP.on=true; mpEl.hidden=false; { const bp=document.getElementById('bPeople'); bp.hidden=false; bp.onclick=()=>document.body.classList.toggle('mpOpen');  if(IS_TOUCH) document.getElementById('bChat').textContent='Czat'; } nickIn.value=myNick; renderList();
       room.onPeers(ch=>{ ch.left.forEach(p=>{ const r=MP.remote.get(p.peer); if(!r)return; [r.body,r.tag,r.veh,r.bubble].forEach(o=>o&&scene.remove(o)); MP.remote.delete(p.peer); if(r.name) toast(`👋 ${r.name.replace(/[<>&]/g,'')} wychodzi z gry`,2); });
         let names=false; [...ch.joined,...ch.updated].forEach(p=>{ if(p.sameTab||p.kind!=='viewer')return; if(!p.presence||p.presence.x===undefined)return; const isNew=!MP.remote.has(p.peer); ensureRemote(p); if(isNew){ names=true; } else { const r=MP.remote.get(p.peer); const nk=cleanTxt(p.presence.nick,24); if(nk&&nk!==r.name) names=true; } });
         if(names) mpNames(); else renderList(); },()=>{});

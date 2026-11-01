@@ -239,6 +239,24 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 #winScreen p{font-family:var(--font-sign);font-size:22px;color:#eee}
 #nameTxt{font-family:var(--font-sign);font-size:15px;color:#fff;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
 .tbtns.more{right:calc(104px + env(safe-area-inset-right,0px))}
+
+/* telefon: czysty ekran – zamiast minimapy mała ikona „M”, gwiazdki tylko podczas pościgu, panel graczy pod ikoną 👥 */
+#bMapM,#bPeople{display:none}
+@media (pointer:coarse){
+  .radarBox #radar,#lvlBox{display:none!important}
+  .radarBox{top:calc(66px + env(safe-area-inset-top,0px))!important;left:max(12px,env(safe-area-inset-left,0px))!important;width:132px!important;background:none!important;border:0!important;padding:0!important}
+  .radarBox .bars{margin:0}
+  .tl{left:max(12px,env(safe-area-inset-left,0px))!important;max-width:calc(100vw - 200px)!important;flex-wrap:nowrap}
+  #bMap{display:none!important}
+  #bMapM{display:inline-flex}
+  #bPeople:not([hidden]){display:inline-flex}
+  .tl .btn.ic{width:44px;height:44px;padding:0;align-items:center;justify-content:center;font-size:20px;border-radius:50%;font-family:var(--font-display)}
+  #stars{display:none}
+  #stars.flash{display:block;font-size:22px}
+  #mp{display:none!important}
+  body.mpOpen #mp{display:block!important;position:fixed;top:calc(118px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:auto;max-width:min(300px,calc(100vw - 24px))!important;min-width:220px!important;z-index:13;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  body.mpOpen #bPeople{background:var(--accent);color:#111}
+}
 </style>
 
 <canvas id="c" tabindex="0" aria-label="Trójwymiarowa gra: Trębaczew"></canvas>
@@ -247,6 +265,8 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 
 <div class="hud tl">
   <button class="btn" id="bMenu" title="Esc">Menu</button>
+  <button class="btn ic" id="bMapM" aria-label="Mapa" title="Mapa">M</button>
+  <button class="btn ic" id="bPeople" aria-label="Gracze online" title="Gracze online" hidden>👥</button>
   <button class="btn" id="bLog" title="Klawisz Q">Misje</button>
   <button class="btn" id="bMap" title="Klawisz M">Mapa</button>
   <button class="btn" id="bCam" title="Klawisz C">Kamera</button>
