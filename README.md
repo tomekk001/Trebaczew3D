@@ -148,10 +148,11 @@ Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyt
 - `kosciol_in.py`: wnętrze kościoła (nawa w kształcie litery A, żebra, prezbiterium, ławki).
 - `regal_apteka.py`: regał z lekami.
 - `sklep.py`: regał z alkoholem, gondola, lodówka i lada Żabki.
-- `budynki.py`: budynki według zdjęć: Delikatesy Premium, dworzec PKP, Minerał, świetlica, ORLEN (sklep i wiata), Biedronka, Lidl. Można zbudować wybrane, np. `python3 tools/blender/budynki.py lidl orlen_wiata`.
+- `pociagi.py`: elektryczny zespół trakcyjny (człony czołowe i środkowe) oraz lokomotywa i węglarki pociągu towarowego.
+- `budynki.py`: budynki według zdjęć: ośrodek zdrowia z Apteką Magnolia (Szkolna 12, taras ze schodami, ganek z dwojgiem drzwi), Delikatesy Premium, dworzec PKP, Minerał, świetlica, ORLEN (sklep i wiata), Biedronka, Lidl. Można zbudować wybrane, np. `python3 tools/blender/budynki.py lidl orlen_wiata`.
 
 ```
-for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep,budynki}.py; do python3 $f; done
+for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep,budynki,pociagi}.py; do python3 $f; done
 python3 tools/glb2js.py && python3 build.py
 ```
 

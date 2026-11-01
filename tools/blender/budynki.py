@@ -187,5 +187,41 @@ def lidl():
     while x < L * .1: M.box(x - .17, x + .17, 0, HH - .3, D / 2 + 3.6, D / 2 + 3.94, steel); M.box(x - .2, x + .2, 0, 1.2, D / 2 + 3.57, D / 2 + 3.97, plin); x += 8
     M.finish(res=1024, quality=72, ao_dist=2.5)
 
-for f in (delikatesy, dworzec, mineral, swietlica, orlen_sklep, orlen_wiata, biedronka, lidl):
+def osrodek():
+    """Ośrodek zdrowia i Apteka Magnolia (Szkolna 12): parterowy, żółty, ciemny dach czterospadowy, ganek z daszkiem dwuspadowym,
+    czerwony taras ze schodami i czarnymi poręczami, komin z cegły. Front (+z) od strony Szkolnej, obrys jak w OSM (litera L)."""
+    M = Model('osrodek'); FL, EH = .95, 3.0; X0, X1, ZB, ZF = -13.2, 12.9, -3.5, 9.3
+    wall = M.mat('wall', '#e2b64e', noise=.05, scale=18); red = M.mat('red', '#8e2a26', noise=.06); redt = M.mat('redt', '#7c2a25', brick=(.6, .3, '#5e1f1b', .01))
+    roof = M.mat('roof', '#2c2e32', brick=(.36, .3, '#1c1d20', .02)); dark = M.mat('dark', '#26282b'); brn = M.mat('brn', '#5a3a24'); shut = M.mat('shut', '#3b3d40', brick=(4, .07, '#2c2e30', .004))
+    pink = M.mat('pink', '#e0e0dc', grad=('#d24a82', '#f0d6e2')); glass = M.mat('glass', '#2c3640'); brick = M.mat('brick', '#8e4a33', brick=(.25, .08, '#6a3424', .01)); iron = M.mat('iron', '#1d1f22'); white = M.mat('white', '#f2f2ee')
+    # bryła główna i tylne skrzydło
+    M.box(X0, X1, BASE, FL + EH, ZB, ZF, wall); M.box(5.3, 12.2, BASE, FL + EH - .2, -9.3, ZB + .1, wall)
+    M.box(X0 - .03, X1 + .03, BASE, FL, ZB - .03, ZF + .03, red); M.box(5.27, 12.23, BASE, FL, -9.33, ZB, red)
+    hip(M, X0, X1, ZB, ZF, FL + EH, 2.6, roof, ov=.7); M.box(5.0, 12.5, FL + EH - .2, FL + EH + .15, -9.6, ZB, roof)
+    # komin
+    M.box(-2.2, -1.4, FL + EH + 1.0, FL + EH + 5.2, 1.5, 2.3, brick); M.box(-2.3, -1.3, FL + EH + 5.2, FL + EH + 5.4, 1.4, 2.4, dark)
+    # ganek: daszek dwuspadowy na dwóch słupach, drzwi do przychodni (lewe) i apteki (prawe)
+    PC, PW, PD = 2.0, 7.2, 3.0
+    gable(M, PC - PW / 2, PC + PW / 2, ZF - 1.2, ZF + PD, FL + EH, 1.5, roof, ov=.3, along='z')
+    M.prism([(PC - PW / 2 - .3, FL + EH - .1, ZF + PD + .3), (PC + PW / 2 + .3, FL + EH - .1, ZF + PD + .3), (PC, FL + EH + 1.55, ZF + PD + .3)], (0, 0, -.12), dark)
+    for x in (PC - PW / 2 + .35, PC + PW / 2 - .35): M.box(x - .12, x + .12, FL, FL + EH, ZF + PD - .45, ZF + PD - .21, dark)
+    M.box(PC - PW / 2, PC + PW / 2, FL + EH - .3, FL + EH, ZF, ZF + PD, dark)
+    for x in (PC - 2.1, PC + 2.1):
+        M.box(x - .62, x + .62, FL, FL + 2.3, ZF, ZF + .05, brn); M.box(x - .5, x + .5, FL + .9, FL + 2.15, ZF + .05, ZF + .07, glass)
+    # okna: brązowe ramy z roletami, różowe plakaty apteki
+    for x, mk in ((-11.4, shut), (-8.6, pink), (-5.8, pink), (-3.4, shut), (7.6, shut), (10.8, shut)):
+        M.box(x - .72, x + .72, FL + .75, FL + 2.25, ZF, ZF + .05, brn); M.box(x - .6, x + .6, FL + .85, FL + 2.15, ZF + .05, ZF + .07, mk); M.box(x - .8, x + .8, FL + .68, FL + .76, ZF, ZF + .18, white)
+    side_windows(M, X1 - X0, ZF - ZB, FL + 1.5, 3.2, 1.2, 1.3, brn, shut)
+    # czerwony taras z balustradą i schodami przed gankiem
+    TZ = ZF + 3.3; SX0, SX1 = PC - 1.9, PC + 1.9
+    M.box(-4.0, X1, BASE, FL, ZF, TZ, redt); M.box(-4.03, X1 + .03, BASE, FL - .05, TZ - .02, TZ + .03, red)
+    for k in range(3): M.box(SX0, SX1, BASE, FL - (k + 1) * FL / 3.4, TZ, TZ + (k + 1) * .34, red)
+    for x0, x1 in ((-4.0, SX0), (SX1, X1)):
+        M.box(x0, x1, FL + .95, FL + 1.0, TZ - .08, TZ - .03, iron); x = x0
+        while x < x1: M.box(x, x + .04, FL, FL + .95, TZ - .08, TZ - .04, iron); x += 1.2
+    for x in (-4.0, X1): M.box(x - .02, x + .02, FL + .95, FL + 1.0, ZF, TZ, iron); M.box(x - .02, x + .02, FL, FL + 1.0, TZ - .1, TZ - .06, iron)
+    for x in (SX0 + .05, SX1 - .05): M.prism([(x, FL + 1.0, TZ - .05), (x, .1 + .9, TZ + 1.05), (x, .1 + .85, TZ + 1.05), (x, FL + .95, TZ - .05)], (.04, 0, 0), iron)
+    M.finish(res=1024, quality=72, ao_dist=2.0)
+
+for f in (osrodek, delikatesy, dworzec, mineral, swietlica, orlen_sklep, orlen_wiata, biedronka, lidl):
     if len(sys.argv) < 2 or f.__name__ in sys.argv[1:]: f()
