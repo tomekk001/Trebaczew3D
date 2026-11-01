@@ -156,6 +156,14 @@ for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep
 python3 tools/glb2js.py && python3 build.py
 ```
 
+## Park przy Zielonej
+
+`tools/park.py` wyciąga z OSM (`tools/raw/osm_area.json.gz`) szczegóły parku do `src/data_park.js`: alejki, każde drzewo osobno (liściaste i iglaste), ławki, piaskownicę, rabatę, żwir, betonowe słupki, ściankę wspinaczkową, huśtawki i wejście na orlik. Gra rysuje z tego alejki (asfalt w środku parku, kostka przy ulicach), latarnie, kosze, gabloty przy wejściach i spacerowiczów. Orlik stoi tam, gdzie w OSM i na ortofotomapie, z furtką od strony parku (tam dochodzi alejka) i drugą od Zielonej.
+
+```
+python3 tools/park.py && python3 build.py
+```
+
 ## Szybsze wczytywanie
 
 Na stronie modele wnętrz (kościół, apteka, Żabka, Lewiatan) i budynki z `budynki.py` leżą w osobnym pliku `models_in.js`, doczytywanym w tle. Do czasu wczytania te budynki stoją w prostszej wersji, a potem gra sama podmienia je na modele. Gra startuje z mniejszego `index.html` (około 2,6 MB zamiast 4,2 MB). Przy wejściu do budynku gra czeka na modele najwyżej kilka sekund. Wersja do artefaktu (`--fragment`) ma wszystko w jednym pliku.
