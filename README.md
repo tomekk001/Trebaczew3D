@@ -1,4 +1,4 @@
-# Symulator Trębaczewa
+# Symulator życia w Trębaczewie
 
 Gra 3D w stylu GTA (dawniej „Trębaczew 3D”), w której można chodzić i jeździć po prawdziwym Trębaczewie (gm. Działoszyn, pow. pajęczański). Ulice, budynki, działki i rzeźba terenu pochodzą z otwartych danych, a charakterystyczne miejsca (Lewiatan, Żabka, kościół, apteka, park, przedszkole, OSP, cmentarz) odwzorowano ze zdjęć.
 

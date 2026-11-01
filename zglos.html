@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Zgłoś błąd · Symulator Trębaczewa</title>
-<meta name="description" content="Formularz zgłaszania błędów w grze Symulator Trębaczewa.">
+<title>Zgłoś błąd · Symulator życia w Trębaczewie</title>
+<meta name="description" content="Formularz zgłaszania błędów w grze Symulator życia w Trębaczewie.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="src/favicon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
@@ -36,7 +36,7 @@ a{color:var(--accent)}
 </head>
 <body>
 <main>
-  <div class="kick">Symulator</div>
+  <div class="kick">Symulator życia w Trębaczewie</div>
   <h1>ZGŁOŚ BŁĄD</h1>
   <p class="lead">Coś nie działa, coś nachodzi na drogę albo masz pomysł? Opisz to tutaj. Zgłoszenie trafi prosto do autora gry.</p>
   <form id="f" novalidate>
@@ -72,7 +72,7 @@ $('f').addEventListener('submit', async e => {
   $('send').disabled = true; $('send').textContent = 'Wysyłanie…';
   try {
     const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ access_key: ACCESS_KEY, subject: `[Trębaczew] ${$('kat').value}`, from_name: 'Symulator Trębaczewa', kategoria: $('kat').value, opis, kontakt: $('kontakt').value.trim(), informacje_z_gry: info, botcheck: $('f').botcheck.checked }) });
+      body: JSON.stringify({ access_key: ACCESS_KEY, subject: `[Trębaczew] ${$('kat').value}`, from_name: 'Symulator życia w Trębaczewie', kategoria: $('kat').value, opis, kontakt: $('kontakt').value.trim(), informacje_z_gry: info, botcheck: $('f').botcheck.checked }) });
     const j = await r.json().catch(() => ({}));
     if (r.ok && j.success !== false) { msg.className = 'msg ok'; msg.textContent = 'Dziękuję! Zgłoszenie zostało wysłane.'; $('opis').value = ''; }
     else throw new Error(j.message || 'błąd serwera');
