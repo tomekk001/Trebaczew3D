@@ -165,7 +165,7 @@ Trzy postacie mają własne zadania i rozmawiają przez model językowy na serwe
 - **Seba** przy przystanku PKS na Wyzwolenia: obok jego Passata B5 FL. Trzeba docenić furę (obraza kończy rozmowę) i przynieść klucz 10 mm i trytytki ze skrzynki przy garażu.
 - **Pani Jadzia** przy płocie niedaleko remizy: trzeba podsłuchać strażaków i wrócić z prawdziwą plotką. Kłamstwo kończy się obrazą i zadanie zaczyna się od nowa.
 
-Przebieg zadań i nagrody są zaprogramowane w grze. Model prowadzi tylko swobodną rozmowę i dostaje od gry wyłącznie identyfikator postaci, etap zadania, listę przedmiotów i treść pytania. Osobowości i zasady (bez wulgaryzmów, tylko zmyślone osoby, bez danych prawdziwych mieszkańców) są zapisane na serwerze. Limity: 12 wiadomości na minutę i 80 dziennie z jednego adresu oraz 2500 dziennie dla całej gry. Gdy serwer jest niedostępny albo limit się wyczerpie, postacie odpowiadają gotowymi kwestiami.
+Przebieg zadań i nagrody są zaprogramowane w grze. Model prowadzi tylko swobodną rozmowę i dostaje od gry wyłącznie identyfikator postaci, etap zadania, listę przedmiotów i treść pytania. Osobowości i zasady (bez wulgaryzmów, tylko zmyślone osoby, bez danych prawdziwych mieszkańców) są zapisane na serwerze. Limity: 12 wiadomości na minutę i 80 dziennie z jednego adresu oraz 900 dziennie dla całej gry (pierwsze ~250 rozmów obsługuje lepszy po polsku Mistral Small, potem Llama 8B – razem mieści się w darmowym limicie Cloudflare). Gdy serwer jest niedostępny albo limit się wyczerpie, postacie odpowiadają gotowymi kwestiami.
 
 ## Postacie
 

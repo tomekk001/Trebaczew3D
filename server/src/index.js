@@ -23,7 +23,8 @@ function cleanPresence(p) {
 
 // ---------- rozmowy z postaciami (Workers AI) ----------
 // Osobowości i stany zadań są tylko na serwerze – gra wysyła identyfikatory, a nie gotowe polecenia dla modelu.
-const NPC_MODEL = '@cf/meta/llama-3.1-8b-instruct-fast', NPC_MODEL2 = '@cf/meta/llama-3.1-8b-instruct';
+// lepszy po polsku Mistral Small przez pierwsze ~250 rozmów dziennie, potem tańsza Llama 8B (razem mieści się w darmowych 10 000 neuronów na dzień)
+const NPC_BEST = '@cf/mistralai/mistral-small-3.1-24b-instruct', NPC_CHEAP = '@cf/meta/llama-3.1-8b-instruct-fast', NPC_BEST_N = 250;
 const GOSSIP = ['Kaśka od sąsiadów wracała z dyskoteki z Darkiem z Działoszyna', 'Zbyszek ze Stacji odprowadzał Agnieszkę aż pod sam kościół',
   'Wiesiek wracał sam, bo Monika uciekła mu z Krystianem', 'Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku', 'Grzesiek z Zagrodowej i Ola szli piechotą aż do świtu'];
 const NPCS = {
@@ -68,7 +69,7 @@ Zasady (zawsze ich przestrzegaj):
 const NPC_FALLBACK = { mietek: 'Nooo, szeeefie… sucho w gardle, to i gadać się nie chce. Pogadamy później, kierowniku.', seba: 'Mordo, teraz nie mam głowy, Passat mi nie domaga.', jadzia: 'Ojej, panie dziejku, aż mi głos odebrało… niech pan przyjdzie za chwilkę.' };
 function npcClean(t, n) {
   t = String(t || '').replace(/\*[^*]*\*/g, '').replace(/\([^)]*\)/g, '').replace(new RegExp('^\\s*(' + NPCS[n].name + '|' + NPCS[n].name.split(' ').pop() + ')\\s*:\\s*', 'i'), '').replace(/^\s*["„”]+|["„”]+\s*$/g, '').replace(/\s+/g, ' ').trim();
-  const sent = t.match(/[^.!?…]+[.!?…]+["”]?/g) || [t]; t = sent.slice(0, 3).map(x => x.trim()).join(' ').trim();
+  t = t.split(/(?<=[.!?…]["”]?)\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ„"])/).slice(0, 3).join(' ').trim();
   if (t.length > 320) t = t.slice(0, 317).replace(/\s\S*$/, '') + '…';
   return t;
 }
@@ -85,11 +86,12 @@ async function npcTalk(req, env, cors) {
   // limit: na adres IP i dzienny dla całej gry (pilnuje go obiekt Stats)
   const ok = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/npc', { method: 'POST', headers: { 'x-ip': req.headers.get('cf-connecting-ip') || '' } });
   if (ok.status !== 200) return J({ ok: false, limit: true, t: NPC_FALLBACK[n] });
+  const used = +(await ok.text()) || 0;
   const hist = (Array.isArray(m.hist) ? m.hist : []).slice(-8).map(h => ({ role: h && h.r === 'n' ? 'assistant' : 'user', content: clean(h && h.t, 300) })).filter(h => h.content);
   const messages = [{ role: 'system', content: npcSystem(n, stage, items, gi) }, ...hist, { role: 'user', content: msg }];
   if (!env.AI) return J({ ok: false, t: NPC_FALLBACK[n] });
   let out = '';
-  for (const model of [env.NPC_MODEL || NPC_MODEL, NPC_MODEL2]) {
+  for (const model of used <= NPC_BEST_N ? [NPC_BEST, NPC_CHEAP] : [NPC_CHEAP]) {
     try { const r = await env.AI.run(model, { messages, max_tokens: 140, temperature: .8 }); out = npcClean(r && (r.response || (r.result && r.result.response)), n); if (out) break; } catch (e) { out = ''; }
   }
   if (!out || censor(out) !== out) return J({ ok: false, t: NPC_FALLBACK[n] });
@@ -198,11 +200,11 @@ export class Stats extends DurableObject {
   add(day, k, v) { this.ctx.storage.sql.exec('INSERT INTO daily(day,k,v) VALUES(?,?,?) ON CONFLICT(day,k) DO UPDATE SET v=v+excluded.v', day, k, v); }
   async fetch(req) {
     const url = new URL(req.url); const q = this.ctx.storage.sql; const day = new Date(Date.now() + 3600e3).toISOString().slice(0, 10);
-    if (url.pathname === '/npc') { // limity rozmów: 12 na minutę i 80 dziennie na adres IP, 2500 dziennie na całą grę
+    if (url.pathname === '/npc') { // limity rozmów: 12 na minutę i 80 dziennie na adres IP, 900 dziennie na całą grę
       const ip = req.headers.get('x-ip') || '?', now = Date.now(); const r = this.nrl.get(ip) || { t: now, n: 0, d: day, dn: 0 }; if (now - r.t > 60e3) { r.t = now; r.n = 0; } if (r.d !== day) { r.d = day; r.dn = 0; }
       const tot = (q.exec('SELECT v FROM daily WHERE day=? AND k=?', day, 'npc').toArray()[0] || { v: 0 }).v;
-      if (++r.n > 12 || ++r.dn > 80 || tot >= 2500) { this.nrl.set(ip, r); return new Response('limit', { status: 429 }); }
-      this.nrl.set(ip, r); if (this.nrl.size > 5000) this.nrl.clear(); this.add(day, 'npc', 1); return new Response('ok'); }
+      if (++r.n > 12 || ++r.dn > 80 || tot >= 900) { this.nrl.set(ip, r); return new Response('limit', { status: 429 }); }
+      this.nrl.set(ip, r); if (this.nrl.size > 5000) this.nrl.clear(); this.add(day, 'npc', 1); return new Response(String(tot + 1)); }
     if (url.pathname === '/peak') { const v = +(await req.text()) || 0; q.exec('INSERT INTO meta(k,v) VALUES(\'peak\',?) ON CONFLICT(k) DO UPDATE SET v=MAX(v,excluded.v)', v); this.cache = null; return new Response('ok'); }
     if (url.pathname === '/report') {
       const ip = req.headers.get('x-ip') || '?', now = Date.now(); const r = this.rrl.get(ip) || { t: now, n: 0 }; if (now - r.t > 3600e3) { r.t = now; r.n = 0; } if (++r.n > 8) return new Response('{"ok":false,"error":"Za dużo zgłoszeń – spróbuj za godzinę"}', { status: 429 }); this.rrl.set(ip, r); if (this.rrl.size > 3000) this.rrl.clear();
