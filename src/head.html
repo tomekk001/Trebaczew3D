@@ -1,4 +1,12 @@
-<title>Trębaczew 3D</title>
+<title>Symulator Trębaczewa</title>
+<meta name="description" content="Symulator Trębaczewa – gra 3D w stylu GTA po prawdziwej wsi Trębaczew (gm. Działoszyn). Misje, poziomy, auta, sklep Lewiatan, Orlen w Działoszynie.">
+<meta property="og:title" content="Symulator Trębaczewa">
+<meta property="og:description" content="Gra 3D w stylu GTA po prawdziwym Trębaczewie. 20 misji, poziomy, auta i dom za 450 000 zł.">
+<meta property="og:image" content="https://trebaczew.io/og.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0d10">
+<link rel="icon" href="__FAVICON__">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600&family=Barlow:wght@400;500;600&display=swap">
 <style>
@@ -101,12 +109,101 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b0d10;color:var(--in
 @media (max-width:760px){ #bWeather,#bSeason,#bQual{display:none} }
 #dead{position:fixed;inset:0;z-index:8;display:grid;place-items:center;background:rgba(0,0,0,.45);font-family:var(--font-display);font-size:min(16vw,110px);color:#b81d1d;letter-spacing:.06em;text-shadow:0 4px 0 #000;pointer-events:none}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#0b0d10;z-index:20;font-family:var(--font-display);font-size:30px;letter-spacing:.05em;color:#f2f2f2}
+
+/* === układ: minimapa lewy górny, przyciski obok, czat lewy dolny, pomoc prawy dolny === */
+.radarBox{left:max(16px,env(safe-area-inset-left,0px))!important;top:calc(14px + env(safe-area-inset-top,0px))!important;bottom:auto!important}
+.tl{left:calc(max(16px,env(safe-area-inset-left,0px)) + 246px)!important;max-width:calc(100vw - 560px)!important}
+#lvlBox{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:20px;letter-spacing:.04em;color:#ffd23a;text-shadow:0 2px 3px #000}
+#lvlBox .xp{flex:1;height:7px;background:rgba(0,0,0,.6);border:1px solid rgba(0,0,0,.8)}
+#lvlBox .xp i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23a,#ff9a2e);transition:width .4s}
+#chatLog{left:max(16px,env(safe-area-inset-left,0px))!important;bottom:calc(76px + env(safe-area-inset-bottom,0px))!important;max-width:min(460px,70vw)!important}
+#chatRow{left:max(16px,env(safe-area-inset-left,0px))!important;transform:none!important;bottom:calc(22px + env(safe-area-inset-bottom,0px))!important;width:min(460px,calc(100vw - 32px))!important}
+.help{left:auto!important;right:max(22px,env(safe-area-inset-right,0px))!important;bottom:calc(110px + env(safe-area-inset-bottom,0px))!important}
+.mapTools{display:flex;gap:6px;align-items:center}
+#bigmap{cursor:grab;touch-action:none}
+@media (pointer:coarse){ .radarBox{width:150px!important} #radar{width:150px;height:100px} .tl{left:calc(max(12px,env(safe-area-inset-left,0px)) + 164px)!important;max-width:calc(100vw - 330px)!important} #chatLog{bottom:calc(170px + env(safe-area-inset-bottom,0px))!important} #chatRow{bottom:calc(170px + env(safe-area-inset-bottom,0px))!important} }
+
+/* === menu główne / pauza === */
+body.inmenu .hud, body.inmenu .tbtns, body.inmenu #joy, body.inmenu .help, body.inmenu #chatRow{display:none!important}
+#menu{position:fixed;inset:0;z-index:30;display:flex;align-items:stretch;background:linear-gradient(90deg,rgba(6,8,10,.94) 0%,rgba(6,8,10,.72) 34%,rgba(6,8,10,.05) 72%);font-family:var(--font-ui)}
+#menu.pause{background:rgba(6,8,10,.62);backdrop-filter:blur(3px)}
+.menuL{padding:calc(6vh + env(safe-area-inset-top,0px)) 5vw calc(4vh + env(safe-area-inset-bottom,0px)) max(5vw,env(safe-area-inset-left,0px));display:flex;flex-direction:column;justify-content:center;gap:4px;width:min(560px,100%);box-sizing:border-box}
+.mKick{font-family:var(--font-sign);font-weight:700;font-size:clamp(18px,2.2vw,24px);letter-spacing:.32em;color:var(--accent);text-transform:uppercase;margin-left:4px}
+.mTitle{margin:0 0 4px;font-family:var(--font-display);font-weight:400;font-size:clamp(50px,8vw,104px);line-height:.88;letter-spacing:.01em;color:#fff;text-shadow:0 5px 0 #000,0 0 40px rgba(0,0,0,.6)}
+.mSub{margin:0 0 4vh 4px;color:var(--muted);font-size:15px}
+.mItem{all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--font-sign);font-weight:700;font-size:clamp(25px,3vw,34px);text-transform:uppercase;letter-spacing:.04em;color:#e3e0d7;padding:5px 0 5px 18px;border-left:5px solid transparent;display:flex;align-items:baseline;gap:12px;transition:background .15s,color .15s}
+.mItem:hover,.mItem:focus-visible,.mItem.sel{color:#fff;border-left-color:var(--accent);background:linear-gradient(90deg,rgba(242,194,48,.2),rgba(242,194,48,0) 80%)}
+.mItem small{font-family:var(--font-ui);font-weight:500;font-size:14px;letter-spacing:0;text-transform:none;color:var(--muted)}
+.mItem[aria-disabled="true"]{color:#6d7277;cursor:not-allowed;background:none;border-left-color:transparent}
+.mFoot{margin-top:4vh;display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:#7d858c;font-size:12.5px}
+.mPanel{position:absolute;right:max(28px,4vw);top:50%;transform:translateY(-50%);width:min(500px,calc(100vw - 32px));max-height:88vh;overflow:auto;box-sizing:border-box;background:rgba(12,14,16,.93);border:1px solid var(--line);border-top:4px solid var(--accent);padding:20px 22px;color:var(--ink)}
+.mPanel h2{margin:0 0 12px;font-family:var(--font-display);font-weight:400;font-size:30px;letter-spacing:.03em}
+.mPanel h3{margin:16px 0 6px;font-family:var(--font-sign);font-size:17px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.mPanel label{display:block;font-size:14px;color:var(--muted);margin:10px 0 5px}
+.kRow{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:15px}
+.kRow button{min-width:96px}
+.kRow button.wait{background:var(--accent);color:#111}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{all:unset;cursor:pointer;padding:6px 11px;border:1px solid var(--line);border-radius:3px;font-family:var(--font-sign);font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.chips button[aria-pressed="true"]{background:var(--accent);color:#111;border-color:var(--accent)}
+.sw{display:flex;flex-wrap:wrap;gap:7px}
+.sw button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.25);box-sizing:border-box}
+.sw button[aria-pressed="true"]{border:3px solid #fff;box-shadow:0 0 0 2px var(--accent)}
+.mPanel input[type=text],.mPanel textarea,.mPanel select{width:100%;box-sizing:border-box;background:rgba(255,255,255,.08);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:8px 10px;font:inherit;font-size:15px}
+.mPanel textarea{min-height:110px;resize:vertical}
+.mRow{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.mRow .btn,.mRow a.btn{text-decoration:none;font-size:17px;padding:8px 14px}
+.btn.pri{background:var(--accent);color:#111;border-color:var(--accent)}
+.note{font-size:13px;color:#8b949c;margin-top:8px;line-height:1.45}
+@media (max-width:760px){ #menu{background:rgba(6,8,10,.8)} .menuL{width:100%;padding-left:max(18px,env(safe-area-inset-left,0px))} #menu.panel .menuL{display:none}
+  .mPanel{right:auto;left:50%;transform:translateX(-50%);top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-height:62vh} #menu.creator .mPanel{max-height:52vh} #menu.creator{background:linear-gradient(0deg,rgba(6,8,10,.9) 50%,rgba(6,8,10,0) 70%)} }
+#menu.creator .menuL{display:none}
+#menu.creator{background:linear-gradient(270deg,rgba(6,8,10,.75) 0%,rgba(6,8,10,.35) 45%,rgba(6,8,10,0) 70%)}
+@media (max-width:1100px){ #menu.panel .menuL{display:none} #menu.panel{background:rgba(6,8,10,.55)} #menu.creator{background:linear-gradient(270deg,rgba(6,8,10,.75) 0%,rgba(6,8,10,0) 70%)} }
+@media (max-width:760px){ #menu.creator{background:linear-gradient(0deg,rgba(6,8,10,.9) 45%,rgba(6,8,10,0) 65%)} }
+#bWeather,#bSeason,#bSound,#bQual{display:none!important}
+#toast kbd{font-family:var(--font-ui);font-size:18px;background:#f2f2f2;color:#111;border-radius:3px;padding:0 6px;text-shadow:none}
+.mItem small{white-space:nowrap}
+.menuL{overflow-y:auto}
+@media (max-height:520px){ .menuL{justify-content:flex-start;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:12px} .mKick{font-size:13px} .mTitle{font-size:46px;margin-bottom:2px} .mSub{display:none} .mItem{font-size:21px;padding:3px 0 3px 14px} .mFoot{margin-top:8px} .mPanel{max-height:calc(100vh - 20px)} }
+@media (pointer:coarse){ #bMenu,#bLog{display:none} }
+@media (pointer:coarse) and (max-height:520px){ .tbtns{bottom:calc(10px + env(safe-area-inset-bottom,0px));gap:6px} .tbtns .btn{width:54px;height:54px;font-size:12px} .tbtns.more{right:calc(82px + env(safe-area-inset-right,0px))} #joy{bottom:calc(14px + env(safe-area-inset-bottom,0px))} }
+#fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity .25s}
+#fade.on{opacity:1}
+/* dziennik misji (Q) */
+#questLog{position:fixed;z-index:12;inset:calc(6vh + env(safe-area-inset-top,0px)) max(4vw,16px) calc(6vh + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:minmax(240px,380px) 1fr;grid-template-rows:auto 1fr;background:rgba(10,12,14,.94);border:1px solid var(--line);border-top:4px solid var(--accent)}
+#questLog header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid var(--line)}
+#questLog header h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:30px;letter-spacing:.03em}
+#questLog header span{color:var(--muted);font-family:var(--font-sign);font-size:18px}
+#questLog header #qMoney{color:var(--money)}
+#questLog header .btn{margin-left:auto}
+#questLog .ql{overflow:auto;padding:6px 8px 14px;border-right:1px solid var(--line)}
+#questLog .ql h3{margin:12px 8px 4px;font-family:var(--font-sign);font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+#questLog .q{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:24px 1fr;gap:0 8px;width:100%;padding:6px 8px;border-radius:3px}
+#questLog .q:hover,#questLog .q.sel{background:rgba(255,255,255,.09)}
+#questLog .q .ic{grid-row:1/3;text-align:center;font-size:15px;padding-top:2px}
+#questLog .q .nm{font-family:var(--font-sign);font-weight:600;font-size:17px}
+#questLog .q .sb{font-size:12.5px;color:var(--muted)}
+#questLog .q.done .nm{color:#8fd47e} #questLog .q.lock{opacity:.5}
+#questLog .qd{overflow:auto;padding:18px 24px}
+#questLog .qd h2{margin:0 0 4px;font-family:var(--font-display);font-weight:400;font-size:36px;letter-spacing:.02em}
+#questLog .qd .meta{color:var(--accent);font-family:var(--font-sign);font-size:17px;margin:0 0 12px}
+#questLog .qd p{font-size:16px;line-height:1.5;max-width:60ch}
+@media (max-width:760px){ #questLog{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;inset:calc(8px + env(safe-area-inset-top,0px)) 8px calc(8px + env(safe-area-inset-bottom,0px))} #questLog .ql{border-right:0} #questLog .qd{border-top:1px solid var(--line);max-height:34vh} }
+#winScreen{position:fixed;inset:0;z-index:28;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,rgba(30,24,6,.75),rgba(0,0,0,.92));text-align:center}
+#winScreen h1{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(46px,9vw,110px);color:var(--accent);text-shadow:0 5px 0 #000;line-height:.95}
+#winScreen p{font-family:var(--font-sign);font-size:22px;color:#eee}
+#nameTxt{font-family:var(--font-sign);font-size:15px;color:#fff;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+.tbtns.more{right:calc(104px + env(safe-area-inset-right,0px))}
 </style>
 
 <canvas id="c" tabindex="0" aria-label="Trójwymiarowa gra: Trębaczew"></canvas>
 <div id="load">WCZYTYWANIE TRĘBACZEWA…</div>
+<div id="fade"></div>
 
 <div class="hud tl">
+  <button class="btn" id="bMenu" title="Esc">Menu</button>
+  <button class="btn" id="bLog" title="Klawisz Q">Misje</button>
   <button class="btn" id="bMap" title="Klawisz M">Mapa</button>
   <button class="btn" id="bCam" title="Klawisz C">Kamera</button>
   <button class="btn" id="bNight" title="Klawisz N">Noc</button>
@@ -135,26 +232,76 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b0d10;color:var(--in
 <div class="hud radarBox">
   <canvas id="radar" width="460" height="300" title="Kliknij, aby otworzyć mapę"></canvas>
   <div class="bars"><div class="bar"><i id="hpb" style="width:100%"></i></div><div class="bar"><i id="arb" style="width:60%"></i></div></div>
+  <div id="lvlBox"><span id="lvlTxt">POZIOM 1</span><span id="nameTxt"></span><div class="xp"><i id="xpb"></i></div></div>
 </div>
 
 <div class="hud loc" id="loc"><div id="locMain" class="outl">Zielona</div><div id="locSub" class="outl">Trębaczew</div></div>
 
 <div class="help" id="helpBox">
   <button class="x" id="hideHelp" aria-label="Ukryj pomoc">ukryj</button>
-  <h2>TRĘBACZEW</h2>
-  <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ruch · <kbd>Shift</kbd> sprint · mysz: rozglądanie<br>
-  <kbd>F</kbd> wsiądź / wysiądź (auto, rower, motor, ciągnik) · <kbd>Spacja</kbd> ręczny · <kbd>R</kbd> radio<br>
-  <kbd>E</kbd> misja / zakupy · żółte znaczniki to misje · <kbd>M</kbd> mapa · <kbd>C</kbd> kamera · <kbd>N</kbd> przewiń czas<br><kbd>T</kbd> czat z innymi graczami · <kbd>H</kbd> klakson (gra wieloosobowa)
+  <h2>SYMULATOR TRĘBACZEWA</h2>
+  <div id="helpKeys"></div>
   <div class="src">Ulice i budynki: © OpenStreetMap contributors (ODbL). Rzeźba terenu: NMT, działki: ULDK © GUGiK (geoportal.gov.pl). Część nazw z Google Maps.</div>
 </div>
 
 <div id="mapView" hidden>
   <h2>MAPA TRĘBACZEWA</h2>
   <div class="mapWrap"><canvas id="bigmap"></canvas><div id="poiList"></div></div>
-  <div class="mapNote">Kliknij na mapie lub wybierz miejsce, by się tam przenieść. <kbd>M</kbd> lub <button class="btn" id="closeMap">Zamknij</button></div>
+  <div class="mapNote mapTools"><button class="btn" id="mapZin">+</button><button class="btn" id="mapZout">−</button><button class="btn" id="mapMe">Ja</button><span>Kółko myszy / dwa palce: przybliżanie · przeciąganie: przesuwanie · kliknięcie: przeniesienie się</span><button class="btn" id="closeMap">Zamknij · M</button></div>
+</div>
+
+
+<div id="questLog" hidden role="dialog" aria-label="Dziennik misji">
+  <header><h2>DZIENNIK MISJI</h2><span id="qLvl"></span><span id="qMoney"></span><button class="btn" id="qClose">Zamknij · Q</button></header>
+  <div class="ql"></div><div class="qd"></div>
+</div>
+<div id="winScreen" hidden><div><h1>WŁASNY KĄT<br>W TRĘBACZEWIE</h1><p class="stats"></p><p>Ukończyłeś Symulator Trębaczewa. Możesz grać dalej i robić misje poboczne.</p><button class="btn pri" id="winOk" style="font-size:20px;padding:10px 18px">Graj dalej</button></div></div>
+
+<div id="menu" role="dialog" aria-label="Menu główne">
+  <div class="menuL">
+    <div class="mKick">Symulator</div>
+    <h1 class="mTitle">TRĘBACZEWA</h1>
+    <p class="mSub">gm. Działoszyn · pow. pajęczański · 51°07′ N 18°55′ E</p>
+    <button class="mItem" id="mPlay">Tryb jednoosobowy <small id="mPlaySub"></small></button>
+    <button class="mItem" id="mMulti" aria-disabled="true" title="Wkrótce">Tryb wieloosobowy <small>wkrótce</small></button>
+    <button class="mItem" id="mOpt">Opcje</button>
+    <button class="mItem" id="mChar">Kreator postaci</button>
+    <button class="mItem" id="mNew" hidden>Nowa gra</button>
+    <div class="mFoot"><button class="btn" id="mBug">Zgłoś błąd</button><span>Dane: © OpenStreetMap, © GUGiK</span></div>
+  </div>
+  <div class="mPanel" id="pOpt" hidden>
+    <h2>OPCJE</h2>
+    <h3>Sterowanie</h3><div id="keyList"></div>
+    <div class="mRow"><button class="btn" id="kReset">Przywróć domyślne</button></div>
+    <h3>Grafika i dźwięk</h3>
+    <div class="chips" id="qChips"><button data-q="1">Wysoka</button><button data-q="0">Niska (telefon)</button></div>
+    <label for="sensIn">Czułość myszy</label><input type="range" id="sensIn" min="0.4" max="2" step="0.1" style="width:100%">
+    <h3>Świat</h3><div class="mRow" style="margin-top:4px"><button class="btn" id="oWeather">Pogoda</button><button class="btn" id="oSeason">Pora roku</button></div>
+    <div class="mRow"><button class="btn" id="oSound">Dźwięk</button><button class="btn pri" data-back>Gotowe</button></div>
+  </div>
+  <div class="mPanel" id="pChar" hidden>
+    <h2>KREATOR POSTACI</h2>
+    <label for="cName">Imię</label><input type="text" id="cName" maxlength="20" placeholder="np. Tomek">
+    <label>Płeć</label><div class="chips" id="cSex"><button data-v="m">Mężczyzna</button><button data-v="k">Kobieta</button></div>
+    <label>Fryzura</label><div class="chips" id="cHair"></div>
+    <label>Kolor włosów</label><div class="sw" id="cHairC"></div>
+    <label>Karnacja</label><div class="sw" id="cSkin"></div>
+    <label>Ubranie</label><div class="chips" id="cStyle"></div>
+    <label>Kolor góry</label><div class="sw" id="cTop"></div>
+    <label>Kolor spodni</label><div class="sw" id="cBot"></div>
+    <div class="mRow"><button class="btn" id="cRand">Losuj</button><button class="btn pri" data-back>Zapisz postać</button></div>
+  </div>
+  <div class="mPanel" id="pBug" hidden>
+    <h2>ZGŁOŚ BŁĄD</h2>
+    <label for="bCat">Czego dotyczy?</label><select id="bCat"><option>Grafika / budynki</option><option>Sterowanie</option><option>Misje</option><option>Pojazdy / kolizje</option><option>Telefon</option><option>Inne</option></select>
+    <label for="bTxt">Opisz, co się stało</label><textarea id="bTxt" maxlength="1500" placeholder="Co robiłeś, co się stało, czego się spodziewałeś…"></textarea>
+    <div class="mRow"><a class="btn pri" id="bSend" href="#" target="_blank" rel="noopener">Wyślij przez GitHub</a><button class="btn" data-back>Anuluj</button></div>
+    <p class="note">Otworzy się formularz zgłoszenia w repozytorium gry na GitHubie, z dołączonym opisem, Twoją pozycją w grze i typem urządzenia. Do wysłania potrzebne jest konto GitHub.</p>
+  </div>
 </div>
 
 <div id="joy"><div id="knob"></div></div>
+<div class="tbtns more"><button class="btn" id="bJump">Skok</button><button class="btn" id="bLogT">Misje</button><button class="btn" id="bMenuT">Menu</button></div>
 <div class="tbtns"><button class="btn" id="bAct">Akcja</button><button class="btn" id="bEnter">Auto</button><button class="btn" id="bRadio">Radio</button><button class="btn" id="run">Bieg</button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

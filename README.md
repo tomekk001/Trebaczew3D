@@ -1,31 +1,41 @@
-# Trębaczew 3D
+# Symulator Trębaczewa
 
-Gra 3D w stylu GTA, w której można chodzić i jeździć po prawdziwym Trębaczewie (gm. Działoszyn, pow. pajęczański). Ulice, budynki, działki i rzeźba terenu pochodzą z otwartych danych, a charakterystyczne miejsca (Lewiatan, Żabka, kościół, apteka, park, przedszkole, OSP, cmentarz) odwzorowano ze zdjęć.
+Gra 3D w stylu GTA (dawniej „Trębaczew 3D”), w której można chodzić i jeździć po prawdziwym Trębaczewie (gm. Działoszyn, pow. pajęczański). Ulice, budynki, działki i rzeźba terenu pochodzą z otwartych danych, a charakterystyczne miejsca (Lewiatan, Żabka, kościół, apteka, park, przedszkole, OSP, cmentarz) odwzorowano ze zdjęć.
 
 Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.html`.
 
-## Sterowanie
+## Rozgrywka
+
+- **Menu główne**: tryb jednoosobowy, tryb wieloosobowy (wkrótce), opcje (przypisywanie klawiszy, grafika, czułość myszy), kreator postaci (płeć, imię, fryzura, kolory, ubranie) i przycisk „Zgłoś błąd”, który otwiera gotowe zgłoszenie w Issues tego repozytorium.
+- **Kampania**: 20 misji fabularnych odblokowywanych poziomami (1–10). Na początku awans jest szybki, później wolniejszy. Ostatnia misja to kupno domu za 450 000 zł, co kończy grę.
+- **Misje poboczne** (niebieskie znaczniki) dają pieniądze i trochę doświadczenia. Po ukończeniu wracają po 5 minutach.
+- **Dziennik misji** (Q): ukończone, dostępne i zablokowane misje z opisami; można zaznaczyć cel na radarze.
+- Do Lewiatana można wejść (E przy drzwiach). W środku są regały, lodówki, kasy z kasjerkami, kolejka i klienci.
+- Na Orlenie w Działoszynie (przy DK42) można zatankować.
+- Każdy dom ma płot z furtką, a przy podjazdach są bramy, które otwiera się klawiszem E.
+
+## Sterowanie (domyślne, można zmienić w Opcjach)
 
 | Klawisz | Akcja |
 |---|---|
 | W A S D / strzałki | ruch, w aucie gaz/hamulec/skręt |
 | Shift | sprint |
+| Spacja | skok, w aucie hamulec ręczny |
 | Mysz (przeciąganie), kółko | rozglądanie się, przybliżanie |
 | F | wsiądź / wysiądź (auto, motor, rower, ciągnik, wóz strażacki) |
-| Spacja | hamulec ręczny |
-| E | misja / zakupy w sklepie |
-| R | radio w aucie |
-| M | mapa |
+| E | akcja: misja, sklep, wejście do Lewiatana, brama, furtka |
+| Q | dziennik misji |
+| M | mapa (kółko lub dwa palce: przybliżanie, przeciąganie: przesuwanie) |
 | C | widok kamery |
-| N | przewiń czas |
-| T | czat (gra wieloosobowa) |
-| H | klakson słyszany przez innych graczy |
+| R | radio w aucie |
+| N | pora dnia |
+| Esc | pauza / menu |
 
-Na telefonie: wirtualny joystick i przyciski na ekranie.
+Na telefonie: wirtualny joystick i przyciski na ekranie (akcja, auto, radio, bieg, skok, misje, menu). Na urządzeniach dotykowych gra domyślnie startuje z niską jakością grafiki.
 
 ## Gra wieloosobowa
 
-Gdy gra jest otwarta jako artefakt w Claude, wszyscy, którzy mają ją otwartą w tej samej chwili, widzą się nawzajem (pozycja, pojazd, nick, czat). Działa to przez platformową funkcję `room` artefaktów Claude; przy zwykłym otwarciu pliku z dysku gra działa w trybie jednoosobowym.
+Kod gry wieloosobowej (funkcja `room` artefaktów Claude) jest w `src/game.js`, ale na razie jest wyłączony (`MP_ENABLED=false`). W menu ten tryb jest oznaczony jako „wkrótce”.
 
 ## Struktura
 
@@ -50,6 +60,10 @@ Po zmianach w `src/` uruchom:
 ```
 python3 build.py
 ```
+
+`python3 build.py --fragment plik.html` dodatkowo zapisuje samą zawartość strony (bez `<html>`/`<head>`), np. do wklejenia jako artefakt.
+
+`og.jpg` to grafika gry pokazywana przy udostępnianiu linku do trebaczew.io, a `src/favicon.png` to ikona karty przeglądarki.
 
 ## Obszar i aktualizacja danych
 
