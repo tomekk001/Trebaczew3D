@@ -7,6 +7,10 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b0d10">
 <link rel="icon" href="__FAVICON__">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="src/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600&family=Barlow:wght@400;500;600&display=swap">
 <style>
@@ -164,7 +168,11 @@ body.inmenu .hud, body.inmenu .tbtns, body.inmenu #joy, body.inmenu .help, body.
 #bWeather,#bSeason,#bSound,#bQual{display:none!important}
 #toast kbd{font-family:var(--font-ui);font-size:18px;background:#f2f2f2;color:#111;border-radius:3px;padding:0 6px;text-shadow:none}
 .mItem small{white-space:nowrap}
-.menuL{overflow-y:auto}
+.menuL{overflow-y:auto;justify-content:flex-start!important}
+.menuL>:first-child{margin-top:auto}
+.menuL>:last-child{margin-bottom:auto}
+.mTitle{line-height:1!important;padding-top:.04em}
+.mKick{line-height:1.3}
 @media (max-height:520px){ .menuL{justify-content:flex-start;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:12px} .mKick{font-size:13px} .mTitle{font-size:46px;margin-bottom:2px} .mSub{display:none} .mItem{font-size:21px;padding:3px 0 3px 14px} .mFoot{margin-top:8px} .mPanel{max-height:calc(100vh - 20px)} }
 @media (pointer:coarse){ #bLog,#bCam,#bNight{display:none!important} #bMenu{display:inline-block!important}
   .tbtns.more,#bEnter,#bJump,#bLogT{display:none!important}
@@ -277,6 +285,7 @@ body.inmenu .hud, body.inmenu .tbtns, body.inmenu #joy, body.inmenu .help, body.
     <button class="mItem" id="mOpt">Opcje</button>
     <button class="mItem" id="mChar">Kreator postaci</button>
     <button class="mItem" id="mNew" hidden>Nowa gra</button>
+    <button class="mItem" id="mInstall" hidden>Pobierz grę <small id="mInstallSub">działa bez przeglądarki</small></button>
     <div class="mFoot"><button class="btn" id="mBug">Zgłoś błąd</button><span>Dane: © OpenStreetMap, © GUGiK</span></div>
   </div>
   <div class="mPanel" id="pOpt" hidden>
