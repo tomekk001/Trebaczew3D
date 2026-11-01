@@ -1237,8 +1237,12 @@ async function boot(saved){
   for(let i=0;i<45;i++){ const w=pick(WALKS); const L=w.len[w.len.length-1]; const s=sampleLine(w.pts,w.len,R(0,L)); const m=new THREE.Mesh(cashGeo,cashMat); const y=H(s.x,s.z)+.9; m.position.set(s.x,y,s.z); scene.add(m); pickups.push({m,x:s.x,z:s.z,y,val:Math.round(R(1,10))*50}); }
 
   /* ---------- stan gry ---------- */
-  const zel=ROADS.find(r=>r.n==='Zielona'); const s0=sampleLine(zel.pts,zel.len,95); const so=(zel.w/2+1.35);
-  const st={x:saved.x??(s0.x-s0.tz*so), z:saved.z??(s0.z+s0.tx*so), yaw:saved.yaw??Math.atan2(s0.tx,s0.tz), pitch:0.22, dist:6.5, mode:saved.mode??0, night:!!saved.night, face:0, walk:0, run:false,
+  // punkt startu: ul. Szkolna przy szkole podstawowej, kamera skierowana na kościół
+  const SPAWN=(()=>{ const sc=centroid(SCHOOL.pts), ch=centroid(CHURCH.pts); let best=null; ROADS.filter(r=>r.n==='Szkolna'&&r.t!=='track').forEach(r=>{ for(let d=0;d<r.L;d+=2){ const q=sampleLine(r.pts,r.len,d); const dd=Math.hypot(q.x-sc[0],q.z-sc[1]); if(!best||dd<best.dd) best={q,dd,r}; } });
+    if(!best){ const zel=ROADS.find(r=>r.n==='Zielona'); const q=sampleLine(zel.pts,zel.len,95); return {x:q.x,z:q.z,yaw:Math.atan2(q.tx,q.tz)}; }
+    const q=best.q, o=best.r.w/2+1.35; let nx=-q.tz, nz=q.tx; if((sc[0]-q.x)*nx+(sc[1]-q.z)*nz<0){ nx=-nx; nz=-nz; } let x=q.x+nx*o, z=q.z+nz*o; if(blocked(x,z,.5)){ x=q.x+nx*(best.r.w/4); z=q.z+nz*(best.r.w/4); }
+    return {x,z,yaw:Math.atan2(x-ch[0],z-ch[1])}; })();
+  const st={x:saved.x??SPAWN.x, z:saved.z??SPAWN.z, yaw:saved.yaw??SPAWN.yaw, pitch:0.22, dist:6.5, mode:saved.mode??0, night:!!saved.night, face:saved.yaw===undefined?SPAWN.yaw+Math.PI:0, walk:0, run:false,
     money:saved.money??0, hp:100, wanted:0, wantedT:0, car:null, lastDrag:-9};
   st.face=st.yaw+Math.PI;
   const MODES=['za postacią','pierwsza osoba','z lotu ptaka'];
@@ -3211,7 +3215,7 @@ async function boot(saved){
     pickups.forEach(k=>{ if(k.got)return; k.m.rotation.y+=dt*2; k.m.position.y=k.y+Math.sin(tAll*3+k.x)*.12; if(Math.hypot(k.x-st.x,k.z-st.z)<(st.car?2.6:1.4)){ k.got=true; k.m.visible=false; addMoney(k.val); } });
     if(st.wanted>0){ st.wantedT+=dt; if(st.wantedT>25){ st.wanted--; st.wantedT=0; } }
     if(st.hp<=0&&!st.dead){ st.dead=2.5; if(st.car)exitCar(true); deadEl.hidden=false; }
-    if(st.dead){ st.dead-=dt; if(st.dead<=0){ st.dead=0; deadEl.hidden=true; st.hp=100; st.wanted=0; teleport(s0.x-s0.tz*so,s0.z+s0.tx*so); } }
+    if(st.dead){ st.dead-=dt; if(st.dead<=0){ st.dead=0; deadEl.hidden=true; st.hp=100; st.wanted=0; teleport(SPAWN.x,SPAWN.z); st.yaw=SPAWN.yaw; st.face=SPAWN.yaw+Math.PI; } }
     if(st.hp<100) st.hp=Math.min(100,st.hp+dt*1.5);
     if(shownMoney!==st.money){ shownMoney+=Math.sign(st.money-shownMoney)*Math.max(1,Math.ceil(Math.abs(st.money-shownMoney)*dt*6)); if(Math.abs(shownMoney-st.money)<2)shownMoney=st.money; moneyEl.textContent=fmt(shownMoney); }
     if(locTimer>0){ locTimer-=dt; if(locTimer<=0)locEl.classList.remove('on'); }
