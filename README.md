@@ -148,12 +148,13 @@ Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyt
 - `kosciol_in.py`: wnętrze kościoła (nawa w kształcie litery A, żebra, prezbiterium, ławki).
 - `regal_apteka.py`: regał z lekami.
 - `sklep.py`: regał z alkoholem, gondola, lodówka i lada Żabki.
+- `budynki.py`: budynki według zdjęć: Delikatesy Premium, dworzec PKP, Minerał, świetlica, ORLEN (sklep i wiata), Biedronka, Lidl. Można zbudować wybrane, np. `python3 tools/blender/budynki.py lidl orlen_wiata`.
 
 ```
-for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep}.py; do python3 $f; done
+for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep,budynki}.py; do python3 $f; done
 python3 tools/glb2js.py && python3 build.py
 ```
 
 ## Szybsze wczytywanie
 
-Na stronie modele wnętrz (kościół, apteka, Żabka, Lewiatan) leżą w osobnym pliku `models_in.js`, doczytywanym w tle. Gra startuje z mniejszego `index.html` (około 2,6 MB zamiast 4,2 MB). Przy wejściu do budynku gra czeka na modele najwyżej kilka sekund. Wersja do artefaktu (`--fragment`) ma wszystko w jednym pliku.
+Na stronie modele wnętrz (kościół, apteka, Żabka, Lewiatan) i budynki z `budynki.py` leżą w osobnym pliku `models_in.js`, doczytywanym w tle. Do czasu wczytania te budynki stoją w prostszej wersji, a potem gra sama podmienia je na modele. Gra startuje z mniejszego `index.html` (około 2,6 MB zamiast 4,2 MB). Przy wejściu do budynku gra czeka na modele najwyżej kilka sekund. Wersja do artefaktu (`--fragment`) ma wszystko w jednym pliku.

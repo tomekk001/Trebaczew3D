@@ -21,8 +21,9 @@ out_in = ['/* modele wnętrz – doczytywane osobno (na stronie) albo wklejone (
 for p in sorted((root / 'src' / 'models').glob('*.glb')):
     P, N, U, I, jpg = load(p); n = len(P)
     pad = lambda x: x + b'\0' * (-len(x) % 4)
-    blob = pad(np.round(P * 1000).astype('<i2').tobytes()) + pad(np.round(np.clip(N, -1, 1) * 127).astype('i1').tobytes()) + pad(np.round(np.clip(U, 0, 1) * 65535).astype('<u2').tobytes()) + I.astype('<u2').tobytes()
-    line = f"MODELS[{json.dumps(p.stem)}]={{n:{n},i:{len(I)},g:'{base64.b64encode(blob).decode()}',t:'{base64.b64encode(jpg).decode()}'}};"
+    q = 1000 if np.abs(P).max() < 32.7 else 500   # pozycje w mm, a dla dużych brył (np. Lidl 67 m) co 2 mm
+    blob = pad(np.round(P * q).astype('<i2').tobytes()) + pad(np.round(np.clip(N, -1, 1) * 127).astype('i1').tobytes()) + pad(np.round(np.clip(U, 0, 1) * 65535).astype('<u2').tobytes()) + I.astype('<u2').tobytes()
+    line = f"MODELS[{json.dumps(p.stem)}]={{n:{n},i:{len(I)},{'' if q == 1000 else f'q:{q},'}g:'{base64.b64encode(blob).decode()}',t:'{base64.b64encode(jpg).decode()}'}};"
     (out if p.stem in OUTSIDE else out_in).append(line)
     print(p.name, n, 'wierzch.', len(I) // 3, 'trójk.', len(blob) // 1024, 'kB geometrii', len(jpg) // 1024, 'kB tekstury')
 (root / 'src' / 'data_m.js').write_text('\n'.join(out) + '\n', encoding='utf-8')
