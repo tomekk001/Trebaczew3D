@@ -15,11 +15,15 @@ def load(p):
     pr = j['meshes'][0]['primitives'][0]; at = pr['attributes']
     img = j['images'][0]; v = j['bufferViews'][img['bufferView']]; jpg = b[bin0 + v.get('byteOffset', 0): bin0 + v.get('byteOffset', 0) + v['byteLength']]
     return acc(at['POSITION']), acc(at['NORMAL']), acc(at['TEXCOORD_0']), acc(pr['indices']).ravel(), jpg
+OUTSIDE = {'lewiatan', 'kosciol', 'dzwonnica'}   # potrzebne od startu; reszta (wnętrza) jest doczytywana
 out = ['/* modele 3D z Blendera (tools/blender) – wygenerowane przez tools/glb2js.py */', 'const MODELS={};']
+out_in = ['/* modele wnętrz – doczytywane osobno (na stronie) albo wklejone (artefakt) */']
 for p in sorted((root / 'src' / 'models').glob('*.glb')):
     P, N, U, I, jpg = load(p); n = len(P)
     pad = lambda x: x + b'\0' * (-len(x) % 4)
     blob = pad(np.round(P * 1000).astype('<i2').tobytes()) + pad(np.round(np.clip(N, -1, 1) * 127).astype('i1').tobytes()) + pad(np.round(np.clip(U, 0, 1) * 65535).astype('<u2').tobytes()) + I.astype('<u2').tobytes()
-    out.append(f"MODELS[{json.dumps(p.stem)}]={{n:{n},i:{len(I)},g:'{base64.b64encode(blob).decode()}',t:'{base64.b64encode(jpg).decode()}'}};")
+    line = f"MODELS[{json.dumps(p.stem)}]={{n:{n},i:{len(I)},g:'{base64.b64encode(blob).decode()}',t:'{base64.b64encode(jpg).decode()}'}};"
+    (out if p.stem in OUTSIDE else out_in).append(line)
     print(p.name, n, 'wierzch.', len(I) // 3, 'trójk.', len(blob) // 1024, 'kB geometrii', len(jpg) // 1024, 'kB tekstury')
 (root / 'src' / 'data_m.js').write_text('\n'.join(out) + '\n', encoding='utf-8')
+(root / 'src' / 'data_m_in.js').write_text('\n'.join(out_in) + "\nwindow.MODELS_IN=true; window.dispatchEvent(new Event('modele'));\n", encoding='utf-8')

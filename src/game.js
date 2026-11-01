@@ -379,7 +379,7 @@ async function boot(saved){
     const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('normal',new THREE.BufferAttribute(nor,3)); g.setAttribute('uv',new THREE.BufferAttribute(uv,2)); g.setIndex(new THREE.BufferAttribute(new Uint16Array(I),1)); g.computeBoundingSphere();
     const t=new THREE.Texture(); t.flipY=false; t.anisotropy=8; const im=new Image(); im.onload=()=>{ t.image=im; t.needsUpdate=true; }; im.src='data:image/jpeg;base64,'+M.t;
     const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({map:t,color:0xffffff})); m.castShadow=m.receiveShadow=true; return m; }catch(e){ console.warn('model',name,e); return null; } }
-  const MPROTO={}; function modelClone(name){ if(!(name in MPROTO)) MPROTO[name]=modelMesh(name); const m=MPROTO[name]; return m?m.clone():null; }
+  const MPROTO={}; function modelClone(name){ if(!MPROTO[name]) MPROTO[name]=modelMesh(name); const m=MPROTO[name]; return m?m.clone():null; }
   const LEW_LOT={};
   function buildLewiatan(b){ const f0=rotFront(b,frontSide(b,ROAD_SZK)); const f={...f0,x:2*b.x-f0.x,z:2*b.z-f0.z,nx:-f0.nx,nz:-f0.nz,rot:f0.rot+Math.PI}; const L=f.len, D=f.dep, FZ=D/2; const g=new THREE.Group(); g.position.set(b.x,b.hc,b.z); g.rotation.y=f.rot; scene.add(g); b.front=f;
     const low=b.hmin-0.4-b.hc, WH=3.4, XS=.6*L/16.5, VZ=FZ+2.2, w=L2W(b.x,b.z,f.rot);
@@ -1553,14 +1553,14 @@ async function boot(saved){
     const g=new THREE.Group(); g.position.set(m.cx,y0,m.cz); g.rotation.y=-m.an; scene.add(g); const wM=new THREE.MeshLambertMaterial({color:0xffffff});
     [-1,1].forEach(s=>{ const gx=s*(m.w/2-1); [-3.66,3.66].forEach(z=>bx(g,.12,2.44,.12,gx,0,z,wM)); bx(g,.12,.12,7.44,gx,2.44,0,wM); });
     // trybunka i budynek klubowy
-    const seatM=new THREE.MeshLambertMaterial({color:0x1f5fb4}); for(let r=0;r<4;r++) bx(g,26,.4,.8,0,r*.4,-m.d/2-2-r*.8,r%2?seatM:new THREE.MeshLambertMaterial({color:0xc8261e}));
-    const rf=new THREE.Mesh(new THREE.BoxGeometry(28,.15,4),new THREE.MeshLambertMaterial({color:0x5c666c})); rf.position.set(0,4.2,-m.d/2-3.4); rf.rotation.x=-.12; g.add(rf); [-13,0,13].forEach(x=>bx(g,.15,4.2,.15,x,0,-m.d/2-5.2,poleM));
+    const seatM=new THREE.MeshLambertMaterial({color:0x1f5fb4}); for(let r=0;r<3;r++) bx(g,26,.4,.8,0,r*.4,-m.d/2-2-r*.8,r%2?seatM:new THREE.MeshLambertMaterial({color:0xc8261e}));
+    /* trybuna bez dachu – jak na zdjęciu */
     const club=new THREE.Group(); club.position.set(m.w/2+8,0,-m.d/2+4); g.add(club); bx(club,8,3.2,12,0,-1,0,new THREE.MeshLambertMaterial({color:0xe9e2cf,map:plasterTex})); const cr=new THREE.Mesh(gabGeo,new THREE.MeshLambertMaterial({color:0x7a3226,map:tileTex})); cr.rotation.y=Math.PI/2; cr.scale.set(12.6,2.2,8.6); cr.position.y=2.2; club.add(cr);
     const lzs=tex(512,96,(x,w,h)=>{ x.fillStyle='#c8261e'; x.fillRect(0,0,w,h); x.fillStyle='#fff'; x.font='700 56px Barlow, Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LZS TRĘBACZEW',w/2,h/2+2); }); pl(club,6,1.1,-4.02,2.2,0,new THREE.MeshLambertMaterial({map:lzs}),-Math.PI/2);
     g.traverse(o=>{ if(o.isMesh)o.castShadow=true; });
     // ---- kibice z biało-czerwonymi szalikami, zawodnicy z piłkami, barierka, brama LZS i kapliczka ----
     { const scarfT=tex(256,48,(x,w,h)=>{ for(let i=0;i<16;i++){ x.fillStyle=i%2?'#ffffff':'#c8261e'; x.fillRect(i*16,0,16,h); } x.fillStyle='#c8261e'; x.fillRect(40,8,176,32); x.fillStyle='#fff'; x.font='800 22px Barlow, Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LZS TRĘBACZEW',128,25); });
-      const fans=[]; for(let r=0;r<4;r++) for(let xx=-12.4;xx<=12.4;xx+=.85){ if(rnd()<.28)continue; fans.push({x:xx+R(-.12,.12),y:r*.4+.4,z:-m.d/2-2-r*.8,ph:R(0,6.28),scarf:rnd()<.72}); }
+      const fans=[]; for(let r=0;r<3;r++) for(let xx=-12.4;xx<=12.4;xx+=.85){ if(rnd()<.28)continue; fans.push({x:xx+R(-.12,.12),y:r*.4+.4,z:-m.d/2-2-r*.8,ph:R(0,6.28),scarf:rnd()<.72}); }
       const bodyIM=new THREE.InstancedMesh(new THREE.CylinderGeometry(.2,.24,.78,8).translate(0,.39,0),new THREE.MeshLambertMaterial({color:0xffffff}),fans.length);
       const headIM=new THREE.InstancedMesh(new THREE.SphereGeometry(.13,8,6),new THREE.MeshLambertMaterial({color:0xffffff}),fans.length);
       const sc=fans.filter(f=>f.scarf); const scarfIM=new THREE.InstancedMesh(new THREE.PlaneGeometry(1.25,.24),new THREE.MeshLambertMaterial({map:scarfT,side:THREE.DoubleSide}),Math.max(1,sc.length));
@@ -1571,14 +1571,20 @@ async function boot(saved){
       sc.forEach((f,j)=>{ armIM.setColorAt(j*2,cl.set('#e6bb98')); armIM.setColorAt(j*2+1,cl.set('#e6bb98')); });
       [bodyIM,headIM,scarfIM,armIM].forEach(o=>{ o.castShadow=true; g.add(o); });
       // trybuna: betonowe stopnie, ściana tylna, boki
-      const conc=new THREE.MeshLambertMaterial({color:0xa9a59c,map:plasterTex}); bx(g,28,.4,4.2,0,-.2,-m.d/2-3.2,conc); bx(g,28,2.4,.25,0,0,-m.d/2-5.35,conc); [-14.1,14.1].forEach(x=>bx(g,.25,2.2,4.2,x,0,-m.d/2-3.2,conc));
+      const conc=new THREE.MeshLambertMaterial({color:0xa9a59c,map:plasterTex}); bx(g,27,.3,3.2,0,-.2,-m.d/2-2.8,conc);
       const ban=tex(512,64,(x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#c8261e'; x.fillRect(0,h/2,w,h/2); x.fillStyle='#173e93'; x.font='800 30px Barlow, Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LZS TRĘBACZEW  ·  JESTEŚMY Z WAMI!',w/2,h/2); });
       pl(g,18,1.0,0,.55,-m.d/2-1.55,new THREE.MeshLambertMaterial({map:ban}));
-      // barierka wokół boiska (biało-czerwone rury)
-      const railM=new THREE.MeshLambertMaterial({color:0xf2f2f2}), railR=new THREE.MeshLambertMaterial({color:0xc8261e}); const rw=m.w/2+2.2, rd=m.d/2+1.6;
-      [[0,-rd,2*rw,0],[0,rd,2*rw,0],[-rw,0,2*rd,1],[rw,0,2*rd,1]].forEach(([x,z,L,rot],k)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(rot?.06:L,.06,rot?L:.06),k%2?railR:railM); b.position.set(x,1.0,z); g.add(b); const b2=b.clone(); b2.position.y=.55; g.add(b2); });
-      const posts=[]; for(let x=-rw;x<=rw;x+=3){ posts.push([x,-rd],[x,rd]); } for(let z=-rd;z<=rd;z+=3){ posts.push([-rw,z],[rw,z]); }
-      const pIM=new THREE.InstancedMesh(new THREE.CylinderGeometry(.04,.04,1.05,6).translate(0,.52,0),railM,posts.length); posts.forEach(([x,z],i)=>{ V.set(x,0,z); M4.compose(V,Q,S1); pIM.setMatrixAt(i,M4); }); g.add(pIM);
+      // piłkochwyty (wysokie słupy z siatką) za bramkami i wzdłuż boku – jak na zdjęciu
+      const netT=tex(64,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='rgba(40,48,40,.9)'; x.lineWidth=1.2; for(let i=0;i<=w;i+=8){ x.beginPath(); x.moveTo(i,0); x.lineTo(i,h); x.stroke(); x.beginPath(); x.moveTo(0,i); x.lineTo(w,i); x.stroke(); } },true);
+      const poleW=new THREE.MeshLambertMaterial({color:0xf2f2f2}); const netRun=(x0,z0,x1,z1,Hn)=>{ const L=Math.hypot(x1-x0,z1-z0); const t=netT.clone(); t.needsUpdate=true; t.repeat.set(L/1.5,Hn/1.5); const nm=new THREE.Mesh(new THREE.PlaneGeometry(L,Hn),new THREE.MeshLambertMaterial({map:t,transparent:true,alphaTest:.3,side:THREE.DoubleSide})); nm.position.set((x0+x1)/2,Hn/2,(z0+z1)/2); nm.rotation.y=-Math.atan2(z1-z0,x1-x0); g.add(nm);
+        const n=Math.max(1,Math.round(L/5)); for(let i=0;i<=n;i++){ const pp=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,Hn+.3,8).translate(0,(Hn+.3)/2,0),poleW); pp.position.set(x0+(x1-x0)*i/n,0,z0+(z1-z0)*i/n); pp.castShadow=true; g.add(pp); } };
+      [-1,1].forEach(sd=>netRun(sd*(m.w/2+4),-m.d/2+2,sd*(m.w/2+4),m.d/2-2,8)); netRun(m.w/2-24,m.d/2+5,m.w/2+4,m.d/2+5,6);
+      // czerwone siatki w bramkach i chorągiewki narożne
+      const redNet=new THREE.MeshLambertMaterial({color:0xc8261e,transparent:true,opacity:.55,side:THREE.DoubleSide}); [-1,1].forEach(sd=>{ const gx=sd*(m.w/2-1); const back=new THREE.Mesh(new THREE.PlaneGeometry(7.32,2.44),redNet); back.position.set(gx+sd*1.6,1.22,0); back.rotation.y=Math.PI/2; g.add(back); [-3.66,3.66].forEach(z=>{ const sdn=new THREE.Mesh(new THREE.PlaneGeometry(1.6,2.44),redNet); sdn.position.set(gx+sd*.8,1.22,z); g.add(sdn); }); const top=new THREE.Mesh(new THREE.PlaneGeometry(1.6,7.32).rotateX(-Math.PI/2).rotateY(Math.PI/2),redNet); top.position.set(gx+sd*.8,2.44,0); g.add(top); });
+      const flagT=tex(16,16,(x)=>{ x.fillStyle='#f2c230'; x.fillRect(0,0,16,8); x.fillStyle='#c8261e'; x.fillRect(0,8,16,8); }); [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([a,b])=>{ const fx=a*(m.w/2-.8), fz=b*(m.d/2-.6); const pp=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.5,6).translate(0,.75,0),poleW); pp.position.set(fx,0,fz); g.add(pp); const fl=new THREE.Mesh(new THREE.PlaneGeometry(.45,.32),new THREE.MeshLambertMaterial({map:flagT,side:THREE.DoubleSide})); fl.position.set(fx+.23,1.32,fz); g.add(fl); });
+      // rząd topoli za trybuną
+      { const pop=new THREE.InstancedMesh(new THREE.SphereGeometry(1,8,7).scale(1.6,6,1.6).translate(0,6.5,0),new THREE.MeshLambertMaterial({color:0xffffff}),26); const M5=new THREE.Matrix4(), cl2=new THREE.Color(); for(let i=0;i<26;i++){ const s2=R(.85,1.15); M5.compose(new THREE.Vector3(-m.w/2-6+i*(m.w+12)/25+R(-1,1),0,-m.d/2-8.5+R(-1,1)),new THREE.Quaternion(),new THREE.Vector3(s2,R(.85,1.2),s2)); pop.setMatrixAt(i,M5); pop.setColorAt(i,cl2.setHSL(R(.24,.3),R(.4,.55),R(.25,.33))); } pop.castShadow=true; g.add(pop);
+        const trk=new THREE.InstancedMesh(new THREE.CylinderGeometry(.18,.25,2.6,6).translate(0,1.3,0),new THREE.MeshLambertMaterial({color:0x5e4632}),26); for(let i=0;i<26;i++){ const e=new THREE.Matrix4(); pop.getMatrixAt(i,e); const v=new THREE.Vector3().setFromMatrixPosition(e); M5.makeTranslation(v.x,0,v.z); trk.setMatrixAt(i,M5); } g.add(trk); }
       // ławki rezerwowych
       [-6,6].forEach(x=>{ bx(g,4,.45,.6,x,0,m.d/2+3,new THREE.MeshLambertMaterial({color:0x2b2f36})); const roof=new THREE.Mesh(new THREE.CylinderGeometry(1,1,4,10,1,true,0,Math.PI).rotateZ(Math.PI/2).rotateY(Math.PI),new THREE.MeshPhongMaterial({color:0x9fc3d6,transparent:true,opacity:.55,side:THREE.DoubleSide})); roof.position.set(x,.9,m.d/2+3.2); g.add(roof); });
       // zawodnicy: drybling, podania, bramkarz
@@ -1598,24 +1604,31 @@ async function boot(saved){
       const W2=L2W(m.cx,m.cz,-m.an); let best=null,bd=1e9; ROADS.forEach(r=>{ if(['track','rail','path','foot','footway'].includes(r.t)||!r.L)return; for(let d=0;d<r.L;d+=2){ const q=sampleLine(r.pts,r.len,d); const dd=Math.hypot(q.x-m.cx,q.z-m.cz); if(dd<bd){ bd=dd; best={r,q}; } } });
       if(best){ const q=best.q; let dx=m.cx-q.x, dz=m.cz-q.z; const dl=Math.hypot(dx,dz)||1; dx/=dl; dz/=dl; const off=best.r.w/2+3.2; const gx=q.x+dx*off, gz=q.z+dz*off, gy=H(gx,gz); const ang=Math.atan2(dx,dz);
         const gate=new THREE.Group(); gate.position.set(gx,gy,gz); gate.rotation.y=ang; scene.add(gate); STAD.gate=[gx,gz];
-        const red=new THREE.MeshLambertMaterial({color:0xc8261e,map:plasterTex}), wht=new THREE.MeshLambertMaterial({color:0xf3f1ec,map:plasterTex}), iron=new THREE.MeshLambertMaterial({color:0x2a2d30});
-        [-3.6,3.6].forEach(x=>{ bx(gate,.7,3.2,.7,x,0,0,wht); bx(gate,.76,.5,.76,x,0,0,red); bx(gate,.8,.18,.8,x,3.2,0,red); const wp=[gx+Math.cos(ang)*x,gz-Math.sin(ang)*x]; addSolid({x:wp[0],z:wp[1],hw:.4,hd:.4,c:1,s:0,r:.6}); });
-        const sT=tex(1024,128,(x,w,h)=>{ x.fillStyle='#c8261e'; x.fillRect(0,0,w,h); x.fillStyle='#fff'; x.fillRect(0,0,w,14); x.fillRect(0,h-14,w,14); x.font='800 78px Barlow, Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LZS TRĘBACZEW',w/2,h/2+2); x.font='600 26px Barlow, Arial'; x.fillText('★',90,h/2); x.fillText('★',w-90,h/2); });
-        const sM=new THREE.MeshLambertMaterial({map:sT}); brandLights.push(sM); bx(gate,8.0,1.0,.25,0,3.45,0,red); pl(gate,7.8,.95,0,3.95,.14,sM); pl(gate,7.8,.95,0,3.95,-.14,sM,Math.PI);
-        // otwarte skrzydła bramy (pręty)
-        [-1,1].forEach(s=>{ const leaf=new THREE.Group(); leaf.position.set(s*3.25,0,0); leaf.rotation.y=s*-1.35; gate.add(leaf); for(let k=0;k<11;k++) bx(leaf,.04,1.9,.04,-s*(.15+k*.3),.05,0,iron,true); bx(leaf,3.2,.06,.06,-s*1.6,1.9,0,iron,true); bx(leaf,3.2,.06,.06,-s*1.6,.15,0,iron,true); });
+        const iron=new THREE.MeshLambertMaterial({color:0x232527}), redM=new THREE.MeshLambertMaterial({color:0xc8261e}), concM=new THREE.MeshLambertMaterial({color:0xb9b6ae,map:plasterTex});
+        const lzsT=tex(512,64,(x,w,h)=>{ x.fillStyle='#c8261e'; x.fillRect(0,0,w,h); x.strokeStyle='#8a1612'; x.lineWidth=4; x.strokeRect(2,2,w-4,h-4); x.fillStyle='#f6e7c8'; x.font='600 40px Barlow, Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LZS TRĘBACZEW',w/2,h/2+2); });
+        // brama dwuskrzydłowa: górą czarne pręty, dołem czerwona blacha z napisem; prawe skrzydło otwarte
+        const leaf=(lx,open)=>{ const L=new THREE.Group(); L.position.set(lx,0,0); gate.add(L); const s=lx<0?1:-1; const w=2.9; L.rotation.y=open?s*1.4:0;
+          bx(L,w,.06,.06,s*w/2,1.75,0,iron,true); bx(L,w,.06,.06,s*w/2,.15,0,iron,true); for(let i=0;i<=14;i++) bx(L,.03,1.0,.03,s*(.08+i*(w-.16)/14),.8,0,iron,true); bx(L,w,.62,.04,s*w/2,.18,0,redM,true);
+          const tp=new THREE.Mesh(new THREE.PlaneGeometry(w-.1,.55),new THREE.MeshLambertMaterial({map:lzsT})); tp.position.set(s*w/2,.49,.03); L.add(tp); const tp2=tp.clone(); tp2.rotation.y=Math.PI; tp2.position.z=-.03; L.add(tp2); };
+        [-3,3].forEach(x=>bx(gate,.1,1.9,.1,x,0,0,iron)); leaf(-3,true); leaf(3,false);
+        { const wp=[gx+Math.cos(ang)*1.5,gz-Math.sin(ang)*1.5]; addSolid({x:wp[0],z:wp[1],hw:1.5,hd:.12,c:Math.cos(-ang),s:Math.sin(-ang),r:1.7}); }
+        // prawa strona: płot z betonowych płyt, słupek, tablica „OGŁOSZENIA” pod daszkiem
+        bx(gate,3.4,1.75,.14,-(3.1+1.7),0,0,concM); for(let i=0;i<4;i++) bx(gate,3.4,.03,.15,-(3.1+1.7),.4+i*.4,0,new THREE.MeshLambertMaterial({color:0x9a968e}),true); bx(gate,.32,2.1,.32,-4.7,0,-.12,concM);
+        { const wp=[gx+Math.cos(ang)*-4.8,gz-Math.sin(ang)*-4.8]; addSolid({x:wp[0],z:wp[1],hw:1.8,hd:.15,c:Math.cos(-ang),s:Math.sin(-ang),r:2}); }
+        const ogT=tex(256,200,(x,w,h)=>{ x.fillStyle='#3a2a1e'; x.fillRect(0,0,w,h); x.fillStyle='#efe9da'; x.fillRect(8,8,w-16,36); x.fillStyle='#222'; x.font='800 30px Barlow, Arial'; x.textAlign='center'; x.fillText('OGŁOSZENIA',w/2,36); [['#fff',14,56],['#ffe28a',100,56],['#fff',14,128],['#f2c230',150,130]].forEach(([c,xx,yy])=>{ x.fillStyle=c; x.fillRect(xx,yy,80,64); }); });
+        bx(gate,.08,2.6,.08,-4.2,0,.7,iron,true); bx(gate,.08,2.6,.08,-5.7,0,.7,iron,true); bx(gate,1.8,1.15,.08,-4.95,1.45,.7,new THREE.MeshLambertMaterial({color:0x3a2a1e})); pl(gate,1.7,1.05,-4.95,2.0,.65,new THREE.MeshLambertMaterial({map:ogT}),Math.PI); bx(gate,2.0,.08,.5,-4.95,2.65,.65,new THREE.MeshLambertMaterial({color:0x4a4d50}));
+        // lewa strona: siatka na słupkach
+        { const t=fenceT.clone(); t.needsUpdate=true; t.repeat.set(4,1); const fm=new THREE.Mesh(new THREE.PlaneGeometry(10,1.5),new THREE.MeshLambertMaterial({map:t,transparent:true,alphaTest:.3,side:THREE.DoubleSide,color:0x6f7a70})); fm.position.set(3.1+5,.75,0); gate.add(fm); for(let i=0;i<=4;i++) bx(gate,.06,1.6,.06,3.1+i*2.5,0,0,new THREE.MeshLambertMaterial({color:0x7c8288}),true);
+          const wp=[gx+Math.cos(ang)*8.1,gz-Math.sin(ang)*8.1]; addSolid({x:wp[0],z:wp[1],hw:5,hd:.1,c:Math.cos(-ang),s:Math.sin(-ang),r:5.2}); }
         gate.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
-        // kapliczka obok bramy
-        const tx=Math.cos(ang), tz=-Math.sin(ang); let kp=null; for(const o of [9,-9,12,-12,15,-15]){ const x=gx+tx*o-dx*1.2, z=gz+tz*o-dz*1.2; if(!blocked(x,z,1.6)&&!ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+1.2)){ kp=[x,z]; break; } }
+        // krzyż przydrożny na granitowym cokole (przy siatce piłkochwytu)
+        const tx=Math.cos(ang), tz=-Math.sin(ang); let kp=null; for(const o of [13,16,-12,-15,19]){ const x=gx+tx*o+dx*2.5, z=gz+tz*o+dz*2.5; if(!blocked(x,z,1.2)&&!ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+1.2)){ kp=[x,z]; break; } }
         if(kp){ const k=new THREE.Group(); k.position.set(kp[0],H(kp[0],kp[1]),kp[1]); k.rotation.y=ang+Math.PI; scene.add(k); STAD.kap=kp;
-          const kw=new THREE.MeshLambertMaterial({color:0xf4f1ea,map:plasterTex}), kr=new THREE.MeshLambertMaterial({color:0x3d4248,map:tileTex}), kb=new THREE.MeshLambertMaterial({color:0x9a958c});
-          bx(k,1.9,.35,1.9,0,-.1,0,kb); bx(k,1.5,2.3,1.5,0,.25,0,kw); bx(k,1.62,.12,1.62,0,2.55,0,kw); const rf=new THREE.Mesh(gabGeo,kr); rf.scale.set(1.9,1.0,1.9); rf.position.y=2.65; k.add(rf); tri(k,1.5,.9,0,2.62,.81,kw);
-          const nT=tex(64,96,(x,w,h)=>{ const gr=x.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#2d5fa8'); gr.addColorStop(1,'#1b3a6e'); x.fillStyle=gr; x.fillRect(0,0,w,h); x.fillStyle='#f2efe6'; x.beginPath(); x.ellipse(w/2,h*.62,13,30,0,0,7); x.fill(); x.fillStyle='#6fa2e0'; x.beginPath(); x.ellipse(w/2,h*.6,11,26,0,0,7); x.fill(); x.fillStyle='#f0d6b8'; x.beginPath(); x.arc(w/2,h*.28,7,0,7); x.fill(); x.strokeStyle='#f2c230'; x.lineWidth=2; x.beginPath(); x.arc(w/2,h*.28,11,0,7); x.stroke(); });
-          pl(k,.62,.95,0,1.55,.76,new THREE.MeshLambertMaterial({map:nT})); bx(k,.74,.06,.12,0,1.04,.76,kw); const crossM=new THREE.MeshLambertMaterial({color:0x2a2d30}); bx(k,.06,.62,.06,0,3.55,0,crossM); bx(k,.32,.06,.06,0,3.95,0,crossM);
-          // kwiaty i znicze
-          ['#e8443a','#f2c230','#ffffff','#d85fa8'].forEach((c,i)=>{ const f=new THREE.Mesh(new THREE.SphereGeometry(.14,6,5),new THREE.MeshLambertMaterial({color:c})); f.position.set(-.6+i*.4,.42,1.05); k.add(f); });
-          [-.3,.3].forEach(x=>{ const z=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.16,8),new THREE.MeshLambertMaterial({color:0xc8261e,emissive:0x601010})); z.position.set(x,.33,.95); k.add(z); });
-          k.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); addSolid({x:kp[0],z:kp[1],hw:1,hd:1,c:1,s:0,r:1.5}); } } }
+          const gran=new THREE.MeshLambertMaterial({color:0xb7b4ad,map:plasterTex}), crM=new THREE.MeshLambertMaterial({color:0xe8e6e0,map:plasterTex}), dark2=new THREE.MeshLambertMaterial({color:0x8d8a84});
+          bx(k,1.1,.18,1.1,0,0,0,dark2); const ped=new THREE.Mesh(new THREE.CylinderGeometry(.33,.42,1.5,4).rotateY(Math.PI/4),gran); ped.position.y=.93; k.add(ped); bx(k,.5,.12,.5,0,1.68,0,gran);
+          bx(k,.24,4.0,.2,0,1.8,0,crM); bx(k,1.75,.24,.2,0,4.6,0,crM); bx(k,.32,.2,.04,0,5.35,.11,dark2,true);
+          const fig=new THREE.Group(); fig.position.set(0,4.2,.13); k.add(fig); const sk=new THREE.MeshLambertMaterial({color:0xd8d4cc}); const bd=new THREE.Mesh(new THREE.CylinderGeometry(.07,.05,.55,6),sk); fig.add(bd); const hd=new THREE.Mesh(new THREE.SphereGeometry(.06,6,5),sk); hd.position.y=.33; fig.add(hd); [-1,1].forEach(sd=>{ const ar=new THREE.Mesh(new THREE.BoxGeometry(.38,.04,.04),sk); ar.position.set(sd*.2,.28,0); ar.rotation.z=sd*.25; fig.add(ar); });
+          k.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); addSolid({x:kp[0],z:kp[1],hw:.55,hd:.55,c:1,s:0,r:.8}); } } }
     STADIUM_P=[m.cx+Math.cos(m.an)*(m.w/2-14),m.cz+Math.sin(m.an)*(m.w/2-14)];
     STADIUM_C=[m.cx,m.cz];
     const cc=centroid(PI2); addSolid({x:m.cx+Math.cos(m.an)*(m.w/2+8),z:m.cz+Math.sin(m.an)*(m.w/2+8),hw:4,hd:6,c:Math.cos(m.an),s:Math.sin(m.an),r:7.5});
@@ -2204,7 +2217,11 @@ async function boot(saved){
     if(typeof PARTS!=='undefined') PARTS.visible=false; }
   let fadeEl=document.getElementById('fade');
   function fadeTo(cb){ if(!fadeEl){ cb(); return; } fadeEl.classList.add('on'); setTimeout(()=>{ cb(); setTimeout(()=>fadeEl.classList.remove('on'),60); },260); }
-  function enterStore(){ if(st.car||st.inside)return; IN.lastSwap=tAll; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do sklepu',2.5); return; }
+  // modele wnętrz są doczytywane osobno (models_in.js) – przy wejściu czekamy na nie chwilę
+  const ROOM_NEEDS={church:['kosciol_in'],pharm:['regal'],zabka:['lada_zabka','lodowka','gondola'],lew:['gondola','lodowka','regal_alk']};
+  let MODELS_SKIP=false; const modelsOk=l=>!l||l.every(n=>typeof MODELS!=='undefined'&&MODELS[n]); let WAITING=false;
+  function waitModels(l,cb){ if(WAITING)return; WAITING=true; toast('Wczytywanie wnętrza…',2); let t=0; const iv=setInterval(()=>{ t+=250; if(modelsOk(l)||t>15000){ clearInterval(iv); WAITING=false; cb(); } },250); }
+  function enterStore(){ if(st.car||st.inside)return; if(!modelsOk(ROOM_NEEDS.lew)&&!IN.built&&!MODELS_SKIP){ waitModels(ROOM_NEEDS.lew,()=>{ MODELS_SKIP=true; enterStore(); MODELS_SKIP=false; }); return; } IN.lastSwap=tAll; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do sklepu',2.5); return; }
     fadeTo(()=>{ buildInterior(); const f=B_LEW.front, o=B_LEW.doorOut||[f.x+f.nx*3.2,f.z+f.nz*3.2]; IN.ret={x:o[0],z:o[1],yaw:Math.atan2(-f.nx,-f.nz),face:Math.atan2(f.nx,f.nz)}; st.inside=true; IN.g.visible=true; IN.worldPos=SHOPS[0].p; CUR=IN;
       st.x=IN.x+IN_DOOR[0]; st.z=IN.z+4.6; st.vx=st.vz=0; st.yaw=0; st.face=Math.PI; st.pitch=.22; st.dist=Math.min(st.dist,3.4); st.distS=st.dist; if(st.mode===2) st.mode=0; locMain.textContent='Lewiatan'; locSub.textContent='Sklep · ul. Szkolna'; locEl.classList.add('on'); locTimer=3; }); }
   function exitStore(){ if(!st.inside)return; IN.lastSwap=tAll; fadeTo(()=>{ st.inside=false; IN.g.visible=false; const r=IN.ret||{x:SHOPS[0].p[0],z:SHOPS[0].p[1],yaw:0,face:0}; st.x=r.x; st.z=r.z; if(blocked(st.x,st.z,.45)){ const q=walkSpot([st.x,st.z],false); st.x=q[0]; st.z=q[1]; } st.yaw=r.yaw; st.face=r.face; st.vx=st.vz=0; if(SHOP_OPEN) closeShop(); }); }
@@ -2415,7 +2432,7 @@ async function boot(saved){
   LIB_ROOM.items=[['„Pan Tadeusz” – A. Mickiewicz',0,'book',0],['„Lalka” – B. Prus',0,'book',0],['„Quo vadis” – H. Sienkiewicz',0,'book',0],['„Chłopi” – W. Reymont',0,'book',0],['„W pustyni i w puszczy” – H. Sienkiewicz',0,'book',0],['„Krzyżacy” – H. Sienkiewicz',0,'book',0]]; LIB_ROOM.shopName='Biblioteka'; LIB_ROOM.sub='Wypożyczalnia · książki za darmo';
   { const lb=BLD.filter(b=>Math.hypot(b.x+136,b.z+124)<14).sort((a,b)=>Math.hypot(a.x+136,a.z+125)-Math.hypot(b.x+136,b.z+125))[0]; if(lb){ const nr=nearestRoad(lb.x,lb.z,r=>r.t!=='track'); const f=frontSide(lb,nr.r); addEnt(LIB_ROOM,'biblioteki',[f.x+f.nx*1.6,f.z+f.nz*1.6],[f.nx,f.nz]); } }
   function roomShopObj(o){ if(!o.items||!o.counter)return null; return {n:o.shopName||'Sklep',sub:o.sub,get p(){ return [o.x+o.counter[0],o.z+o.counter[1]]; },items:o.items}; }
-  function enterRoom(e){ if(st.car||st.inside)return; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do środka',2.5); return; } IN.lastSwap=tAll; const o=e.room;
+  function enterRoom(e){ if(st.car||st.inside)return; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do środka',2.5); return; } const o=e.room; if(!o.built&&!modelsOk(ROOM_NEEDS[o.kind])&&!MODELS_SKIP){ waitModels(ROOM_NEEDS[o.kind],()=>{ MODELS_SKIP=true; enterRoom(e); MODELS_SKIP=false; }); return; } IN.lastSwap=tAll;
     fadeTo(()=>{ buildRoom(o); o.shop=roomShopObj(o); o.ret={x:e.p[0]+e.n[0]*1.6,z:e.p[1]+e.n[1]*1.6,yaw:Math.atan2(-e.n[0],-e.n[1]),face:Math.atan2(e.n[0],e.n[1])}; o.doorW=[o.x+o.doorX,o.z+o.D/2-.6]; o.worldPos=e.p;
       CUR=o; st.inside=true; o.g.visible=true; st.x=o.x+o.doorX; st.z=o.z+o.D/2-2.2; if(curBlocked(st.x,st.z,.4)){ let ok=false; for(let r=.4;r<5&&!ok;r+=.3) for(let a2=0;a2<6.28&&!ok;a2+=.4){ const x=st.x+Math.cos(a2)*r, z=st.z+Math.sin(a2)*r; if(!curBlocked(x,z,.4)){ st.x=x; st.z=z; ok=true; } } } st.vx=st.vz=0; st.yaw=0; st.face=Math.PI; st.pitch=.22; st.dist=Math.min(st.dist,3.4); st.distS=st.dist; if(st.mode===2) st.mode=0;
       locMain.textContent=o.title||e.label; locSub.textContent='wnętrze'; locEl.classList.add('on'); locTimer=3; }); }

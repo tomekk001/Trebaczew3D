@@ -153,3 +153,7 @@ Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyt
 for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep}.py; do python3 $f; done
 python3 tools/glb2js.py && python3 build.py
 ```
+
+## Szybsze wczytywanie
+
+Na stronie modele wnętrz (kościół, apteka, Żabka, Lewiatan) leżą w osobnym pliku `models_in.js`, doczytywanym w tle. Gra startuje z mniejszego `index.html` (około 2,6 MB zamiast 4,2 MB). Przy wejściu do budynku gra czeka na modele najwyżej kilka sekund. Wersja do artefaktu (`--fragment`) ma wszystko w jednym pliku.
