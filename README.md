@@ -108,3 +108,23 @@ Serwer znajduje się w folderze `server/` (Cloudflare Worker + Durable Object). 
 - Status pokoi: `https://trebaczew-mp.kontakt-3e3.workers.dev/status`
 - W jednym pokoju gra do 30 osób. Gdy pokój jest pełny, gra sama przechodzi do następnego.
 - Serwer przesyła pozycje, pojazdy, czat (z filtrem wulgaryzmów i limitem) i klakson (H).
+
+## Model Lewiatana z Blendera
+
+`tools/blender/lewiatan.py` buduje model sklepu w Blenderze (`pip install bpy`). Bryła, dachy, okna i rynny mają wypalone cienie (AO) w jednej teksturze. Wynik trafia do `src/models/lewiatan.glb`, a `tools/glb2js.py` pakuje go do `src/data_m.js` (skompresowana geometria + JPEG).
+
+```
+python3 tools/blender/lewiatan.py && python3 tools/glb2js.py && python3 build.py
+```
+
+## Minigry
+
+- **Paczkomat**: nadawanie (gabaryt, kod, skrytka) i odbiór paczki.
+- **Flanki w parku**: rzut w puszkę z kątem, siłą i wiatrem, potem szybkie klikanie.
+- **Rzuty karne**: na orliku i na stadionie LZS; strzelasz i bronisz.
+
+Minigry są częścią misji (m4, m5, m8, s6–s8). Można też zagrać w nie w świecie przy zielonych kółkach i przy paczkomatach. Rekordy zapisują się w przeglądarce.
+
+## Statystyki
+
+`statystyki.html` pokazuje anonimowe liczniki z serwera (`/stats`): graczy, uruchomienia, czas gry, misje, minigry i rankingi.

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Statystyki · Symulator życia w Trębaczewie</title>
+<meta name="description" content="Ilu graczy odwiedziło Trębaczew, ile misji ukończono i kto ma najlepsze wyniki w minigrach.">
+<link rel="icon" href="src/favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0b0d10;--panel:#121518;--panel2:#171b1f;--ink:#f6f4ef;--muted:#b9c0c6;--dim:#7f878e;--accent:#f2c230;--line:rgba(255,255,255,.12);--grid:rgba(255,255,255,.07);--ok:#7fd06b;--blue:#6fa8e8}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Barlow,'Segoe UI',Arial,sans-serif}
+body{background:linear-gradient(180deg,rgba(11,13,16,.6),var(--bg) 420px),url(og.jpg) center top/cover no-repeat;background-attachment:scroll}
+main{max-width:1100px;margin:0 auto;padding:clamp(24px,5vh,56px) 16px 56px}
+.kick{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;font-size:16px}
+h1{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:clamp(44px,9vw,84px);line-height:.92;margin:6px 0 10px;text-shadow:0 4px 0 #000;letter-spacing:.01em}
+.lead{color:var(--muted);max-width:640px;line-height:1.5;margin:0 0 6px}
+.live{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:10px 0 26px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(127,208,107,.6);animation:p 2s infinite}
+@keyframes p{70%{box-shadow:0 0 0 9px rgba(127,208,107,0)}100%{box-shadow:0 0 0 0 rgba(127,208,107,0)}}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:rgba(18,21,24,.92);border:1px solid var(--line);border-top:3px solid var(--accent);padding:14px 16px 12px}
+.tile .v{font-family:Anton,Impact,sans-serif;font-size:clamp(30px,4.6vw,44px);line-height:1.05;font-variant-numeric:tabular-nums}
+.tile .l{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--muted);margin-top:4px}
+.tile .s{font-size:13px;color:var(--dim);margin-top:2px}
+.tile.hero{border-top-color:var(--ok)}
+.card{background:rgba(18,21,24,.95);border:1px solid var(--line);padding:18px;margin-top:14px}
+.card h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 2px}
+.card .sub{color:var(--dim);font-size:14px;margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+.chart{position:relative;height:220px}
+.chart svg{width:100%;height:100%;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:#0b0d10;border:1px solid var(--line);padding:6px 9px;font-size:13px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s}
+.tip b{font-variant-numeric:tabular-nums}
+.split{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--grid);margin:8px 0 6px}
+.split i{display:block;height:100%}
+.legend{display:flex;gap:16px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--c)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+td.r{width:28px;color:var(--dim)}
+tr:first-child td.r{color:var(--accent)}
+.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.boards h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px;color:var(--accent)}
+.empty{color:var(--dim);font-size:14px;padding:8px 0}
+.err{background:rgba(229,72,77,.12);border:1px solid rgba(229,72,77,.4);padding:12px 14px;color:#ffb3b5;margin:10px 0;display:none}
+footer{margin-top:26px;color:var(--dim);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+a{color:var(--accent)}
+.play{display:inline-block;margin-top:6px;background:var(--accent);color:#111;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase;padding:9px 18px}
+</style>
+</head>
+<body>
+<main>
+  <div class="kick">Symulator życia w Trębaczewie</div>
+  <h1>STATYSTYKI</h1>
+  <p class="lead">Jak żyje wirtualny Trębaczew: ilu mieszkańców zajrzało do gry, ile misji ukończono i kto rządzi w minigrach. Dane są anonimowe i odświeżają się same.</p>
+  <div class="live"><span class="dot"></span><span id="liveTxt">Łączenie z serwerem gry…</span></div>
+  <div class="err" id="err">Nie udało się pobrać statystyk. Spróbuj odświeżyć stronę za chwilę.</div>
+
+  <section class="tiles" aria-label="Najważniejsze liczby">
+    <div class="tile hero"><div class="v" id="tOnline">–</div><div class="l">Gra teraz</div><div class="s" id="tPeak">rekord: –</div></div>
+    <div class="tile"><div class="v" id="tPlayers">–</div><div class="l">Graczy łącznie</div><div class="s" id="tToday">dziś: –</div></div>
+    <div class="tile"><div class="v" id="tStarts">–</div><div class="l">Uruchomień gry</div><div class="s" id="tStartsToday">dziś: –</div></div>
+    <div class="tile"><div class="v" id="tHours">–</div><div class="l">Godzin w grze</div><div class="s" id="tAvg">średnio: –</div></div>
+    <div class="tile"><div class="v" id="tMissions">–</div><div class="l">Ukończonych misji</div><div class="s" id="tMain">fabularnych: –</div></div>
+    <div class="tile"><div class="v" id="tMini">–</div><div class="l">Rozegranych minigier</div><div class="s" id="tWins">wygranych: –</div></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card"><h2>Gracze dziennie</h2><p class="sub">Unikalni gracze w ostatnich 30 dniach</p><div class="chart" id="cPlayers"></div></section>
+    <section class="card"><h2>Czas gry dziennie</h2><p class="sub">Łączne minuty spędzone w Trębaczewie</p><div class="chart" id="cMinutes"></div></section>
+  </div>
+
+  <section class="card"><h2>Na czym grają</h2><p class="sub">Gracze według urządzenia</p>
+    <div class="split" id="split"></div>
+    <div class="legend"><span style="--c:var(--accent)" id="lMob">Telefon –</span><span style="--c:var(--blue)" id="lDesk">Komputer –</span></div>
+  </section>
+
+  <section class="card"><h2>Ranking minigier</h2><p class="sub">Najlepsze wygrane wyniki (nick z gry)</p><div class="boards" id="boards"></div></section>
+
+  <footer><span>Bez logowania i bez danych osobowych – gra liczy tylko anonimowe zdarzenia.</span><a class="play" href="./">Zagraj w Trębaczew</a></footer>
+</main>
+<script>
+const API='https://trebaczew-mp.kontakt-3e3.workers.dev';
+const $=id=>document.getElementById(id);
+const nf=new Intl.NumberFormat('pl-PL');
+const GAMES={'paczkomat-nadaj':'Paczkomat – nadawanie','paczkomat-odbierz':'Paczkomat – odbiór','flanki':'Flanki w parku','karne-orlik':'Karne na orliku','karne-lzs':'Karne – LZS Trębaczew'};
+function plural(n,a,b,c){ n=Math.abs(n); if(n===1)return a; const d=n%10,h=n%100; return d>=2&&d<=4&&(h<12||h>14)?b:c; }
+function fmtDay(d){ const [y,m,dd]=d.split('-'); return `${+dd}.${m}`; }
+function bars(el,days,key,unit){
+  const W=el.clientWidth||600, H=el.clientHeight||220, pl=34, pb=22, pt=10, pr=4; const n=days.length;
+  const max=Math.max(4,...days.map(d=>d[key])); const nice=(()=>{ const p=Math.pow(10,Math.floor(Math.log10(max))); for(const m of [1,2,2.5,5,10]) if(m*p>=max) return m*p; return 10*p; })();
+  const bw=(W-pl-pr)/n, gap=Math.min(4,bw*.25); let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Wykres: ${unit}">`;
+  for(let i=0;i<=4;i++){ const y=pt+(H-pt-pb)*(1-i/4); s+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,${i?'.07':'.25'})"/><text x="${pl-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#7f878e">${nf.format(Math.round(nice*i/4))}</text>`; }
+  days.forEach((d,i)=>{ const v=d[key], h=(H-pt-pb)*v/nice, x=pl+i*bw+gap/2, y=H-pb-h, w=bw-gap; const today=i===n-1;
+    if(v>0) s+=`<path d="M${x},${H-pb} V${y+Math.min(4,h)} Q${x},${y} ${x+Math.min(4,w/2)},${y} H${x+w-Math.min(4,w/2)} Q${x+w},${y} ${x+w},${y+Math.min(4,h)} V${H-pb} Z" fill="${today?'#f2c230':'rgba(242,194,48,.62)'}"/>`;
+    s+=`<rect class="hit" data-i="${i}" x="${pl+i*bw}" y="${pt}" width="${bw}" height="${H-pt-pb}" fill="transparent"/>`;
+    if(i%5===4||i===0) s+=`<text x="${x+w/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="#7f878e">${today?'dziś':fmtDay(d.d)}</text>`; });
+  s+='</svg><div class="tip"></div>'; el.innerHTML=s; const tip=el.querySelector('.tip');
+  el.querySelectorAll('.hit').forEach(r=>{ r.addEventListener('pointerenter',()=>{ const d=days[+r.dataset.i]; tip.innerHTML=`${fmtDay(d.d)} · <b>${nf.format(d[key])}</b> ${unit}`; const bb=r.getBBox(); tip.style.left=(bb.x+bb.width/2)/W*100+'%'; tip.style.top=Math.max(20,(H-pb-(H-pt-pb)*d[key]/nice))+'px'; tip.style.opacity=1; r.setAttribute('fill','rgba(255,255,255,.05)'); });
+    r.addEventListener('pointerleave',()=>{ tip.style.opacity=0; r.setAttribute('fill','transparent'); }); }); }
+let DATA=null;
+function render(j){ DATA=j; $('err').style.display='none';
+  $('tOnline').textContent=nf.format(j.online||0); $('tPeak').textContent=`rekord: ${nf.format(Math.max(j.peak||0,j.online||0))} naraz`;
+  $('liveTxt').textContent=(j.online?`${j.online} ${plural(j.online,'osoba gra','osoby grają','osób gra')} teraz w trybie wieloosobowym`:'Nikt teraz nie gra w trybie wieloosobowym')+' · aktualizacja '+new Date(j.t).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+  $('tPlayers').textContent=nf.format(j.gracze); $('tToday').textContent=`dziś: ${nf.format(j.dzis.gracze)}`;
+  $('tStarts').textContent=nf.format(j.starty); $('tStartsToday').textContent=`dziś: ${nf.format(j.dzis.starty)}`;
+  const h=j.minuty/60; $('tHours').textContent=nf.format(h<10?Math.round(h*10)/10:Math.round(h)); $('tAvg').textContent=`średnio ${nf.format(Math.round(j.minuty/Math.max(1,j.starty)))} min na grę`;
+  $('tMissions').textContent=nf.format(j.misje); $('tMain').textContent=`fabularnych: ${nf.format(j.fabula)}`;
+  $('tMini').textContent=nf.format(j.minigry); $('tWins').textContent=`wygranych: ${nf.format(j.wygrane)}`;
+  bars($('cPlayers'),j.dni,'gracze','graczy'); bars($('cMinutes'),j.dni,'min','min');
+  const mob=j.telefon||0, desk=Math.max(0,(j.gracze||0)-mob), tot=Math.max(1,mob+desk);
+  $('split').innerHTML=`<i style="width:${mob/tot*100}%;background:var(--accent)"></i><i style="width:${desk/tot*100}%;background:var(--blue);margin-left:${mob&&desk?2:0}px"></i>`;
+  $('lMob').textContent=`Telefon ${Math.round(mob/tot*100)}% (${nf.format(mob)})`; $('lDesk').textContent=`Komputer ${Math.round(desk/tot*100)}% (${nf.format(desk)})`;
+  $('boards').innerHTML=Object.keys(GAMES).map(g=>{ const list=(j.top||{})[g]||[]; const played=(j.mini||{})[g]||0;
+    return `<div><h3>${GAMES[g]}</h3>${list.length?`<table><thead><tr><th></th><th>Gracz</th><th style="text-align:right">Pkt</th></tr></thead><tbody>${list.map((r,i)=>`<tr><td class="r">${i+1}.</td><td>${r.n.replace(/[<>&]/g,'')}</td><td class="n">${nf.format(r.s)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Brak wyników – bądź pierwszy!</div>'}<div class="empty">Rozegrano: ${nf.format(played)}</div></div>`; }).join(''); }
+async function load(){ try{ const r=await fetch(API+'/stats',{cache:'no-store'}); if(!r.ok) throw 0; render(await r.json()); }catch(e){ if(!DATA){ $('err').style.display='block'; $('liveTxt').textContent='Brak połączenia z serwerem gry'; } } }
+load(); setInterval(load,30000); addEventListener('resize',()=>{ if(DATA) render(DATA); });
+</script>
+</body>
+</html>

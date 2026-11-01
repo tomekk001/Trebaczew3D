@@ -26,6 +26,21 @@ export default {
       for (let i = 1; i <= 3; i++) { const r = await env.ROOM.get(env.ROOM.idFromName('t' + i)).fetch('https://do/count'); out['t' + i] = +(await r.text()); }
       return new Response(JSON.stringify({ ok: true, gra: 'Symulator życia w Trębaczewie', pokoje: out }), { headers: { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*' } });
     }
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type' };
+    if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
+    if (url.pathname === '/hit' && req.method === 'POST') {
+      const body = await req.text(); if (body.length > 2000) return new Response('za duże', { status: 413, headers: cors });
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/hit', { method: 'POST', body });
+      return new Response(null, { status: r.status === 200 ? 204 : r.status, headers: cors });
+    }
+    if (url.pathname === '/stats') {
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/stats');
+      const j = await r.json(); let online = 0; const pokoje = {};
+      for (let i = 1; i <= 3; i++) { const c = +(await (await env.ROOM.get(env.ROOM.idFromName('t' + i)).fetch('https://do/count')).text()); pokoje['t' + i] = c; online += c; }
+      j.online = online; j.pokoje = pokoje;
+      if (online > (j.peak || 0)) await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/peak', { method: 'POST', body: String(online) });
+      return new Response(JSON.stringify(j), { headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=20' } });
+    }
     const m = url.pathname.match(/^\/room\/([a-z0-9]+)$/);
     if (!m || !ROOMS.test(m[1])) return new Response('Nie ma takiego pokoju', { status: 404 });
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('Oczekiwano WebSocket', { status: 426 });
@@ -71,4 +86,61 @@ export class Room extends DurableObject {
   }
   async webSocketClose(ws) { const a = ws.deserializeAttachment(); if (a && a.id) { ws.serializeAttachment({}); this.bcast({ t: 'l', peer: a.id }, ws); } try { ws.close(1000); } catch (e) {} }
   async webSocketError(ws) { return this.webSocketClose(ws); }
+}
+
+// Statystyki gry: anonimowe liczniki (losowy identyfikator z przeglądarki, bez IP i danych osobowych)
+const EVS = ['start', 'beat', 'mission', 'mini', 'mp'];
+export class Stats extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env); const q = this.ctx.storage.sql;
+    q.exec(`CREATE TABLE IF NOT EXISTS daily(day TEXT, k TEXT, v INTEGER, PRIMARY KEY(day,k));
+            CREATE TABLE IF NOT EXISTS seen(day TEXT, id TEXT, PRIMARY KEY(day,id));
+            CREATE TABLE IF NOT EXISTS players(id TEXT PRIMARY KEY, first TEXT, mob INTEGER);
+            CREATE TABLE IF NOT EXISTS scores(g TEXT, nick TEXT, s INTEGER, t INTEGER);
+            CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);`);
+    this.rl = new Map(); this.cache = null;
+  }
+  add(day, k, v) { this.ctx.storage.sql.exec('INSERT INTO daily(day,k,v) VALUES(?,?,?) ON CONFLICT(day,k) DO UPDATE SET v=v+excluded.v', day, k, v); }
+  async fetch(req) {
+    const url = new URL(req.url); const q = this.ctx.storage.sql; const day = new Date(Date.now() + 3600e3).toISOString().slice(0, 10);
+    if (url.pathname === '/peak') { const v = +(await req.text()) || 0; q.exec('INSERT INTO meta(k,v) VALUES(\'peak\',?) ON CONFLICT(k) DO UPDATE SET v=MAX(v,excluded.v)', v); this.cache = null; return new Response('ok'); }
+    if (url.pathname === '/hit') {
+      let m; try { m = JSON.parse(await req.text()); } catch (e) { return new Response('zły JSON', { status: 400 }); }
+      const id = clean(m.id, 40).replace(/[^a-z0-9-]/gi, ''); if (id.length < 8 || !EVS.includes(m.ev)) return new Response('złe dane', { status: 400 });
+      const now = Date.now(), r = this.rl.get(id) || { t: now, n: 0 }; if (now - r.t > 60000) { r.t = now; r.n = 0; } if (++r.n > 20) return new Response('limit', { status: 429 }); this.rl.set(id, r);
+      if (this.rl.size > 5000) this.rl.clear();
+      const d = m.d || {};
+      if (m.ev === 'start') {
+        this.add(day, 'starts', 1); this.add(day, d.mob ? 'mob' : 'desk', 1);
+        const isNew = !q.exec('SELECT 1 FROM players WHERE id=?', id).toArray().length;
+        if (isNew) { q.exec('INSERT INTO players(id,first,mob) VALUES(?,?,?)', id, day, d.mob ? 1 : 0); this.add(day, 'new', 1); }
+      }
+      if (m.ev === 'beat') this.add(day, 'min', Math.min(5, Math.max(1, +d.min || 1)));
+      if (m.ev === 'mission') { this.add(day, 'missions', 1); if (d.main) this.add(day, 'main', 1); }
+      if (m.ev === 'mp') this.add(day, 'mp', 1);
+      if (m.ev === 'mini') {
+        const g = ['paczkomat', 'flanki', 'karne'].includes(d.g) ? d.g + (d.m ? '-' + clean(d.m, 10).replace(/[^a-z]/g, '') : '') : null; if (!g) return new Response('zła gra', { status: 400 });
+        this.add(day, 'mini', 1); this.add(day, 'mini:' + g, 1); if (d.w) this.add(day, 'miniwin', 1);
+        const s = Math.max(0, Math.min(5000, Math.round(+d.s || 0))); const nick = censor(clean(d.n, 18)) || 'Anonim';
+        if (s > 0 && d.w) { q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', g, nick, s, now); q.exec('DELETE FROM scores WHERE g=? AND rowid NOT IN (SELECT rowid FROM scores WHERE g=? ORDER BY s DESC, t ASC LIMIT 25)', g, g); }
+      }
+      q.exec('INSERT OR IGNORE INTO seen(day,id) VALUES(?,?)', day, id);
+      this.cache = null; return new Response('ok');
+    }
+    if (url.pathname === '/stats') {
+      if (this.cache && Date.now() - this.cache.t < 15000) return new Response(this.cache.body);
+      const tot = {}; for (const r of q.exec('SELECT k, SUM(v) AS v FROM daily GROUP BY k').toArray()) tot[r.k] = r.v;
+      const days = []; const since = new Date(Date.now() + 3600e3 - 29 * 86400e3).toISOString().slice(0, 10);
+      const byDay = {}; for (const r of q.exec('SELECT day,k,v FROM daily WHERE day>=?', since).toArray()) (byDay[r.day] = byDay[r.day] || {})[r.k] = r.v;
+      const uniq = {}; for (const r of q.exec('SELECT day, COUNT(*) AS n FROM seen WHERE day>=? GROUP BY day', since).toArray()) uniq[r.day] = r.n;
+      for (let i = 29; i >= 0; i--) { const dd = new Date(Date.now() + 3600e3 - i * 86400e3).toISOString().slice(0, 10); const b = byDay[dd] || {}; days.push({ d: dd, gracze: uniq[dd] || 0, starty: b.starts || 0, nowi: b.new || 0, min: b.min || 0 }); }
+      const players = q.exec('SELECT COUNT(*) AS n, SUM(mob) AS m FROM players').toArray()[0];
+      const top = {}; for (const r of q.exec('SELECT g,nick,s,t FROM scores ORDER BY s DESC, t ASC').toArray()) { (top[r.g] = top[r.g] || []); if (top[r.g].length < 10) top[r.g].push({ n: r.nick, s: r.s, t: r.t }); }
+      const mini = {}; Object.keys(tot).filter(k => k.startsWith('mini:')).forEach(k => mini[k.slice(5)] = tot[k]);
+      const peak = (q.exec('SELECT v FROM meta WHERE k=\'peak\'').toArray()[0] || {}).v || 0;
+      const body = JSON.stringify({ gracze: players.n || 0, telefon: players.m || 0, starty: tot.starts || 0, minuty: tot.min || 0, misje: tot.missions || 0, fabula: tot.main || 0, minigry: tot.mini || 0, wygrane: tot.miniwin || 0, multi: tot.mp || 0, startyTel: tot.mob || 0, startyKomp: tot.desk || 0, peak, mini, top, dni: days, dzis: days[days.length - 1], t: Date.now() });
+      this.cache = { t: Date.now(), body }; return new Response(body);
+    }
+    return new Response('?', { status: 404 });
+  }
 }
