@@ -1454,7 +1454,7 @@ async function boot(saved){
     if(e.metaKey||e.ctrlKey||e.altKey){ keys.clear(); return; }            // skróty systemowe gubią zdarzenie keyup
     if(GAME.paused||e.code==='Escape') return;
     const k=keyOf(e); if(!keys.has(k)&&!e.repeat){ if(k==='q'){ toggleLog(); e.preventDefault(); return; } if(!logEl.hidden) return; if(k==='c')cycleCam(); if(k==='n')toggleNight(); if(k==='m')toggleMap(); if(k==='f')enterExit(); if(k==='e')extInteract(); if(k==='r')extRadio(); }
-    if(mapView.hidden&&!SHOP_OPEN&&logEl.hidden) keys.add(k); if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault(); },true);
+    if(mapView.hidden&&!SHOP_OPEN&&logEl.hidden&&!NPC_OPEN) keys.add(k); if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault(); },true);
   addEventListener('keyup',e=>{ const k=keyOf(e); keys.delete(k); keys.delete((e.key||'').toLowerCase()); if(e.key==='Meta'||e.key==='Control'||e.key==='Alt')keys.clear(); },true);
   addEventListener('blur',releaseAll); addEventListener('pagehide',releaseAll);
   document.addEventListener('visibilitychange',()=>{ if(document.hidden)releaseAll(); });
@@ -2057,8 +2057,109 @@ async function boot(saved){
   function nearShop(){ if(st.inside){ const sh=CUR===IN?IN_SHOP:CUR.shop; return sh&&Math.hypot(sh.p[0]-st.x,sh.p[1]-st.z)<2.4?sh:null; } return SHOPS.find(s=>{ if(s.n==='Lewiatan'||s.room)return false; const p=s.p; return Math.hypot(p[0]-st.x,p[1]-st.z)<4.5; }); }
   function nearStoreDoor(){ if(st.car)return false; if(st.inside){ const d=CUR.doorW; return d&&Math.hypot(d[0]-st.x,d[1]-st.z)<(IS_TOUCH?3.2:2.3)?'out':false; } DOOR_ENT=null; let bd=IS_TOUCH?4.8:3.4; ENTS.forEach(e=>{ const p=e.p; if(!p)return; const d=Math.hypot(p[0]-st.x,p[1]-st.z); if(d<bd){ bd=d; DOOR_ENT=e; } }); return DOOR_ENT?'in':false; }
   function nearMission(){ return !ACTIVE&&!st.inside&&MISSIONS.find(m=>m.mk.visible&&Math.hypot(m.sp[0]-st.x,m.sp[1]-st.z)<(st.car?5:3)); }
-  function extInteract(){ if(SHOP_OPEN){ closeShop(); return; } if(st.car&&nearPump()){ openFuel(); return; } const sd=nearStoreDoor(); if(sd==='out'){ exitRoom(); return; } if(!st.inside){ const gt=nearGate(); if(gt){ toggleGate(gt); return; } } if(sd==='in'&&IS_TOUCH){ DOOR_ENT.enter(); return; } const m=nearMission(); if(m){ startMission(m); return; } if(ACTIVE&&ACTIVE.mRetry&&ACTIVE.mIn){ ACTIVE.mRetry=false; ACTIVE.mLock=false; return; } const mg=nearMini(); if(mg){ openMini(mg.id,mg.opt); return; } if(sd==='in'){ DOOR_ENT.enter(); return; } if(!st.car){ const s=nearShop(); if(s){ openShop(s); return; } } }
-  function extHint(){ if(SHOP_OPEN)return ''; const E=IS_TOUCH?'<kbd>Akcja</kbd>':`<kbd>${keyName(KEYMAP.e)}</kbd>`; if(st.car&&nearPump()) return `${E} zatankuj (${FUEL_NAME[st.car.ftype]} ${FUEL[st.car.ftype].toFixed(2).replace('.',',')} zł/l)`; const sd=nearStoreDoor(); if(sd==='out') return `${E} wyjdź na zewnątrz`; if(!st.inside){ const gt=nearGate(); if(gt) return `${E} ${gt.open?'zamknij':'otwórz'} ${gt.kind==='brama'?'bramę':'furtkę'}`; }
+  /* ---------- postacie z AI: Mietek (Lewiatan), Seba (przystanek PKS), Pani Jadzia (płot przy remizie) ----------
+     Zadania są zaprogramowane w grze (stały przebieg i nagrody); swobodną rozmowę prowadzi model językowy na serwerze (Workers AI). */
+  const NPC_GOSSIP=['Kaśka od sąsiadów wracała z dyskoteki z Darkiem z Działoszyna','Zbyszek ze Stacji odprowadzał Agnieszkę aż pod sam kościół','Wiesiek wracał sam, bo Monika uciekła mu z Krystianem','Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku','Grzesiek z Zagrodowej i Ola szli piechotą aż do świtu'];
+  const NQ=(()=>{ let q=null; try{ q=JSON.parse(localStorage.getItem('trebaczew-npc')||'null'); }catch(e){} return Object.assign({mietek:'start',seba:'start',jadzia:'start',items:[],gi:0,hist:{}},q||{}); })();
+  const nqSave=()=>{ try{ localStorage.setItem('trebaczew-npc',JSON.stringify(NQ)); }catch(e){} };
+  const hasIt=i=>NQ.items.includes(i), giveIt=i=>{ if(!hasIt(i)) NQ.items.push(i); nqSave(); }, takeIt=i=>{ NQ.items=NQ.items.filter(q=>q!==i); nqSave(); };
+  const NPC=[]; const NPC_PICKS=[];
+  function npcSpot(x,z,dx,dz){ for(let k=0;k<12&&blocked(x,z,.45);k++){ x+=dx*.5; z+=dz*.5; } return [x,z]; }
+  function addNPC(id,name,title,col,pos,face,look){ const p=makePerson(look.top,look.bot,look.hair,Object.assign({exact:true},look.opt)); p.position.set(pos[0],H(pos[0],pos[1])+.1,pos[1]); p.rotation.y=face; scene.add(p);
+    const sol={x:pos[0],z:pos[1],hw:.35,hd:.35,c:1,s:0,r:.6}; addSolid(sol); const tag=labelSprite(name,col); tag.scale.multiplyScalar(.22); tag.position.set(pos[0],H(pos[0],pos[1])+2.35,pos[1]); scene.add(tag);
+    const n={id,name,title,col,p,x:pos[0],z:pos[1],face0:face,tag,sol}; NPC.push(n);
+    POIS.push({n:`${name} – ${title}`,x:pos[0],z:pos[1],p:pos,c:col,ic:'💬',sp:labelSprite(name,col)}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(pos[0],H(pos[0],pos[1])+9,pos[1]); lp.sp.visible=false; scene.add(lp.sp); }
+    return n; }
+  // Mietek: przy narożniku Lewiatana, w przejściu wzdłuż ściany
+  if(B_LEW&&B_LEW.front){ const f=B_LEW.front, tx=-f.nz, tz=f.nx; const q=npcSpot(f.x+f.nx*1.6+tx*(f.len/2-1.3),f.z+f.nz*1.6+tz*(f.len/2-1.3),f.nx,f.nz);
+    addNPC('mietek','Mietek','stały bywalec spod Lewiatana','#d9a43a',q,Math.atan2(f.nx,f.nz),{top:0x5a5146,bot:0x3a3d44,hair:0x8a8a8a,opt:{female:false,style:'jacket',hairStyle:'cap',capC:0x2a3a5a,skin:0xd9a982,shoe:0x2a2420,stubble:true}}); }
+  // Seba: przy przystanku PKS na Wyzwolenia (DK42), obok swojego Passata B5 FL kombi – przystanek z wiatą stawiamy tu sami (autobus też się na nim zatrzymuje)
+  { let bd=1e9, d0=0; for(let d=0;d<DK.L;d+=2){ const q=sampleLine(DK.pts,DK.len,d); const dd=Math.hypot(q.x+160,q.z-105); if(dd<bd){bd=dd;d0=d;} }
+    const s0=sampleLine(DK.pts,DK.len,d0); const tx=s0.tx, tz=s0.tz; let nx=-tz, nz=tx, off=DK.w/2+2.2;
+    const free=(sg)=>[0,3,6,9].every(k=>!blocked(s0.x+sg*nx*off+tx*k,s0.z+sg*nz*off+tz*k,.8)); if(!free(1)&&free(-1)){ nx=-nx; nz=-nz; }
+    const sh={x:s0.x+nx*off,z:s0.z+nz*off}; BUS_STOPS.push(d0);
+    { const gB=new THREE.Group(); const mm=new THREE.MeshLambertMaterial({color:0x6b7d8c}); const roof=new THREE.Mesh(new THREE.BoxGeometry(4.5,.15,1.8),mm); roof.position.y=2.5; const back=new THREE.Mesh(new THREE.BoxGeometry(4.5,2.3,.08),new THREE.MeshPhongMaterial({color:0xaac4d6,transparent:true,opacity:.45,shininess:90})); back.position.set(0,1.25,-.8);
+      const bench=new THREE.Mesh(new THREE.BoxGeometry(3,.1,.4),new THREE.MeshLambertMaterial({color:0x8a6a4a})); bench.position.set(0,.5,-.5); [-2.15,2.15].forEach(x=>{ const p2=new THREE.Mesh(new THREE.BoxGeometry(.08,2.5,.08),mm); p2.position.set(x,1.25,-.75); gB.add(p2); });
+      gB.add(roof,back,bench); gB.position.set(sh.x,H(sh.x,sh.z),sh.z); gB.rotation.y=Math.atan2(-nx,-nz); scene.add(gB); addSolid({x:sh.x-nx*.75,z:sh.z-nz*.75,hw:2.25,hd:.12,c:Math.cos(-gB.rotation.y),s:Math.sin(-gB.rotation.y),r:2.4}); }
+      const q=npcSpot(sh.x+nx*1.4+tx*2.6,sh.z+nz*1.4+tz*2.6,nx,nz); addNPC('seba','Seba','fan niemieckiej motoryzacji','#4aa3df',q,Math.atan2(-nx,-nz),{top:0x1f2a44,bot:0x1f2a44,hair:0x2a1d14,opt:{female:false,style:'hoodie',hairStyle:'buzz',skin:0xe6bb98,shoe:0xe8e8e4}});
+      let cx=sh.x+nx*3.4+tx*7, cz=sh.z+nz*3.4+tz*7; for(let k=0;k<8&&blocked(cx,cz,1.3,true);k++){ cx+=nx*.6; cz+=nz*.6; }
+      const car=makeCar(0x30343a,'car'); seatCar(car,cx,cz,Math.atan2(tz,tx)); scene.add(car); addSolid({x:cx,z:cz,hw:2.2,hd:1,c:Math.cos(Math.atan2(tz,tx)),s:Math.sin(Math.atan2(tz,tx)),r:2.5});
+      const pl2=new THREE.Mesh(new THREE.PlaneGeometry(.52,.12),new THREE.MeshBasicMaterial({map:signTex('EPJ B5FL','#f4f4f2','#111111',256,60,'700 40px Barlow, Arial')})); pl2.position.set(cx-tx*2.18,H(cx,cz)+.5,cz-tz*2.18); pl2.rotation.y=Math.atan2(-tx,-tz); scene.add(pl2);
+      // skrzynka z narzędziami przy garażu jednego z domów w pobliżu
+      const hb=BLD.filter(b=>b.kind==='house'&&!b.cust&&Math.hypot(b.x+205,b.z-107)>35&&Math.hypot(b.x-q[0],b.z-q[1])>45&&Math.hypot(b.x-q[0],b.z-q[1])<150).sort((a,b)=>Math.hypot(a.x-q[0],a.z-q[1])-Math.hypot(b.x-q[0],b.z-q[1]))[0];
+      if(hb){ const fr=frontSide(hb,nearestRoad(hb.x,hb.z,r=>r.t!=='track').r); const ttx=-fr.nz, ttz=fr.nx; const p=npcSpot(fr.x+fr.nx*1.1+ttx*(fr.len/2-.9),fr.z+fr.nz*1.1+ttz*(fr.len/2-.9),fr.nx,fr.nz);
+        const g=new THREE.Group(); g.position.set(p[0],H(p[0],p[1]),p[1]); g.rotation.y=fr.rot; scene.add(g); bx(g,1.4,.85,.6,0,0,0,new THREE.MeshLambertMaterial({color:0x7a5a3a})); bx(g,.55,.28,.25,-.25,.85,0,new THREE.MeshLambertMaterial({color:0xc0272c})); bx(g,.12,.03,.25,.3,.86,0,new THREE.MeshLambertMaterial({color:0x9aa0a6}));
+        NPC_PICKS.push({id:'narzedzia',p,label:'weź klucz 10 mm i trytytki ze skrzynki',on:()=>NQ.seba==='zadanie'&&!(hasIt('klucz10')&&hasIt('trytytki')),act:()=>{ giveIt('klucz10'); giveIt('trytytki'); toast('Masz <b>klucz 10 mm</b> i <b>trytytki</b> – wróć do Seby',3); }}); } }
+  // Pani Jadzia: przy płocie domu najbliżej remizy OSP
+  { const hb=BLD.filter(b=>b.kind==='house'&&!b.cust).sort((a,b)=>Math.hypot(a.x+205,a.z-107)-Math.hypot(b.x+205,b.z-107))[0];
+    if(hb){ const fr=frontSide(hb,nearestRoad(hb.x,hb.z,r=>r.t!=='track').r); const q=npcSpot(fr.x+fr.nx*2.4,fr.z+fr.nz*2.4,fr.nx,fr.nz);
+      addNPC('jadzia','Pani Jadzia','wie wszystko o wszystkich','#d35d8e',q,fr.rot,{top:0x9a4a6a,bot:0x3a3a4a,hair:0xb8b8b8,opt:{female:true,style:'coat',hairStyle:'bob',skin:0xf0cfb2,shoe:0x3a2c22}}); } }
+  // remiza OSP: grill strażaków i dwóch druhów, którzy plotkują przy bramie
+  if(OSP_YARD){ const {w,L,FZ,toRoad,f}=OSP_YARD; const gp=w(L/2-1.2,FZ+Math.min(6,toRoad*.6)); const g=new THREE.Group(); g.position.set(gp[0],H(gp[0],gp[1]),gp[1]); g.rotation.y=f.rot; scene.add(g);
+    const blk=new THREE.MeshLambertMaterial({color:0x222426}); bx(g,1.2,.25,.5,0,.75,0,blk); [-.5,.5].forEach(x=>[-.2,.2].forEach(z=>bx(g,.04,.75,.04,x,0,z,blk,true))); const coal=new THREE.Mesh(new THREE.BoxGeometry(1.0,.04,.36),new THREE.MeshBasicMaterial({color:0xff6a20})); coal.position.y=1.0; g.add(coal);
+    for(let k=0;k<5;k++){ const s2=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.32,8).rotateZ(Math.PI/2),new THREE.MeshLambertMaterial({color:0xb0553a})); s2.position.set(-.3+k*.15,1.04,0); g.add(s2); } addSolid({x:gp[0],z:gp[1],hw:.7,hd:.35,c:Math.cos(-f.rot),s:Math.sin(-f.rot),r:.9});
+    NPC_PICKS.push({id:'grill',p:gp,label:'poproś strażaków o kiełbasę z grilla',on:()=>NQ.mietek==='zadanie'&&!hasIt('kielbasa'),act:()=>{ giveIt('kielbasa'); toast('Druh Marek: „Bierz, sąsiedzie, na zdrowie!”<br>Masz <b>kiełbasę z grilla</b> – zanieś ją Mietkowi',3.5); }});
+    const lp=w(-L/2+3.5,FZ+2.6); [[-.6,Math.PI/2],[.6,-Math.PI/2]].forEach(([o,r])=>{ const q=[lp[0]+Math.cos(-f.rot)*o,lp[1]+Math.sin(-f.rot)*o]; const p=makePerson(0x1f2a44,0x1f2a44,pick([0x2a1d14,0x6b4426]),{female:false,style:'jacket',hairStyle:'short',exact:true}); p.position.set(q[0],H(q[0],q[1])+.1,q[1]); p.rotation.y=f.rot+r; scene.add(p); addSolid({x:q[0],z:q[1],hw:.3,hd:.3,c:1,s:0,r:.5}); });
+    NPC_PICKS.push({id:'plotka',p:lp,listen:true,label:'podsłuchaj, o czym rozmawiają strażacy',on:()=>NQ.jadzia==='zadanie'&&!hasIt('plotka'),act:()=>{}}); }
+  // znaczniki celów zadań (świetlne słupy)
+  const beaconM=new THREE.MeshBasicMaterial({color:0xffd34a,transparent:true,opacity:.28,depthWrite:false}); const BEAC=NPC_PICKS.map(k=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,14,12,1,true).translate(0,7,0),beaconM); m.position.set(k.p[0],H(k.p[0],k.p[1]),k.p[1]); m.visible=false; scene.add(m); return m; });
+  let listenT=0, bumpT=0;
+  function npcUpdate(dt){ if(st.inside){ return; } const px=st.car?st.car.x:st.x, pz=st.car?st.car.z:st.z;
+    NPC_PICKS.forEach((k,i)=>BEAC[i].visible=k.on());
+    NPC.forEach(n=>{ const d=Math.hypot(px-n.x,pz-n.z); n.tag.visible=d<22; const tgt=d<5?Math.atan2(px-n.x,pz-n.z):n.face0; let df=tgt-n.p.rotation.y; df=Math.atan2(Math.sin(df),Math.cos(df)); n.p.rotation.y+=df*Math.min(1,dt*3);
+      if(n.id==='mietek'&&NQ.mietek!=='koniec'&&!st.car&&d<1.3&&tAll-bumpT>4){ bumpT=tAll; toast('Mietek: „Noo, szeeefie, bez kiełbaski nie przejdziesz!”',2.5); } });
+    if(NPC_OPEN&&Math.hypot(px-NPC_OPEN.x,pz-NPC_OPEN.z)>4.5) closeNPC();
+    const L=NPC_PICKS.find(k=>k.listen&&k.on()); if(L&&!st.car&&Math.hypot(px-L.p[0],pz-L.p[1])<4){ listenT+=dt; if(listenT>5){ listenT=0; NQ.gi=Math.floor(rnd()*NPC_GOSSIP.length); giveIt('plotka'); toast(`Podsłuchałeś: <i>„${NPC_GOSSIP[NQ.gi]}”</i><br>Wróć do Pani Jadzi`,5); } } else listenT=Math.max(0,listenT-dt); }
+  function nearNPCthing(){ if(st.inside||st.car||NPC_OPEN)return null; let best=null,bd=2.4; NPC.forEach(n=>{ const d=Math.hypot(st.x-n.x,st.z-n.z); if(d<bd){bd=d;best={npc:n};} }); NPC_PICKS.forEach(k=>{ if(k.listen||!k.on())return; const d=Math.hypot(st.x-k.p[0],st.z-k.p[1]); if(d<bd+.4){bd=d;best={pick:k};} }); return best; }
+  function npcHint(E){ const t=nearNPCthing(); if(!t){ const L=NPC_PICKS.find(k=>k.listen&&k.on()); if(L&&Math.hypot(st.x-L.p[0],st.z-L.p[1])<4) return `Podsłuchujesz strażaków… ${Math.max(1,Math.ceil(5-listenT))} s`; return ''; } return t.npc?`${E} porozmawiaj: <b>${t.npc.name}</b>`:`${E} ${t.pick.label}`; }
+  function npcInteract(){ const t=nearNPCthing(); if(!t)return false; if(t.npc) openNPC(t.npc); else t.pick.act(); return true; }
+  // ---------- okno rozmowy ----------
+  let NPC_OPEN=null;
+  { const css=document.createElement('style'); css.textContent=`#npcBox{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(580px,calc(100vw - 24px));max-height:min(62vh,520px);display:flex;flex-direction:column;background:rgba(12,14,16,.94);border:1px solid var(--line);border-top:4px solid var(--accent);z-index:35;font-family:var(--font-ui);color:var(--ink);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#npcBox[hidden]{display:none}#npcBox header{display:flex;align-items:baseline;gap:10px;padding:10px 14px 6px}#npcBox header b{font-family:var(--font-sign);font-size:22px;letter-spacing:.03em}#npcBox header span{color:var(--muted);font-size:13px;flex:1}
+#npcLog{overflow:auto;padding:4px 14px;display:flex;flex-direction:column;gap:6px;min-height:80px}#npcLog p{margin:0;padding:7px 10px;border-radius:3px;line-height:1.4;font-size:15px;max-width:88%}#npcLog p.n{background:rgba(255,255,255,.07);align-self:flex-start}#npcLog p.u{background:rgba(242,194,48,.18);align-self:flex-end}#npcLog p.s{color:var(--muted);font-size:13px;font-style:italic;align-self:center;background:none}
+#npcCh{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px 2px}#npcCh button{font-size:14px;padding:6px 10px}#npcIn{display:flex;gap:6px;padding:8px 14px 12px}#npcIn input{flex:1;min-width:0;background:rgba(255,255,255,.08);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:8px 10px;font:inherit;font-size:15px}
+#npcBox .typing{opacity:.6}`; document.head.appendChild(css);
+    const box=document.createElement('div'); box.id='npcBox'; box.hidden=true; box.setAttribute('role','dialog'); box.innerHTML=`<header><b id="npcName"></b><span id="npcTitle"></span><button class="btn" id="npcX" aria-label="Zamknij rozmowę">Zamknij · Esc</button></header><div id="npcLog" aria-live="polite"></div><div id="npcCh"></div><form id="npcIn"><input id="npcTxt" maxlength="160" autocomplete="off" placeholder="Napisz coś…" aria-label="Twoja wypowiedź"><button class="btn pri">Powiedz</button></form>`; document.body.appendChild(box); }
+  const npcLog=$('npcLog'), npcCh=$('npcCh'), npcTxt=$('npcTxt');
+  function npcSay(cls,t){ const p=document.createElement('p'); p.className=cls; p.textContent=t; npcLog.appendChild(p); npcLog.scrollTop=npcLog.scrollHeight; return p; }
+  function npcHist(id){ return NQ.hist[id]||(NQ.hist[id]=[]); }
+  function npcPush(id,r,t){ const h=npcHist(id); h.push({r,t}); if(h.length>10) h.splice(0,h.length-10); nqSave(); }
+  function npcStage(id){ const s=NQ[id]; if(id==='mietek'&&s==='zadanie'&&hasIt('kielbasa')) return 'ma'; if(id==='seba'&&s==='zadanie'&&hasIt('klucz10')&&hasIt('trytytki')) return 'ma'; if(id==='jadzia'&&s==='zadanie'&&hasIt('plotka')) return 'ma'; return s; }
+  const NPC_CANNED={ mietek:{start:'Nooo, szeeefie… Tędy to nie bardzo. Stoję tu od rana i coś mi w brzuchu burczy.',zadanie:'Kierowniku, kiełbaska z grilla spod remizy. Strażacy dziś grillują, wiem to na pewno.',ma:'Czuję zapach! Szeeefie, to kiełbaska z remizy?',koniec:'Szeeefie, LZS w weekend gra u siebie. Będzie się działo, mówię ci.'},
+    seba:{start:'Co jest, ziomek? Passat mi znowu odwala, ABS świeci jak choinka.',obrazony:'Spadaj, mordo. Z takimi tekstami nie gadam.',zadanie:'Mordo, klucz dziesiątka i trytytki. Bez tego nie ruszę.',ma:'O, mordo, masz to?',koniec:'Ziomek, Passat chodzi jak złoto. Szacun!'},
+    jadzia:{start:'Ojej, dzień dobry, dzień dobry! A pan słyszał, co się wczoraj działo po dyskotece?',zadanie:'Panie dziejku, pod remizą strażacy na pewno gadają. Niech pan podsłucha, tylko dyskretnie!',ma:'No i co, no i co? Kto z kim wracał?',obrazona:'Kto to widział, żeby tak starszą osobę okłamywać! Niech pan idzie jeszcze raz pod remizę.',koniec:'Ojej, to ci dopiero! Dziękuję, złote serce z pana.'} };
+  function npcChoices(n){ npcCh.innerHTML=''; const id=n.id, s=npcStage(id); const add=(t,fn)=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=t; b.onclick=()=>{ npcSay('u',t); npcPush(id,'u',t); fn(); }; npcCh.appendChild(b); };
+    const reply=t=>{ npcSay('n',t); npcPush(id,'n',t); }, sys=t=>npcSay('s',t), after=()=>{ nqSave(); setTimeout(()=>npcChoices(n),30); };
+    if(id==='mietek'){
+      if(s==='start') add('Co trzeba, żeby mnie przepuścić?',()=>{ reply('Kiełbaska z grilla spod remizy OSP, szefie. Jak przyniesiesz, to się przesunę i jeszcze ci powiem, jak LZS zagra w weekend.'); NQ.mietek='zadanie'; sys('Nowe zadanie: przynieś Mietkowi kiełbasę z grilla przy remizie OSP.'); after(); });
+      if(s==='ma') add('Proszę, kiełbasa z remizy',()=>{ takeIt('kielbasa'); NQ.mietek='koniec'; reply('Nooo, szeeefie, złoty człowiek! Przechodź, droga wolna. A LZS w weekend wygra, mówię ci.'); addMoney(150); addXP(40); sys('Zadanie wykonane: +150 zł, +40 XP'); mietekMove(); after(); });
+      add('Jak szanse LZS w weekend?',()=>npcAI(n,'Jak oceniasz szanse LZS Trębaczew w weekendowym meczu?',true)); }
+    if(id==='seba'){
+      if(s==='start'){ add('Ładna fura! B5 FL to klasyk.',()=>{ reply('No w końcu ktoś, kto się zna! Mordo, padł mi czujnik ABS i przegub stuka. Skoczysz po klucz dziesiątkę i trytytki? W garażu przy domu niedaleko jest skrzynka z narzędziami.'); NQ.seba='zadanie'; sys('Nowe zadanie: przynieś Sebie klucz 10 mm i trytytki ze skrzynki przy garażu.'); after(); });
+        add('Co to za złom?',()=>{ reply('Złom?! Ziomek, ty się lepiej odsuń od mojej fury. Nie gadam z tobą.'); NQ.seba='obrazony'; after(); });
+        add('Co się stało z autem?',()=>npcAI(n,'Co się stało z twoim autem?',true)); }
+      if(s==='obrazony') add('Sorry, mordo. Passat jest git.',()=>{ reply('No… dobra, ziomek. Ale uważaj, co gadasz o mojej furze.'); NQ.seba='start'; after(); });
+      if(s==='ma') add('Masz klucz 10 i trytytki',()=>{ takeIt('klucz10'); takeIt('trytytki'); NQ.seba='koniec'; reply('Mordo, jesteś złoty! Trytytka tu, dokręcić tam… i ABS zgasł! Szacun, ziomek.'); addMoney(200); addXP(50); sys('Zadanie wykonane: +200 zł, +50 XP'); after(); }); }
+    if(id==='jadzia'){
+      if(s==='start') add('W czym mogę pomóc, pani Jadziu?',()=>{ reply('Ojej, panie dziejku… Strażacy pod remizą gadają, kto z kim wracał wczoraj z dyskoteki. Niech pan podsłucha i mi powie, tylko prawdę, bo ja wszystko i tak sprawdzę!'); NQ.jadzia='zadanie'; sys('Nowe zadanie: podsłuchaj strażaków pod remizą OSP i wróć do Pani Jadzi.'); after(); });
+      if(s==='obrazona') add('Przepraszam, pójdę jeszcze raz pod remizę.',()=>{ reply('No dobrze, ale tym razem prawdę, kto to widział…'); NQ.jadzia='zadanie'; after(); });
+      if(s==='ma'){ const opts=[NQ.gi]; while(opts.length<3){ const k=Math.floor(rnd()*NPC_GOSSIP.length); if(!opts.includes(k)) opts.push(k); } opts.sort(()=>rnd()-.5);
+        opts.forEach(k=>add(NPC_GOSSIP[k]+'.',()=>{ takeIt('plotka'); if(k===NQ.gi){ NQ.jadzia='koniec'; reply('Ojej, to ci dopiero sensacja! Złote serce z pana, niech pan tu ma coś za fatygę.'); addMoney(120); addXP(40); sys('Zadanie wykonane: +120 zł, +40 XP'); }
+          else { NQ.jadzia='obrazona'; reply('Kłamstwo! Ja wiem, że to nieprawda, kto to widział! Obrażam się. Niech pan idzie jeszcze raz pod remizę.'); sys('Pani Jadzia się obraziła – zadanie zaczyna się od nowa.'); } after(); })); } } }
+  async function npcAI(n,msg,fromBtn){ const id=n.id; if(!fromBtn){ npcSay('u',msg); } npcPush(id,'u',msg); const wait=npcSay('n typing','…'); let t='', ok=false;
+    try{ const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),12000); const r=await fetch(STAT_URL+'/npc',{method:'POST',signal:ctl.signal,body:JSON.stringify({npc:id,stage:npcStage(id),items:NQ.items,gi:NQ.gi,msg,hist:npcHist(id).slice(-9,-1)})}); clearTimeout(tm); const j=await r.json(); t=j.t||''; ok=!!j.ok; }catch(e){}
+    if(!t) t=NPC_CANNED[id][npcStage(id)]||NPC_CANNED[id].start; wait.classList.remove('typing'); wait.textContent=t; npcPush(id,'n',t); npcLog.scrollTop=npcLog.scrollHeight; }
+  function openNPC(n){ NPC_OPEN=n; keys.clear(); try{ document.exitPointerLock&&document.exitPointerLock(); }catch(e){} $('npcName').textContent=n.name; $('npcTitle').textContent=n.title; npcLog.innerHTML=''; $('npcBox').hidden=false;
+    npcHist(n.id).slice(-6).forEach(h=>npcSay(h.r==='u'?'u':'n',h.t)); const s=npcStage(n.id); const open=NPC_CANNED[n.id][s]||NPC_CANNED[n.id].start; npcSay('n',open); npcPush(n.id,'n',open); npcChoices(n); if(!IS_TOUCH) setTimeout(()=>npcTxt.focus(),50); }
+  function closeNPC(){ if(!NPC_OPEN)return; NPC_OPEN=null; $('npcBox').hidden=true; npcTxt.blur(); keys.clear(); canvas.focus(); }
+  $('npcX').addEventListener('click',closeNPC);
+  $('npcIn').addEventListener('submit',e=>{ e.preventDefault(); const t=cleanTxt(npcTxt.value,160); npcTxt.value=''; if(!t||!NPC_OPEN)return; npcAI(NPC_OPEN,t,false); });
+  addEventListener('keydown',e=>{ if(NPC_OPEN&&e.code==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); closeNPC(); } },true);
+  function mietekMove(){ const n=NPC.find(q=>q.id==='mietek'); if(!n)return; n.sol.off=true; const f=B_LEW.front; const nx=n.x+f.nx*2.2, nz=n.z+f.nz*2.2; n.x=nx; n.z=nz; n.p.position.set(nx,H(nx,nz)+.1,nz); n.tag.position.set(nx,H(nx,nz)+2.35,nz); }
+  if(NQ.mietek==='koniec') mietekMove();
+  function extInteract(){ if(SHOP_OPEN){ closeShop(); return; } if(st.car&&nearPump()){ openFuel(); return; } const sd=nearStoreDoor(); if(sd==='out'){ exitRoom(); return; } if(!st.inside){ const gt=nearGate(); if(gt){ toggleGate(gt); return; } } if(npcInteract()) return; if(sd==='in'&&IS_TOUCH){ DOOR_ENT.enter(); return; } const m=nearMission(); if(m){ startMission(m); return; } if(ACTIVE&&ACTIVE.mRetry&&ACTIVE.mIn){ ACTIVE.mRetry=false; ACTIVE.mLock=false; return; } const mg=nearMini(); if(mg){ openMini(mg.id,mg.opt); return; } if(sd==='in'){ DOOR_ENT.enter(); return; } if(!st.car){ const s=nearShop(); if(s){ openShop(s); return; } } }
+  function extHint(){ if(SHOP_OPEN)return ''; const E=IS_TOUCH?'<kbd>Akcja</kbd>':`<kbd>${keyName(KEYMAP.e)}</kbd>`; if(st.car&&nearPump()) return `${E} zatankuj (${FUEL_NAME[st.car.ftype]} ${FUEL[st.car.ftype].toFixed(2).replace('.',',')} zł/l)`; const sd=nearStoreDoor(); if(sd==='out') return `${E} wyjdź na zewnątrz`; if(!st.inside){ const gt=nearGate(); if(gt) return `${E} ${gt.open?'zamknij':'otwórz'} ${gt.kind==='brama'?'bramę':'furtkę'}`; } { const nh=npcHint(E); if(nh) return nh; }
     const m=nearMission(); if(m) return `<b>${m.n}</b> · ${E} rozpocznij misję${m.reward?` (nagroda ${fmt(m.main?m.reward:Math.round(m.reward*(1+st.level*.35)))})`:''}`; if(ACTIVE&&ACTIVE.mRetry&&ACTIVE.mIn) return `${E} spróbuj ponownie`; { const mg=nearMini(); if(mg) return `🎮 ${E} ${mg.label.toLowerCase()}`; } if(sd==='in') return `${E} wejdź do ${DOOR_ENT.label}`; if(!st.car){ const s=nearShop(); if(s) return `${E} ${st.inside?(s.sub?'wypożycz książkę':'kasa – zrób zakupy'):'zrób zakupy: '+s.n}`; } return ''; }
 
   /* ---------- zapis postępu ---------- */
@@ -2267,7 +2368,7 @@ async function boot(saved){
     const sc=STAD.sc; sc.forEach((f,j)=>{ const up=.5+.5*Math.sin(tAll*2.6+f.ph); _V.set(f.x,f.y+1.38+up*.22,f.z+.05); _E.set(0,0,Math.sin(tAll*1.3+f.ph)*.08); _Q.setFromEuler(_E); _M4.compose(_V,_Q,_S); STAD.scarfIM.setMatrixAt(j,_M4);
       [-1,1].forEach((s,k)=>{ _V.set(f.x+s*.24,f.y+.72,f.z); _E.set(0,0,s*(.35-up*.15)); _Q.setFromEuler(_E); _M4.compose(_V,_Q,_S); STAD.armIM.setMatrixAt(j*2+k,_M4); }); });
     STAD.scarfIM.instanceMatrix.needsUpdate=true; STAD.armIM.instanceMatrix.needsUpdate=true; }
-  function mpUpdate(dt){ stadUpdate(dt); if(MP.on) duelUpdate(); crossUpdate(); gatesUpdate(dt); churchDoorUpdate(dt); peopleIdle(dt); turbinesUpdate(dt); animalsUpdate(dt); parkGuysUpdate(dt); interiorUpdate(dt); roomsUpdate(dt); storeDoorAuto(); cullUpdate();
+  function mpUpdate(dt){ stadUpdate(dt); if(MP.on) duelUpdate(); crossUpdate(); gatesUpdate(dt); churchDoorUpdate(dt); peopleIdle(dt); turbinesUpdate(dt); npcUpdate(dt); animalsUpdate(dt); parkGuysUpdate(dt); interiorUpdate(dt); roomsUpdate(dt); storeDoorAuto(); cullUpdate();
     if(FIRE&&FIRE.g.userData.bar){ const on=st.car===FIRE&&Math.abs(FIRE.v)>1, fl=Math.floor(tAll*7)%2; FIRE.g.userData.bar[0].visible=!on||!!fl; FIRE.g.userData.bar[1].visible=!on||!fl; }
     if(OSP_FLAG){ const p=OSP_FLAG.geometry.attributes.position; for(let i=0;i<p.count;i++){ const x=p.getX(i)+.75; p.setZ(i,Math.sin(tAll*4+x*3)*.12*x); } p.needsUpdate=true; }
     MP.chat=MP.chat.filter(c=>{ c.t-=dt; if(c.t<3) c.row.style.opacity=Math.max(0,c.t/3); if(c.t<=0){ c.row.remove(); return false; } return true; });
@@ -2438,7 +2539,7 @@ async function boot(saved){
   // drzwi automatyczne: wystarczy podejść do drzwi (ważne na telefonie)
   const bActEl=document.getElementById('bAct'); let lastAct='';
   const bRadioEl=document.getElementById('bRadio');
-  function actLabel(){ let t=''; if(SHOP_OPEN) t='Zamknij'; else if(st.car&&nearPump()) t='Tankuj'; else { const sd=nearStoreDoor(); if(sd==='out') t='Wyjdź'; else if(sd==='in') t='Wejdź'; else if(!st.inside&&nearGate()) t=nearGate().open?'Zamknij':'Otwórz'; else if(nearMission()) t='Misja'; else if(ACTIVE&&ACTIVE.mRetry&&ACTIVE.mIn) t='Jeszcze raz'; else if(nearMini()) t='Zagraj'; else if(!st.car&&nearShop()) t='Kasa'; else if(st.car) t='Wysiądź'; else if(!st.inside&&nearestParked()) t='Wsiądź'; }
+  function actLabel(){ let t=''; if(SHOP_OPEN) t='Zamknij'; else if(st.car&&nearPump()) t='Tankuj'; else { const sd=nearStoreDoor(); if(sd==='out') t='Wyjdź'; else if(sd==='in') t='Wejdź'; else if(!st.inside&&nearGate()) t=nearGate().open?'Zamknij':'Otwórz'; else if(nearNPCthing()) t=nearNPCthing().npc?'Rozmowa':'Weź'; else if(nearMission()) t='Misja'; else if(ACTIVE&&ACTIVE.mRetry&&ACTIVE.mIn) t='Jeszcze raz'; else if(nearMini()) t='Zagraj'; else if(!st.car&&nearShop()) t='Kasa'; else if(st.car) t='Wysiądź'; else if(!st.inside&&nearestParked()) t='Wsiądź'; }
     if(t!==lastAct){ lastAct=t; bActEl.textContent=t; bActEl.classList.toggle('show',!!t); bActEl.classList.toggle('hot',!!t&&t!=='Wysiądź'); }
     bRadioEl.classList.toggle('show',!!st.car&&st.car.kind!=='bike'); }
   function storeDoorAuto(){ if(st.car||st.dead||GAME.paused||SHOP_OPEN||tAll-(IN.lastSwap||-9)<2.5) return; const v=Math.hypot(st.vx||0,st.vz||0); if(v<.8) return;

@@ -157,6 +157,16 @@ for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep
 python3 tools/glb2js.py && python3 build.py
 ```
 
+## Rozmowy z postaciami (AI)
+
+Trzy postacie mają własne zadania i rozmawiają przez model językowy na serwerze (Cloudflare Workers AI, `server/src/index.js`, adres `/npc`):
+
+- **Mietek** pod Lewiatanem: stoi w przejściu i nie przepuści bez kiełbasy z grilla przy remizie OSP.
+- **Seba** przy przystanku PKS na Wyzwolenia: obok jego Passata B5 FL. Trzeba docenić furę (obraza kończy rozmowę) i przynieść klucz 10 mm i trytytki ze skrzynki przy garażu.
+- **Pani Jadzia** przy płocie niedaleko remizy: trzeba podsłuchać strażaków i wrócić z prawdziwą plotką. Kłamstwo kończy się obrazą i zadanie zaczyna się od nowa.
+
+Przebieg zadań i nagrody są zaprogramowane w grze. Model prowadzi tylko swobodną rozmowę i dostaje od gry wyłącznie identyfikator postaci, etap zadania, listę przedmiotów i treść pytania. Osobowości i zasady (bez wulgaryzmów, tylko zmyślone osoby, bez danych prawdziwych mieszkańców) są zapisane na serwerze. Limity: 12 wiadomości na minutę i 80 dziennie z jednego adresu oraz 2500 dziennie dla całej gry. Gdy serwer jest niedostępny albo limit się wyczerpie, postacie odpowiadają gotowymi kwestiami.
+
 ## Postacie
 
 `tools/blender/postac.py` modeluje człowieka z części zgodnych ze szkieletem gry: tułów (mężczyzna i kobieta × kurtka, t-shirt, bluza z kapturem, płaszcz), głowę z twarzą (oczy z tęczówkami i źrenicami, powieki, brwi, nos, usta, uszy), 6 fryzur, ramię, przedramię z dłonią i palcami, udo i łydkę z butem (podeszwa, sznurówki). Każda ściana ma region koloru, a w wierzchołkach zapisane jest zacienienie (AO). Wynik trafia do `src/data_hum.js`.
