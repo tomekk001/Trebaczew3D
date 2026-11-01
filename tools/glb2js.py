@@ -21,7 +21,7 @@ out_in = ['/* modele wnętrz – doczytywane osobno (na stronie) albo wklejone (
 for p in sorted((root / 'src' / 'models').glob('*.glb')):
     P, N, U, I, jpg = load(p); n = len(P)
     pad = lambda x: x + b'\0' * (-len(x) % 4)
-    q = 1000 if np.abs(P).max() < 32.7 else 500   # pozycje w mm, a dla dużych brył (np. Lidl 67 m) co 2 mm
+    q = min(1000, int(32700 // max(1e-6, float(np.abs(P).max()))))   # pozycje w mm; duże bryły (Lidl 67 m, wiatrak 97 m) z mniejszą dokładnością
     blob = pad(np.round(P * q).astype('<i2').tobytes()) + pad(np.round(np.clip(N, -1, 1) * 127).astype('i1').tobytes()) + pad(np.round(np.clip(U, 0, 1) * 65535).astype('<u2').tobytes()) + I.astype('<u2').tobytes()
     line = f"MODELS[{json.dumps(p.stem)}]={{n:{n},i:{len(I)},{'' if q == 1000 else f'q:{q},'}g:'{base64.b64encode(blob).decode()}',t:'{base64.b64encode(jpg).decode()}'}};"
     (out if p.stem in OUTSIDE else out_in).append(line)
