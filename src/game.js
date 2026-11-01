@@ -374,7 +374,7 @@ async function boot(saved){
     const st=new THREE.Mesh(new THREE.BoxGeometry(.05,.5,.05),fm); st.position.set(-.15,.6,0); g.add(st); const hb=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,.5),tm); hb.position.set(.45,.95,0); g.add(hb); return g; }
   function rotFront(b,f){ const c=Math.cos(b.a), s=Math.sin(b.a); let best=null,bd=1e9;
     [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const nx=u*c-v*s, nz=u*s+v*c; if(Math.abs(nx*f.nx+nz*f.nz)>.5)return; const ex=b.x+(u*b.w/2)*c-(v*b.d/2)*s, ez=b.z+(u*b.w/2)*s+(v*b.d/2)*c; const d=nearestRoad(ex,ez,r=>r.t!=='track').d; if(d<bd){bd=d;best={x:ex,z:ez,nx,nz,len:u?b.d:b.w,dep:u?b.w:b.d,rot:Math.atan2(nx,nz)};} }); return best||f; }
-  function buildLewiatan(b){ const f=rotFront(b,frontSide(b,ROAD_SZK)); const L=f.len, D=f.dep, FZ=D/2; const g=new THREE.Group(); g.position.set(b.x,b.hc,b.z); g.rotation.y=f.rot; scene.add(g); b.front=f;
+  function buildLewiatan(b){ const f0=rotFront(b,frontSide(b,ROAD_SZK)); const f={...f0,x:2*b.x-f0.x,z:2*b.z-f0.z,nx:-f0.nx,nz:-f0.nz,rot:f0.rot+Math.PI}; /* wejście od drugiej strony (obrót o 180°) */ const L=f.len, D=f.dep, FZ=D/2; const g=new THREE.Group(); g.position.set(b.x,b.hc,b.z); g.rotation.y=f.rot; scene.add(g); b.front=f;
     const low=b.hmin-0.4-b.hc, WH=3.4;
     const cream=new THREE.MeshLambertMaterial({color:0xeadfc6,map:plasterTex}), plinthM=new THREE.MeshLambertMaterial({color:0xb9ab94}), roofM=new THREE.MeshLambertMaterial({color:0x3d4248,map:tileTex}), white=new THREE.MeshLambertMaterial({color:0xf4f2ee}), brownF=new THREE.MeshLambertMaterial({color:0x5a3b28}), glassD=new THREE.MeshPhongMaterial({color:0x22303a,shininess:110,specular:0x8899aa});
     bx(g,L,WH-low,D,0,low,0,cream); bx(g,L+.06,.55-low,D+.06,0,low,0,plinthM);
@@ -394,7 +394,7 @@ async function boot(saved){
     bx(g,bl,.18,1.7,bxC,2.75,GZ+.85,white); bx(g,bl,1.15,.35,bxC,2.75,GZ+1.6,new THREE.MeshLambertMaterial({color:0xf6c315}));
     pl(g,bl,1.15,bxC,2.75+.575,GZ+1.79,signM);
     // wejście, witryna z plakatami, drzwi, okna w brązowych ramach
-    const ex0=-L/2+3.2; pl(g,2.6,2.4,ex0,1.2,GZ+.02,new THREE.MeshPhongMaterial({map:glassTex,shininess:110,specular:0x8899aa}));
+    const ex0=-L/2+3.2; { const wD=L2W(b.x,b.z,f.rot); b.door=wD(ex0,GZ+1.5); b.doorF=wD(ex0,GZ+.3); b.doorOut=wD(ex0,GZ+2.8); } pl(g,2.6,2.4,ex0,1.2,GZ+.02,new THREE.MeshPhongMaterial({map:glassTex,shininess:110,specular:0x8899aa}));
     pl(g,1.3,2.0,ex0+2.2,1.2,GZ+.02,new THREE.MeshLambertMaterial({color:0xd9773a})); pl(g,1.1,2.2,-L/2+8.2,1.1,GZ+.02,brownF); pl(g,.9,2.0,-L/2+8.2,1.1,GZ+.03,glassD);
     for(let x=L*0.06+4.6;x<L/2-1;x+=3.3){ pl(g,1.45,1.15,x,1.9,D/2+.01,brownF); pl(g,1.25,.95,x,1.9,D/2+.02,glassD); }
     gables.forEach(([cx,wd],i)=>{ if(i===1){ [-1.6,1.6].forEach(o=>{ pl(g,1.45,1.15,cx+o,1.9,GZ+.01,brownF); pl(g,1.25,.95,cx+o,1.9,GZ+.02,glassD); }); } });
@@ -1312,7 +1312,7 @@ async function boot(saved){
     const ab=st.inside?null:nearAddr(); if(ab&&ab!==lastAddr){ locMain.textContent=(/^\d/.test(ab.addr)?'Trębaczew ':'ul. ')+ab.addr; locSub.textContent=ab.name&&ab.name!=='shelter'?ab.name:'Trębaczew'; locEl.classList.add('on'); locTimer=3; lastLoc=null; } lastAddr=ab;
     starsEl.innerHTML='<b>'+'★'.repeat(st.wanted)+'</b>'+'★'.repeat(5-st.wanted); starsEl.classList.toggle('flash',st.wanted>0);
     hpb.style.width=st.hp+'%';
-    let hint=extHint()||''; if(!hint&&!st.car){ const c=nearestParked(); if(c) hint=`Naciśnij <kbd>${keyName(KEYMAP.f)}</kbd>, aby wsiąść do auta`; else { const pk=LOCKERS.find(l=>Math.hypot(l.x-st.x,l.z-st.z)<4); if(pk) hint='Paczkomat · '+pk.n; } } hintEl.innerHTML=hint; hintEl.classList.toggle('on',!!hint);
+    let hint=extHint()||''; if(!hint&&!st.car){ const c=nearestParked(); if(c) hint=`Naciśnij <kbd>${keyName(KEYMAP.f)}</kbd>, aby wsiąść do auta`; else { const pk=LOCKERS.find(l=>Math.hypot(l.x-st.x,l.z-st.z)<4); if(pk) hint='Paczkomat · '+pk.n; } } hintEl.innerHTML=hint; hintEl.classList.toggle('on',!!hint); if(IS_TOUCH) actLabel();
     if(st.car) vehEl.textContent=vehEl.textContent.split(' · ')[0]+' · '+(vehEl.dataset.kmh||0)+' km/h';
     const far=st.mode===2?600:70; POIS.forEach(p=>{ p.sp.visible=Math.hypot(p.x-st.x,p.z-st.z)<far; }); }
 
@@ -1636,7 +1636,7 @@ async function boot(saved){
 
   /* ---------- sklepy: kupowanie ---------- */
   const SHOPS=[
-    {n:'Lewiatan',get p(){ const f=B_LEW.front; return [f.x+f.nx*2,f.z+f.nz*2]; },items:[['Hot-dog',8,'hp',40],['Napój energetyczny',6,'boost',60],['Woda mineralna',3,'hp',10],['Znicz',7,'znicz',0]]},
+    {n:'Lewiatan',get p(){ if(B_LEW.door) return B_LEW.door; const f=B_LEW.front; return [f.x+f.nx*2,f.z+f.nz*2]; },items:[['Hot-dog',8,'hp',40],['Napój energetyczny',6,'boost',60],['Woda mineralna',3,'hp',10],['Znicz',7,'znicz',0]]},
     {n:'Żabka',get p(){ const f=B_ZAB.front; return [f.x+f.nx*2,f.z+f.nz*2]; },items:[['Kawa z ekspresu',9,'hp',20],['Zapiekanka',12,'hp',50],['Napój energetyczny',6,'boost',60],['Hot-dog',8,'hp',40]]},
     {n:'Euforia Trębaczew',p:[-151,-344],items:[['Pizza',32,'hp',100],['Burger',24,'hp',70],['Frytki',10,'hp',25]]},
     {n:'Apteka Magnolia',p:[-94,-195],items:[['Plastry',6,'hp',25],['Witaminy',15,'hp',45]]},
@@ -1654,10 +1654,10 @@ async function boot(saved){
   const housesBy=(f)=>resHouses.filter(f);
   /* ---------- interakcja (E) i podpowiedzi ---------- */
   function nearShop(){ if(st.inside) return Math.hypot(IN_SHOP.p[0]-st.x,IN_SHOP.p[1]-st.z)<2.2?IN_SHOP:null; return SHOPS.find(s=>{ if(s.n==='Lewiatan')return false; const p=s.p; return Math.hypot(p[0]-st.x,p[1]-st.z)<4.5; }); }
-  function nearStoreDoor(){ if(st.car)return false; if(st.inside) return Math.hypot(IN.x+IN_DOOR[0]-st.x,IN.z+IN_DOOR[1]-st.z)<2.0?'out':false; const p=SHOPS[0].p; return Math.hypot(p[0]-st.x,p[1]-st.z)<3.4?'in':false; }
+  function nearStoreDoor(){ if(st.car)return false; if(st.inside) return Math.hypot(IN.x+IN_DOOR[0]-st.x,IN.z+IN_DOOR[1]-st.z)<(IS_TOUCH?3.2:2.3)?'out':false; const p=SHOPS[0].p; return Math.hypot(p[0]-st.x,p[1]-st.z)<(IS_TOUCH?4.8:3.4)?'in':false; }
   function nearMission(){ return !ACTIVE&&!st.inside&&MISSIONS.find(m=>m.mk.visible&&Math.hypot(m.sp[0]-st.x,m.sp[1]-st.z)<(st.car?5:3)); }
-  function extInteract(){ if(SHOP_OPEN){ closeShop(); return; } const sd=nearStoreDoor(); if(sd==='out'){ exitStore(); return; } if(!st.inside){ const gt=nearGate(); if(gt){ toggleGate(gt); return; } } const m=nearMission(); if(m){ startMission(m); return; } if(sd==='in'){ enterStore(); return; } if(!st.car){ const s=nearShop(); if(s){ openShop(s); return; } } }
-  function extHint(){ if(SHOP_OPEN)return ''; const E=`<kbd>${keyName(KEYMAP.e)}</kbd>`; const sd=nearStoreDoor(); if(sd==='out') return `${E} wyjdź ze sklepu`; if(!st.inside){ const gt=nearGate(); if(gt) return `${E} ${gt.open?'zamknij':'otwórz'} ${gt.kind==='brama'?'bramę':'furtkę'}`; }
+  function extInteract(){ if(SHOP_OPEN){ closeShop(); return; } const sd=nearStoreDoor(); if(sd==='out'){ exitStore(); return; } if(!st.inside){ const gt=nearGate(); if(gt){ toggleGate(gt); return; } } if(sd==='in'&&IS_TOUCH){ enterStore(); return; } const m=nearMission(); if(m){ startMission(m); return; } if(sd==='in'){ enterStore(); return; } if(!st.car){ const s=nearShop(); if(s){ openShop(s); return; } } }
+  function extHint(){ if(SHOP_OPEN)return ''; const E=IS_TOUCH?'<kbd>Akcja</kbd>':`<kbd>${keyName(KEYMAP.e)}</kbd>`; const sd=nearStoreDoor(); if(sd==='out') return `${E} wyjdź ze sklepu`; if(!st.inside){ const gt=nearGate(); if(gt) return `${E} ${gt.open?'zamknij':'otwórz'} ${gt.kind==='brama'?'bramę':'furtkę'}`; }
     const m=nearMission(); if(m) return `<b>${m.n}</b> · ${E} rozpocznij misję${m.reward?` (nagroda ${fmt(m.main?m.reward:Math.round(m.reward*(1+st.level*.35)))})`:''}`; if(sd==='in') return `${E} wejdź do Lewiatana`; if(!st.car){ const s=nearShop(); if(s) return `${E} ${st.inside?'kasa – zrób zakupy':'zrób zakupy: '+s.n}`; } return ''; }
 
   /* ---------- zapis postępu ---------- */
@@ -1672,7 +1672,7 @@ async function boot(saved){
   $('bAct').addEventListener('click',()=>extInteract()); $('bRadio').addEventListener('click',()=>{ if(!AU.ctx)audioStart(); extRadio(); });
   applySeason(); updButtons();
 
-  window.__treb={get GATES(){return GATES;},get MP(){return MP;},get AU(){return AU;},get CB(){return CB;},get TIR(){return TIR_LOT;},startMission:m=>startMission(MISSIONS.find(q=>q.id===m)),get CAMPAIGN(){return CAMPAIGN;},get IN(){return IN;},enterStore:()=>enterStore(),exitStore:()=>exitStore(),showMenu:v=>showMenu(v),get GAME(){return GAME;},addXP:v=>addXP(v),get ORLEN(){return ORLEN;},st,setWanted,openShop:i=>openShop(SHOPS[i]),buy,ENV,COPS,parked,enterExit,get MISSIONS(){return MISSIONS;},get active(){return ACTIVE;},get player(){return player;},get CHUNKS(){return CHUNKS;}};
+  window.__treb={get GATES(){return GATES;},get MP(){return MP;},get AU(){return AU;},get CB(){return CB;},get TIR(){return TIR_LOT;},startMission:m=>startMission(MISSIONS.find(q=>q.id===m)),get CAMPAIGN(){return CAMPAIGN;},get IN(){return IN;},enterStore:()=>enterStore(),exitStore:()=>exitStore(),showMenu:v=>showMenu(v),get GAME(){return GAME;},addXP:v=>addXP(v),get ORLEN(){return ORLEN;},st,setWanted,openShop:i=>openShop(SHOPS[i]),buy,ENV,COPS,parked,enterExit,get MISSIONS(){return MISSIONS;},get active(){return ACTIVE;},get player(){return player;},LEW:B_LEW,get CHUNKS(){return CHUNKS;}};
   /* ---------- aktualizacja co klatkę ---------- */
   function extUpdate(dt){
     envUpdate(dt); audioUpdate(dt); missionUpdate(dt);
@@ -1786,7 +1786,7 @@ async function boot(saved){
   document.getElementById('chatSend').addEventListener('click',sendChat);
   nickIn.addEventListener('change',()=>{ myNick=cleanTxt(nickIn.value,24); try{ localStorage.setItem('trebaczew-nick',myNick); }catch(e){} renderList(); MP.last=''; });
   function mpBlips(dot){ MP.remote.forEach(r=>dot(r.x,r.z,r.col,5.5)); }
-  function mpUpdate(dt){ crossUpdate(); gatesUpdate(dt); animalsUpdate(dt); parkGuysUpdate(dt); interiorUpdate(dt); cullUpdate();
+  function mpUpdate(dt){ crossUpdate(); gatesUpdate(dt); animalsUpdate(dt); parkGuysUpdate(dt); interiorUpdate(dt); storeDoorAuto(); cullUpdate();
     if(FIRE&&FIRE.g.userData.bar){ const on=st.car===FIRE&&Math.abs(FIRE.v)>1, fl=Math.floor(tAll*7)%2; FIRE.g.userData.bar[0].visible=!on||!!fl; FIRE.g.userData.bar[1].visible=!on||!fl; }
     if(OSP_FLAG){ const p=OSP_FLAG.geometry.attributes.position; for(let i=0;i<p.count;i++){ const x=p.getX(i)+.75; p.setZ(i,Math.sin(tAll*4+x*3)*.12*x); } p.needsUpdate=true; }
     MP.chat=MP.chat.filter(c=>{ c.t-=dt; if(c.t<3) c.row.style.opacity=Math.max(0,c.t/3); if(c.t<=0){ c.row.remove(); return false; } return true; });
@@ -1936,10 +1936,17 @@ async function boot(saved){
     if(typeof PARTS!=='undefined') PARTS.visible=false; }
   let fadeEl=document.getElementById('fade');
   function fadeTo(cb){ if(!fadeEl){ cb(); return; } fadeEl.classList.add('on'); setTimeout(()=>{ cb(); setTimeout(()=>fadeEl.classList.remove('on'),60); },260); }
-  function enterStore(){ if(st.car||st.inside)return; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do sklepu',2.5); return; }
-    fadeTo(()=>{ buildInterior(); const f=B_LEW.front; IN.ret={x:f.x+f.nx*3.2,z:f.z+f.nz*3.2,yaw:Math.atan2(-f.nx,-f.nz),face:Math.atan2(f.nx,f.nz)}; st.inside=true; IN.g.visible=true;
+  function enterStore(){ if(st.car||st.inside)return; IN.lastSwap=tAll; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do sklepu',2.5); return; }
+    fadeTo(()=>{ buildInterior(); const f=B_LEW.front, o=B_LEW.doorOut||[f.x+f.nx*3.2,f.z+f.nz*3.2]; IN.ret={x:o[0],z:o[1],yaw:Math.atan2(-f.nx,-f.nz),face:Math.atan2(f.nx,f.nz)}; st.inside=true; IN.g.visible=true;
       st.x=IN.x+IN_DOOR[0]; st.z=IN.z+4.6; st.vx=st.vz=0; st.yaw=0; st.face=Math.PI; st.pitch=.22; st.dist=Math.min(st.dist,3.4); st.distS=st.dist; if(st.mode===2) st.mode=0; locMain.textContent='Lewiatan'; locSub.textContent='Sklep · ul. Szkolna'; locEl.classList.add('on'); locTimer=3; }); }
-  function exitStore(){ if(!st.inside)return; fadeTo(()=>{ st.inside=false; IN.g.visible=false; const r=IN.ret||{x:SHOPS[0].p[0],z:SHOPS[0].p[1],yaw:0,face:0}; st.x=r.x; st.z=r.z; st.yaw=r.yaw; st.face=r.face; st.vx=st.vz=0; if(SHOP_OPEN) closeShop(); }); }
+  function exitStore(){ if(!st.inside)return; IN.lastSwap=tAll; fadeTo(()=>{ st.inside=false; IN.g.visible=false; const r=IN.ret||{x:SHOPS[0].p[0],z:SHOPS[0].p[1],yaw:0,face:0}; st.x=r.x; st.z=r.z; st.yaw=r.yaw; st.face=r.face; st.vx=st.vz=0; if(SHOP_OPEN) closeShop(); }); }
+  // drzwi automatyczne: wystarczy podejść do drzwi (ważne na telefonie)
+  const bActEl=document.getElementById('bAct'); let lastAct='';
+  function actLabel(){ let t='Akcja'; if(SHOP_OPEN) t='Zamknij'; else { const sd=nearStoreDoor(); if(sd==='out') t='Wyjdź'; else if(sd==='in') t='Wejdź'; else if(!st.inside&&nearGate()) t=nearGate().open?'Zamknij':'Otwórz'; else if(nearMission()) t='Misja'; else if(!st.car&&nearShop()) t='Kasa'; }
+    if(t!==lastAct){ lastAct=t; bActEl.textContent=t; bActEl.classList.toggle('hot',t!=='Akcja'); } }
+  function storeDoorAuto(){ if(st.car||st.dead||GAME.paused||SHOP_OPEN||tAll-(IN.lastSwap||-9)<2.5) return; const v=Math.hypot(st.vx||0,st.vz||0); if(v<.8) return;
+    if(st.inside){ const lx=st.x-IN.x-IN_DOOR[0], lz=st.z-IN.z; if(Math.abs(lx)<1.3&&lz>6.4&&(st.vz||0)>.6) exitStore(); return; }
+    const d=B_LEW.doorF; if(!d) return; const f=B_LEW.front; if(Math.hypot(d[0]-st.x,d[1]-st.z)<1.9&&-(st.vx*f.nx+st.vz*f.nz)>.6) enterStore(); }
   function inCam(){ const p=camera.position; const lx=clamp(p.x-IN.x,-IN.W/2+.3,IN.W/2-.3), lz=clamp(p.z-IN.z,-IN.D/2+.3,IN.D/2-.3); p.set(IN.x+lx,clamp(p.y,IN.y+.6,IN.y+3.35),IN.z+lz); if(st.mode!==1) camera.lookAt(st.x,IN.y+1.4,st.z); sky.position.copy(p); }
 
   /* ---------- stacja ORLEN w Działoszynie (przy DK42) ---------- */
@@ -1989,8 +1996,8 @@ async function boot(saved){
   const dkPt=f=>{ const s=sampleLine(DK.pts,DK.len,DK.L*f); return [s.x,s.z]; };
   const C=(id,n,lvl,xp,reward,start,desc,steps,o)=>Object.assign({id,n,lvl,xp,reward,start,desc,steps,main:true},o||{});
   const CAMPAIGN=[
-    C('m1','Pierwsze zakupy',1,80,300,()=>sideOf(B_LEW,6,5),'Zacznij od podstaw: wejdź do Lewiatana (E przy drzwiach) i kup cokolwiek przy kasie.',()=>[{p:fr(B_LEW,2),t:'Kup coś w Lewiatanie',buy:'Lewiatan'}]),
-    C('m2','Znicz dla dziadka',1,90,400,()=>sideOf(B_LEW,6,-5),'Kup znicz w Lewiatanie i zapal go na grobie dziadka na cmentarzu.',()=>[{p:fr(B_LEW,2),t:'Kup znicz w Lewiatanie',buy:'Lewiatan',item:'Znicz'},{p:centroid(CEM.pts),t:'Zapal znicz na grobie',wait:4,r:12}]),
+    C('m1','Pierwsze zakupy',1,80,300,()=>sideOf(B_LEW,10,4),'Zacznij od podstaw: wejdź do Lewiatana (podejdź do drzwi albo naciśnij E / Akcja) i kup cokolwiek przy kasie.',()=>[{p:fr(B_LEW,2),t:'Kup coś w Lewiatanie',buy:'Lewiatan'}]),
+    C('m2','Znicz dla dziadka',1,90,400,()=>sideOf(B_LEW,10,-4),'Kup znicz w Lewiatanie i zapal go na grobie dziadka na cmentarzu.',()=>[{p:fr(B_LEW,2),t:'Kup znicz w Lewiatanie',buy:'Lewiatan',item:'Znicz'},{p:centroid(CEM.pts),t:'Zapal znicz na grobie',wait:4,r:12}]),
     C('m3','Wizyta u lekarza',2,120,300,()=>[DOC_P[0]+6,DOC_P[1]+4],'Kaszel nie przechodzi. Idź do ośrodka zdrowia i odczekaj swoje w poczekalni.',()=>[{p:DOC_P,t:'Poczekaj na wizytę',wait:10,r:6,heal:1}]),
     C('m4','Mecz na orliku',2,140,500,()=>[orlik.m.cx+10,orlik.m.cz-16],'Chłopaki zbierają drużynę. Pograj w piłkę na orliku przy parku.',()=>[{p:[orlik.m.cx,orlik.m.cz],t:'Graj w piłkę',wait:18,r:16,onfoot:1}]),
     C('m5','Browar w parku',3,160,200,()=>fr(B_ZAB,5),'Kup piwo w Żabce i dołącz do ekipy na ławce w parku.',()=>[{p:fr(B_ZAB,2),t:'Kup piwo w Żabce',buy:'Żabka',item:'Piwo'},{p:PARK_P,t:'Posiedź z ekipą na ławce',wait:12,r:5,onfoot:1}]),
