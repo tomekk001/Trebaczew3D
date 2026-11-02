@@ -21,6 +21,16 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 - Ceny paliw na pylonie i przy dystrybutorze pochodzą z pliku `ceny_paliw.json`, który codziennie aktualizuje GitHub Action (`.github/workflows/ceny-paliw.yml`, skrypt `tools/ceny_paliw.py`). Gdy pliku nie da się pobrać, gra używa cen wpisanych w kod.
 - Przejazd kolejowy na DK42: przed pociągiem migają czerwone światła i dzwoni sygnalizator, potem opuszczają się rogatki, a auta czekają w kolejce. Po przejeździe pociągu rogatki się podnoszą.
 
+## Ekonomia i postęp
+
+- **Start:** 200 zł. Obok miejsca startu stoi niebieski **punkt informacyjny „i”**: cel gry, pierwsza i następna misja, jak zarabiać i na co uważać. Tam zaczyna się pierwsza misja.
+- **Misje fabularne:** od 250 zł (pierwsze zakupy) do 25 000 zł (wielki wyścig gminny), razem ok. 92 000 zł. Kolejne odblokowują się z poziomem; progi doświadczenia: 150, 400, 800, 1300, 2000, 2900, 4000, 5400 i 7200 XP. Pierwsze kilkanaście misji idzie płynnie, przed misjami 16, 18 i 20 trzeba dorobić doświadczenia na zleceniach postaci albo misjach pobocznych.
+- **Misje poboczne:** nagroda podstawowa (600–2500 zł) × (1 + 0,35 × poziom), czyli ×1,35 na 1. i ×4,5 na 10. poziomie. Ta sama misja powtarzana raz za razem płaci coraz mniej (−25% za każde powtórzenie, najmniej 40%), a pełna stawka wraca po ok. 15 minutach przerwy. Co 20 minut trzy losowe misje poboczne płacą 1,5× (★ w dzienniku i w punkcie informacyjnym).
+- **Zlecenia postaci:** jednorazowo 80–250 zł i trochę doświadczenia. Kolekcja gum Turbo: 1500 zł.
+- **Pieniądze na chodnikach:** do 30 banknotów naraz, głównie 10–50 zł, czasem 100–150 zł, rzadko zgubiony portfel (300 zł); co 90 s pojawia się nowy.
+- **Wydatki:** mandat po złapaniu przez policję 10% pieniędzy (najwyżej 5000 zł), rachunek ze szpitala po utracie zdrowia 5% (najwyżej 2000 zł), paliwo, zakupy w sklepach.
+- **Cel:** dom za 450 000 zł. Przy rozsądnej grze to ok. 6–7,5 godziny: kampania zajmuje ok. 2 godzin i daje ok. 90 000 zł, resztę dają misje poboczne (ok. 60–75) i zlecenia.
+
 ## Sterowanie (domyślne, można zmienić w Opcjach)
 
 | Klawisz | Akcja |
