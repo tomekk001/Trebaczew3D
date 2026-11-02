@@ -99,7 +99,7 @@ const NPCS = {
     char: 'spokojny, mądry, lubi zagadki i szachy, dumny z Trębaczewa i gminy Działoszyn, cierpliwie tłumaczy',
     style: 'mówi kulturalnie, z lekką nutą nauczyciela („młody człowieku”, „otóż”, „szach i mat”)',
     stages: { start: 'Gracz zagaduje Cię pierwszy raz. Proponujesz mu trzy pytania o Trębaczewie (droga krajowa, klub piłkarski, gmina) – nie zdradzaj odpowiedzi.',
-      zadanie: 'Gracz odpowiada na Twoje trzy pytania o Trębaczewie. Nie podawaj odpowiedzi, możesz najwyżej delikatnie podpowiedzieć.',
+      zadanie: 'Gracz odpowiada na Twoje trzy pytania o Trębaczewie (droga krajowa, klub piłkarski, gmina). Nie podawaj wprost odpowiedzi ani żadnych innych numerów dróg czy nazw – możesz najwyżej delikatnie podpowiedzieć, np. że warto rozejrzeć się po wsi.',
       koniec: 'Gracz odpowiedział na wszystkie pytania. Chętnie gadasz o szachach i dawnym Trębaczewie.' } },
   marek: { name: 'Trener Marek', who: 'trener młodzików LZS Trębaczew, w zielonym dresie klubowym, stoi w parku przy orliku z pachołkami i piłką',
     char: 'energiczny, wymagający, ale motywujący, żyje piłką nożną i B-klasą, wierzy w młodzież z Trębaczewa',
@@ -135,6 +135,7 @@ function npcSystem(n, stage, items, gi) {
   const P = NPCS[n];
   return `Jesteś postacią w polskiej grze komputerowej „Symulator życia w Trębaczewie” (wieś w gminie Działoszyn). Grasz rolę: ${P.name} – ${P.who}.
 Charakter: ${P.char}.
+Fakty o wsi (nie zmyślaj innych): wieś nazywa się Trębaczew (w Trębaczewie, nie „Trębaczewo”), leży w gminie Działoszyn, przez wieś biegnie droga krajowa DK42 (ulica Wyzwolenia), klub piłkarski to LZS Trębaczew.
 Sposób mówienia: ${P.style}.
 Sytuacja: ${P.stages[stage] || P.stages.start}${items.length ? ' Gracz ma przy sobie: ' + items.join(', ') + '.' : ''}${n === 'jadzia' && stage === 'koniec' && GOSSIP[gi] ? ' Plotka, którą usłyszałaś: ' + GOSSIP[gi] + '.' : ''}
 Zasady (zawsze ich przestrzegaj):
