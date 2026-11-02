@@ -4,6 +4,8 @@ import { DurableObject } from 'cloudflare:workers';
 
 const MAX = 30;
 // skrót SHA-256 klucza do podglądu zgłoszeń (sam klucz zna tylko właściciel gry)
+// klucz publiczny do szyfrowania zgłoszeń pobieranych automatycznie (odszyfrować je może tylko właściciel klucza prywatnego)
+const REPORT_PUB = 'MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnuhjs05kJ4EJnGva2gaJpmzrOrO9D45uNN3d0MuLzCYkgIoB7YKiBimVCTwU+eDPuTLZ7Dfe256RLfXUNbvZsTXtmYFChy1U5/OE7v1cVisldTh/cEwMhbQjP00KGfu59x10siny2AfUUnZqIxuJZh7wjKr4SqQ+vHns/4VJe0q/q8OETw/MIAFWdGvJZMph2wUP6cSzM9B0t0bshPcjIay7Qmix+OLUXBuORgk4gOzKCfyyslRKhRX6oSehBen6f+g7AqXCJgMqKb5RUZ7nNgeKEAU5qfuzCn0By90p4XxQwI/0MO9ct5AImz+i3MkzLpFRgqor9iEtLzaNguMP4XVrYhntiN5drwoEhNRs3BuAaMUy0WxJy3cPVj5RfQJxuLwB5T4Ta8G2plmiVcZ9p3vdPDdxTObfCSiuAORSEzqUcvICjf0PBI+UMqijr8Snsf2gzrXkhV5ZKV9C6IeTsE2xB3EKaOwwvJDUStShXqbtAgmRA3DT8jxt3HvaF84LAgMBAAE=';
 const REPORT_HASH = 'a9ec3e12248619df754f448947d3957ab891bb8f9b9782ca6c298c0f04127c1a';
 const ROOMS = /^t[1-9]$/;
 const BAD = ['kurw','chuj','huj','pierdol','jeb','pizd','cip','skurw','dziwk','pedal','pedał','spierdal','zajeb','wypierdal','fiut','kutas','szmat','debil','cwel','nigg','nigg'];
@@ -160,6 +162,17 @@ export default {
       const body = await req.text(); if (body.length > 8000) return new Response('za duże', { status: 413, headers: cors });
       const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/report', { method: 'POST', body, headers: { 'x-ip': req.headers.get('cf-connecting-ip') || '' } });
       return new Response(await r.text(), { status: r.status, headers: { ...cors, 'content-type': 'application/json' } });
+    }
+    if (url.pathname === '/reports-enc') {
+      // te same zgłoszenia, ale zaszyfrowane (AES-GCM, klucz AES zaszyfrowany RSA-OAEP) – do pobierania przez GitHub Actions bez ujawniania treści
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/reports'); const txt = await r.text();
+      const b64 = u => { const a = new Uint8Array(u); let s = ''; for (let i = 0; i < a.length; i += 8192) s += String.fromCharCode(...a.subarray(i, i + 8192)); return btoa(s); };
+      const der = Uint8Array.from(atob(REPORT_PUB), c => c.charCodeAt(0));
+      const pub = await crypto.subtle.importKey('spki', der, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['encrypt']);
+      const aes = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']); const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aes, new TextEncoder().encode(txt));
+      const ek = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pub, await crypto.subtle.exportKey('raw', aes));
+      return new Response(JSON.stringify({ ek: b64(ek), iv: b64(iv), ct: b64(ct) }), { headers: { ...cors, 'content-type': 'application/json', 'cache-control': 'no-store' } });
     }
     if (url.pathname === '/reports') {
       const k = url.searchParams.get('k') || ''; const h = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(k)))].map(b => b.toString(16).padStart(2, '0')).join('');

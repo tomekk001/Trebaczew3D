@@ -1,0 +1,10 @@
+name: Pobierz zgłoszenia (zaszyfrowane)
+on: workflow_dispatch
+jobs:
+  pobierz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Zgłoszenia graczy (szyfrowane – treść widzi tylko właściciel klucza prywatnego)
+        run: |
+          curl -s -m 30 https://trebaczew-mp.kontakt-3e3.workers.dev/reports-enc > z.json
+          echo "ZGLOSZENIA_BEGIN"; base64 -w0 z.json; echo; echo "ZGLOSZENIA_END"
