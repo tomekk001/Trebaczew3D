@@ -178,9 +178,119 @@ async function npcTalk(req, env, cors) {
   return J({ ok: true, t: out });
 }
 
+const STATS_ALLOWED_LOGIN = 'tomekk001';
+const STATS_SESSION_COOKIE = '__Host-treb-stats';
+const STATS_STATE_COOKIE = '__Host-treb-stats-state';
+const STATS_SESSION_SECONDS = 8 * 60 * 60;
+const encoder = new TextEncoder();
+
+function base64UrlEncode(bytes) {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlDecode(value) {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+  try { return Uint8Array.from(atob(padded), c => c.charCodeAt(0)); } catch (e) { return null; }
+}
+
+function cookieValue(req, name) {
+  for (const cookie of (req.headers.get('cookie') || '').split(';')) {
+    const part = cookie.trim(), i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i) === name) return part.slice(i + 1);
+  }
+  return '';
+}
+
+async function statsSessionToken(secret, expires) {
+  const payload = base64UrlEncode(encoder.encode(`${STATS_ALLOWED_LOGIN}:${expires}`));
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(payload)));
+  return `${payload}.${base64UrlEncode(signature)}`;
+}
+
+async function hasStatsSession(req, env) {
+  const token = cookieValue(req, STATS_SESSION_COOKIE), parts = token.split('.');
+  if (!env.STATS_SESSION_SECRET || env.STATS_SESSION_SECRET.length < 32 || parts.length !== 2) return false;
+  const [payload, encodedSignature] = parts, signature = base64UrlDecode(encodedSignature), payloadBytes = base64UrlDecode(payload);
+  if (!signature || !payloadBytes) return false;
+  const values = new TextDecoder().decode(payloadBytes).split(':');
+  if (values.length !== 2 || values[0] !== STATS_ALLOWED_LOGIN || !/^\d+$/.test(values[1]) || +values[1] <= Math.floor(Date.now() / 1000)) return false;
+  const key = await crypto.subtle.importKey('raw', encoder.encode(env.STATS_SESSION_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+  return crypto.subtle.verify('HMAC', key, signature, encoder.encode(payload));
+}
+
+function noStoreError(message, status) {
+  return new Response(message, { status, headers: { 'cache-control': 'no-store', 'content-type': 'text/plain; charset=utf-8' } });
+}
+
+function clearStatsStateCookie() {
+  return `${STATS_STATE_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
+    if (url.pathname === '/auth/login' && req.method === 'GET') {
+      if (await hasStatsSession(req, env)) return Response.redirect(`${url.origin}/statystyki.html`, 302);
+      if (!env.GITHUB_OAUTH_CLIENT_ID || !env.GITHUB_OAUTH_CLIENT_SECRET || !env.STATS_SESSION_SECRET || env.STATS_SESSION_SECRET.length < 32) {
+        return noStoreError('Logowanie statystyk nie jest skonfigurowane w Cloudflare Worker.', 503);
+      }
+      const state = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
+      const authorize = new URL('https://github.com/login/oauth/authorize');
+      authorize.searchParams.set('client_id', env.GITHUB_OAUTH_CLIENT_ID);
+      authorize.searchParams.set('redirect_uri', `${url.origin}/auth/callback`);
+      authorize.searchParams.set('scope', 'read:user');
+      authorize.searchParams.set('state', state);
+      const response = new Response(null, { status: 302, headers: { location: authorize.href, 'cache-control': 'no-store' } });
+      response.headers.append('set-cookie', `${STATS_STATE_COOKIE}=${state}; Path=/; Max-Age=300; HttpOnly; Secure; SameSite=Lax`);
+      return response;
+    }
+    if (url.pathname === '/auth/callback' && req.method === 'GET') {
+      const state = url.searchParams.get('state') || '', code = url.searchParams.get('code') || '';
+      if (!state || state !== cookieValue(req, STATS_STATE_COOKIE) || !code || code.length > 512) {
+        const response = noStoreError('Nieprawidłowa lub wygasła sesja logowania GitHub.', 400);
+        response.headers.append('set-cookie', clearStatsStateCookie());
+        return response;
+      }
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: { accept: 'application/json', 'content-type': 'application/json', 'user-agent': 'Trebaczew3D' },
+        body: JSON.stringify({ client_id: env.GITHUB_OAUTH_CLIENT_ID, client_secret: env.GITHUB_OAUTH_CLIENT_SECRET, code, redirect_uri: `${url.origin}/auth/callback` })
+      });
+      const tokenBody = await tokenResponse.json();
+      if (!tokenResponse.ok || typeof tokenBody.access_token !== 'string') {
+        const response = noStoreError('GitHub nie zaakceptował logowania.', 401);
+        response.headers.append('set-cookie', clearStatsStateCookie());
+        return response;
+      }
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers: { accept: 'application/vnd.github+json', authorization: `Bearer ${tokenBody.access_token}`, 'user-agent': 'Trebaczew3D' }
+      });
+      const user = await userResponse.json();
+      if (!userResponse.ok || typeof user.login !== 'string' || user.login.toLowerCase() !== STATS_ALLOWED_LOGIN) {
+        const response = noStoreError('To konto GitHub nie ma dostępu do statystyk.', 403);
+        response.headers.append('set-cookie', clearStatsStateCookie());
+        return response;
+      }
+      const expires = Math.floor(Date.now() / 1000) + STATS_SESSION_SECONDS;
+      const response = new Response(null, { status: 302, headers: { location: `${url.origin}/statystyki.html`, 'cache-control': 'no-store' } });
+      response.headers.append('set-cookie', clearStatsStateCookie());
+      response.headers.append('set-cookie', `${STATS_SESSION_COOKIE}=${await statsSessionToken(env.STATS_SESSION_SECRET, expires)}; Path=/; Max-Age=${STATS_SESSION_SECONDS}; HttpOnly; Secure; SameSite=Lax`);
+      return response;
+    }
+    if (url.pathname === '/statystyki.html' && req.method === 'GET') {
+      if (!await hasStatsSession(req, env)) {
+        return new Response(null, { status: 302, headers: { location: `${url.origin}/auth/login`, 'cache-control': 'no-store' } });
+      }
+      const asset = await env.ASSETS.fetch(req);
+      const headers = new Headers(asset.headers);
+      headers.set('cache-control', 'private, no-store');
+      headers.set('x-content-type-options', 'nosniff');
+      return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
+    }
     if (url.pathname === '/' || url.pathname === '/status') {
       const out = {};
       for (let i = 1; i <= 3; i++) { const r = await env.ROOM.get(env.ROOM.idFromName('t' + i)).fetch('https://do/count'); out['t' + i] = +(await r.text()); }
@@ -217,12 +327,15 @@ export default {
       return new Response(await r.text(), { headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
     }
     if (url.pathname === '/stats') {
+      if (!await hasStatsSession(req, env)) {
+        return new Response('{"error":"unauthorized"}', { status: 401, headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+      }
       const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/stats');
       const j = await r.json(); let online = 0; const pokoje = {};
       for (let i = 1; i <= 3; i++) { const c = +(await (await env.ROOM.get(env.ROOM.idFromName('t' + i)).fetch('https://do/count')).text()); pokoje['t' + i] = c; online += c; }
       j.online = online; j.pokoje = pokoje;
       if (online > (j.peak || 0)) await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/peak', { method: 'POST', body: String(online) });
-      return new Response(JSON.stringify(j), { headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=20' } });
+      return new Response(JSON.stringify(j), { headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'private, no-store' } });
     }
     const m = url.pathname.match(/^\/room\/([a-z0-9]+)$/);
     if (!m || !ROOMS.test(m[1])) return new Response('Nie ma takiego pokoju', { status: 404 });
