@@ -138,7 +138,7 @@ Minigry są częścią misji (m4, m5, m8, s6–s8). Można też zagrać w nie w 
 
 ## Zgłoszenia błędów
 
-Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyta je na stronie `zgloszenia.html`, po podaniu klucza dostępu. W kodzie jest tylko skrót SHA-256 tego klucza. Jeśli w `zglos.html` ustawisz `ACCESS_KEY` z Web3Forms, zgłoszenia dodatkowo przyjdą e-mailem.
+Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyta je na stronie `zgloszenia.html`, po podaniu klucza dostępu. W kodzie jest tylko skrót SHA-256 tego klucza. Jeśli w `zglos.html` ustawisz `ACCESS_KEY` z Web3Forms, zgłoszenia dodatkowo przyjdą e-mailem. Workflow „Pobierz zgłoszenia (zaszyfrowane)” (`.github/workflows/zgloszenia.yml`) pobiera je z adresu `/reports-enc`: treść jest zaszyfrowana kluczem publicznym (RSA-OAEP + AES-GCM), więc w publicznych logach Actions nie widać zgłoszeń, a odczytać je może tylko posiadacz klucza prywatnego.
 
 ## Modele z Blendera
 

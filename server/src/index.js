@@ -105,6 +105,7 @@ Sposób mówienia: ${P.style}.
 Sytuacja: ${P.stages[stage] || P.stages.start}${items.length ? ' Gracz ma przy sobie: ' + items.join(', ') + '.' : ''}${n === 'jadzia' && stage === 'koniec' && GOSSIP[gi] ? ' Plotka, którą usłyszałaś: ' + GOSSIP[gi] + '.' : ''}
 Zasady (zawsze ich przestrzegaj):
 - Odpowiadaj wyłącznie po polsku, 1–3 krótkimi zdaniami, w pierwszej osobie, jako ${P.name}. Bez opisów w nawiasach i bez gwiazdek.
+- Odpowiadaj sensownie i na temat tego, co powiedział gracz, poprawną polszczyzną. Jeśli nie rozumiesz, dopytaj krótko po swojemu.
 - Wszystkie osoby, imiona i plotki są zmyślone. Nigdy nie podawaj prawdziwych nazwisk, adresów ani informacji o prawdziwych mieszkańcach.
 - Bez przekleństw, wulgaryzmów, treści erotycznych, przemocy, polityki i obrażania kogokolwiek. Nie namawiaj gracza do picia alkoholu ani jazdy po alkoholu.
 - Nie wymyślaj nowych zadań, nagród ani przedmiotów – o zadaniu mów tylko zgodnie z sytuacją powyżej.
@@ -136,7 +137,7 @@ async function npcTalk(req, env, cors) {
   if (!env.AI) return J({ ok: false, t: NPC_FALLBACK[n] });
   let out = '';
   for (const model of used <= NPC_BEST_N ? [NPC_BEST, NPC_CHEAP] : [NPC_CHEAP]) {
-    try { const r = await env.AI.run(model, { messages, max_tokens: 140, temperature: .8 }); out = npcClean(r && (r.response || (r.result && r.result.response)), n); if (out) break; } catch (e) { out = ''; }
+    try { const r = await env.AI.run(model, { messages, max_tokens: 140, temperature: .7 }); out = npcClean(r && (r.response || (r.result && r.result.response)), n); if (out) break; } catch (e) { out = ''; }
   }
   if (!out || censor(out) !== out) return J({ ok: false, t: NPC_FALLBACK[n] });
   return J({ ok: true, t: out });
