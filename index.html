@@ -238,6 +238,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 #questLog .qd h2{margin:0 0 4px;font-family:var(--font-display);font-weight:400;font-size:36px;letter-spacing:.02em}
 #questLog .qd .meta{color:var(--accent);font-family:var(--font-sign);font-size:17px;margin:0 0 12px}
 #questLog .qd p{font-size:16px;line-height:1.5;max-width:60ch}
+#questLog .turboGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:6px;margin-top:10px}#questLog .turboGrid span{border:1px solid var(--line);padding:6px 8px;font-size:14px;color:var(--muted)}#questLog .turboGrid span.have{color:var(--ink);background:rgba(242,194,48,.12)}#questLog .turboGrid b{display:block;font-size:12px;color:var(--muted)}
 @media (max-width:760px){ #questLog{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;inset:calc(8px + env(safe-area-inset-top,0px)) 8px calc(8px + env(safe-area-inset-bottom,0px))} #questLog .ql{border-right:0} #questLog .qd{border-top:1px solid var(--line);max-height:34vh} }
 #winScreen{position:fixed;inset:0;z-index:28;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,rgba(30,24,6,.75),rgba(0,0,0,.92));text-align:center}
 #winScreen h1{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(46px,9vw,110px);color:var(--accent);text-shadow:0 5px 0 #000;line-height:.95}
@@ -2357,6 +2358,7 @@ async function boot(saved){
     dog(){ const t=AU.ctx.currentTime; for(let i=0;i<2;i++){ tone('sawtooth',420,t+i*.28,.18,.05,null,180); noiseHit(t+i*.28,.15,.06,'bandpass',700); } },
     bell(n){ const t=AU.ctx.currentTime; for(let k=0;k<n;k++) [1,2,2.4,3,4.2].forEach((m,j)=>tone('sine',196*m,t+k*1.6,3,.05/(j+1))); },
     horn(v){ v=v===undefined?1:v; if(v<.02)return; const t=AU.ctx.currentTime; tone('sawtooth',311,t,1.4,.05*v); tone('sawtooth',370,t,1.4,.05*v); },
+    schoolBell(){ const t=AU.ctx.currentTime; for(let k=0;k<44;k++) tone('square',1046+(k%2)*14,t+k*.055,.05,.022); },
     cash(){ const t=AU.ctx.currentTime; tone('square',1320,t,.08,.05); tone('square',1760,t+.08,.18,.05); },
     win(){ const t=AU.ctx.currentTime; [523,659,784,1047].forEach((f,i)=>tone('square',f,t+i*.12,.25,.05)); } };
   /* ---------- muzyka w aucie: 4 stacje z prawdziwą perkusją, basem, akordami i melodią ---------- */
@@ -2487,9 +2489,13 @@ async function boot(saved){
   function openShop(s){ SHOP_OPEN=s; keys.clear(); shopEl.hidden=false; shopEl.innerHTML=`<h2>${s.n}</h2><p class="sub">${s.sub||'Kasa'} · masz ${fmt(st.money)}</p>`+s.items.map((it,i)=>`<button data-i="${i}"><kbd>${i+1}</kbd> ${it[0]}<span>${it[1]} zł</span></button>`).join('')+`<button data-i="x" class="close">Wyjdź <kbd>E</kbd></button>`;
     shopEl.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ const i=b.dataset.i; if(i==='x')closeShop(); else buy(+i); })); }
   function closeShop(){ SHOP_OPEN=null; shopEl.hidden=true; canvas.focus(); }
+  const TURBO_CARS=['Porsche 911 Turbo','Lamborghini Countach','Ferrari Testarossa','BMW M1','Audi Quattro','Lancia Delta Integrale','Mercedes 190E','Volkswagen Golf GTI','Toyota Supra','Ford Sierra Cosworth','Fiat 126p','Polonez Coupe','Ferrari F40','Lotus Esprit','De Tomaso Pantera','Ford Mustang','Chevrolet Corvette','Nissan 300ZX','Mazda RX-7','Renault 5 Turbo','Peugeot 205 GTI','Saab 900 Turbo','Volvo 240','Opel Manta','Alfa Romeo Spider','Jaguar XJS','Aston Martin V8','Dodge Viper','Honda NSX','Bugatti EB110'];
+  const TURBO_HAVE=new Set();
   function buy(i){ const it=SHOP_OPEN&&SHOP_OPEN.items[i]; if(!it)return; if(st.money<it[1]){ toast('Za mało pieniędzy',2); return; } st.money-=it[1]; shownMoney=st.money; moneyEl.textContent=fmt(st.money); if(AU.ctx&&AU.on)sfx.cash();
     if(it[2]==='book'){ st.books=(st.books||0)+1; toast(`Wypożyczono: ${it[0]}`,3); saveGame(); openShop(SHOP_OPEN); return; } if(it[2]==='canister'){ st.canister=(st.canister||0)+it[3]; }
-    if(it[2]==='hp') st.hp=Math.min(100,st.hp+it[3]); if(it[2]==='boost') st.boost=it[3]; if(it[2]==='turbo'){ st.turbo=(st.turbo||0)+1; const TC=['Porsche 911 Turbo','Lamborghini Countach','Ferrari Testarossa','BMW M1','Audi Quattro','Lancia Delta','Mercedes 190E','Volkswagen Golf GTI','Toyota Supra','Ford Sierra Cosworth','Fiat 126p','Polonez Coupe']; toast(`Guma Turbo! Historyjka nr ${1+Math.floor(rnd()*120)}: <b>${pick(TC)}</b><br>W kolekcji masz już ${st.turbo} ${st.turbo===1?'historyjkę':st.turbo%10>=2&&st.turbo%10<=4&&(st.turbo%100<10||st.turbo%100>20)?'historyjki':'historyjek'}`,3.2); saveGame(); openShop(SHOP_OPEN); return; } toast(`Kupiono: ${it[0]}`,2); saveGame(); openShop(SHOP_OPEN); }
+    if(it[2]==='hp') st.hp=Math.min(100,st.hp+it[3]); if(it[2]==='boost') st.boost=it[3]; if(it[2]==='turbo'){ st.turbo=(st.turbo||0)+1; const i=Math.floor(rnd()*TURBO_CARS.length), nw=!TURBO_HAVE.has(i); TURBO_HAVE.add(i); const n=TURBO_HAVE.size, N=TURBO_CARS.length;
+      toast(`Guma Turbo! Historyjka nr ${i+1}: <b>${TURBO_CARS[i]}</b> ${nw?'– nowa!':'(już masz)'}<br>Kolekcja: ${n}/${N}`,3.2);
+      if(nw&&n===N){ setTimeout(()=>{ toast(`<b>PEŁNA KOLEKCJA TURBO!</b><br>+${fmt(1500)} · +150 XP`,4.5); addMoney(1500); addXP(150); },1800); } saveGame(); openShop(SHOP_OPEN); return; } toast(`Kupiono: ${it[0]}`,2); saveGame(); openShop(SHOP_OPEN); }
   addEventListener('keydown',e=>{ if(!SHOP_OPEN)return; const n=parseInt(e.key,10); if(n>=1&&n<=9){ buy(n-1); e.preventDefault(); } if(e.key==='Escape'){ closeShop(); e.preventDefault(); } },true);
 
   /* ---------- misje ---------- */
@@ -2602,10 +2608,20 @@ async function boot(saved){
     NPC_PICKS.push({id:'plotka',p:lp,listen:true,label:'podsłuchaj, o czym rozmawiają strażacy',on:()=>NQ.jadzia==='zadanie'&&!hasIt('plotka'),act:()=>{}}); }
   // znaczniki celów zadań (świetlne słupy)
   const beaconM=new THREE.MeshBasicMaterial({color:0xffd34a,transparent:true,opacity:.28,depthWrite:false}); const BEAC=NPC_PICKS.map(k=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,14,12,1,true).translate(0,7,0),beaconM); m.position.set(k.p[0],H(k.p[0],k.p[1]),k.p[1]); m.visible=false; scene.add(m); return m; });
+  // opisy zadań postaci do dziennika (Q) i cel na radarze
+  const NPC_INFO={ mietek:{where:'pod Lewiatanem',task:'Przynieś Mietkowi kiełbasę z grilla przy remizie OSP.',pick:'grill',money:150,xp:40},
+    seba:{where:'w parku przy Zielonej, obok Passata',task:'Przynieś Sebie klucz 10 mm i trytytki ze skrzynki przy garażu.',pick:'narzedzia',money:200,xp:50,bad:'Seba jest obrażony – przeproś go i doceń Passata.'},
+    jadzia:{where:'przed domem niedaleko remizy OSP',task:'Podsłuchaj strażaków pod remizą OSP (postój chwilę obok) i wróć z plotką.',pick:'plotka',money:120,xp:40,bad:'Pani Jadzia jest obrażona – przeproś i idź jeszcze raz pod remizę.'} };
+  Object.keys(NPC_DEF).forEach(id=>{ const D=NPC_DEF[id]; NPC_INFO[id]={where:{andrzej:'przy przystanku przy kościele',soltys:'przy bibliotece',halina:'przy Szkolnej, niedaleko Lewiatana',stasiek:'przy swoim ciągniku',kasia:'przy orliku',wiesiek:'przy Szkolnej, koło ośrodka zdrowia'}[id]||'',task:D.task.replace(/^Nowe zadanie: /,'').replace(/^./,c=>c.toUpperCase()),pick:id+'_pick',money:D.money,xp:D.xp}; });
+  function npcTarget(n){ const s=npcStage(n.id), I=NPC_INFO[n.id]; if(s==='zadanie'&&I){ const k=NPC_PICKS.find(q=>q.id===I.pick); if(k) return {p:k.p,what:'cel zadania'}; } if(s==='koniec') return null; return {p:[n.x,n.z],what:n.name}; }
+  // znaczek nad głową: „!” – zadanie do wzięcia, „?” – można oddać zadanie
+  const markTex=(ch,bg)=>{ const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d'); x.fillStyle=bg; x.beginPath(); x.arc(32,32,28,0,7); x.fill(); x.lineWidth=4; x.strokeStyle='#1a1a1a'; x.stroke(); x.fillStyle='#1a1a1a'; x.font='900 44px Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(ch,32,35); const t=new THREE.CanvasTexture(c); return new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}); };
+  const MARK_EX=markTex('!','#ffd34a'), MARK_Q=markTex('?','#7ee08a');
+  NPC.forEach(n=>{ const sp=new THREE.Sprite(MARK_EX); sp.scale.set(.55,.55,.55); sp.position.set(n.x,H(n.x,n.z)+2.95,n.z); sp.renderOrder=5; sp.visible=false; scene.add(sp); n.mark=sp; });
   let listenT=0, bumpT=0;
   function npcUpdate(dt){ if(st.inside){ return; } const px=st.car?st.car.x:st.x, pz=st.car?st.car.z:st.z;
     NPC_PICKS.forEach((k,i)=>BEAC[i].visible=k.on());
-    NPC.forEach(n=>{ const d=Math.hypot(px-n.x,pz-n.z); n.tag.visible=d<22; const tgt=d<5?Math.atan2(px-n.x,pz-n.z):n.face0; let df=tgt-n.p.rotation.y; df=Math.atan2(Math.sin(df),Math.cos(df)); n.p.rotation.y+=df*Math.min(1,dt*3);
+    NPC.forEach(n=>{ const d=Math.hypot(px-n.x,pz-n.z); n.tag.visible=d<22; if(n.mark){ const s=npcStage(n.id); const m=s==='start'?MARK_EX:s==='ma'?MARK_Q:null; n.mark.visible=!!m&&d<60&&!NPC_OPEN; if(m){ n.mark.material=m; n.mark.position.y=H(n.x,n.z)+2.95+Math.sin(tAll*2.5)*.08; } } const tgt=d<5?Math.atan2(px-n.x,pz-n.z):n.face0; let df=tgt-n.p.rotation.y; df=Math.atan2(Math.sin(df),Math.cos(df)); n.p.rotation.y+=df*Math.min(1,dt*3);
       if(n.def&&n.def.wobble){ n.p.rotation.z=Math.sin(tAll*1.3)*.05; n.p.rotation.x=Math.sin(tAll*.83+1)*.035; } });
     NPC_PICKS.forEach(k=>{ if(k.g&&!k.keep) k.g.visible=k.on(); });
     if(NPC_OPEN&&Math.hypot(px-NPC_OPEN.x,pz-NPC_OPEN.z)>4.5) closeNPC();
@@ -3369,7 +3385,7 @@ async function boot(saved){
   const SCHOOL_ROOM=defRoom({kind:'school',W:40,D:22,HT:2*SCH_F,doorX:0,col:0xe07b39,wall:0xece6d4,floor:'#b0a898',ceil:0xf0f0ec,ceilE:0x4c4c4a,wallE:0x2c2b26,floorE:0x1c1c1a,levels:2}); SCHOOL_ROOM.title='Szkoła Podstawowa w Trębaczewie';
   SCHOOL_ROOM.items=[['Guma Turbo',1,'turbo',0],['Prince Polo',2,'hp',10],['Drożdżówka z serem',3,'hp',20],['Sok Kubuś',3,'hp',12],['Oranżada w proszku',1,'boost',30],['Kanapka z szynką',5,'hp',30]]; SCHOOL_ROOM.shopName='Sklepik szkolny'; SCHOOL_ROOM.sub='Pani Krysia · przerwa trwa 10 minut';
   if(SCHOOL_M){ const {cx,cz,an}=SCHOOL_M, c=Math.cos(an), sn=Math.sin(an), W0=(x,z)=>[cx+x*c-z*sn,cz+x*sn+z*c]; addEnt(SCHOOL_ROOM,'szkoły',W0(-4.25,13.1),[-sn,c]); }
-  const SCH_SPOT={teach:[-7.25,5.4,1],k1a:[-17.6,6.5,0],board:[-19.2,6.5,0],shop:[-6,5.8,0]};
+  const SCH_SPOT={teach:[-6.2,3.6,1],k1a:[-18,7.3,0],board:[-19.2,6.5,0],shop:[-6,5.8,0]};
   function roomShopObj(o){ if(!o.items||!o.counter)return null; return {n:o.shopName||'Sklep',sub:o.sub,get p(){ return [o.x+o.counter[0],o.z+o.counter[1]]; },items:o.items}; }
   function enterRoom(e){ if(st.car||st.inside)return; if(st.wanted>0){ toast('Policja Cię ściga — nie wejdziesz teraz do środka',2.5); return; } const o=e.room; if(!o.built&&!modelsOk(ROOM_NEEDS[o.kind])&&!MODELS_SKIP){ waitModels(ROOM_NEEDS[o.kind],()=>{ MODELS_SKIP=true; enterRoom(e); MODELS_SKIP=false; }); return; } IN.lastSwap=tAll;
     fadeTo(()=>{ buildRoom(o); o.shop=roomShopObj(o); o.ret={x:e.p[0]+e.n[0]*1.6,z:e.p[1]+e.n[1]*1.6,yaw:Math.atan2(-e.n[0],-e.n[1]),face:Math.atan2(e.n[0],e.n[1])}; o.doorW=[o.x+o.doorX,o.z+o.D/2-.6]; o.worldPos=e.p;
@@ -3377,6 +3393,7 @@ async function boot(saved){
       locMain.textContent=o.title||e.label; locSub.textContent='wnętrze'; locEl.classList.add('on'); locTimer=3; }); }
   function exitRoom(){ const o=CUR; if(o===IN){ exitStore(); return; } IN.lastSwap=tAll; fadeTo(()=>{ lampPool.forEach(l=>{ l.color.set(0xffc070); l.distance=26; }); st.inside=false; o.g.visible=false; const r=o.ret; st.x=r.x; st.z=r.z; if(blocked(st.x,st.z,.45)){ const q=walkSpot([st.x,st.z],false); st.x=q[0]; st.z=q[1]; } st.yaw=r.yaw; st.face=r.face; st.vx=st.vz=0; st.gy=stairAt(st.x,st.z); st.jy=0; st.vy=0; if(SHOP_OPEN) closeShop(); CUR=IN; }); }
   function roomsUpdate(dt){ if(!st.inside||CUR===IN||!CUR.built)return; const o=CUR;
+    if(o.kind==='school'){ o.bellT=(o.bellT===undefined?20:o.bellT)-dt; if(o.bellT<=0){ o.bellT=R(70,110); if(AU.ctx&&AU.on) sfx.schoolBell(); toast(pick(['🔔 Dzwonek – przerwa!','🔔 Dzwonek na lekcję','🔔 Dzwonek! Uczniowie wybiegają na korytarz']),2.2); } }
     o.npc.forEach(c=>{ c.t=(c.t||0)+dt; const u=c.p.userData;
       if(c.role==='cash'){ u.aR.rotation.x=-1.0+Math.sin(c.t*3.2)*.45; u.aL.rotation.x=-.7; u.eR.rotation.x=u.eL.rotation.x=-.8; return; }
       if(c.role==='clerk'){ u.aR.rotation.x=-.5+Math.sin(c.t*1.3)*.3; u.eR.rotation.x=-.9; return; }
@@ -3571,7 +3588,7 @@ async function boot(saved){
     if(!ACTIVE){ missionEl.hidden=true; return; } const A=ACTIVE, s=A.steps[A.i]; if(A.m.time){ A.t-=dt; if(A.t<=0){ endMission(false); return; } }
     let info='', d=0;
     if(s.escape){ info=st.wanted>0?`Gwiazdki: ${st.wanted} — uciekaj!`:''; if(st.wanted===0&&tAll-A.ts>2) return nextStep(); }
-    else if(s.buy){ d=st.inside?0:Math.hypot(s.p[0]-st.x,s.p[1]-st.z); if(LASTBUY&&LASTBUY.t>A.ts&&LASTBUY.shop===s.buy&&(!s.item||LASTBUY.item===s.item)) return nextStep(); info=st.inside||d<8?`podejdź do kasy i naciśnij E${s.item?' · '+s.item:''}`:''; }
+    else if(s.buy){ d=st.inside?0:Math.hypot(s.p[0]-st.x,s.p[1]-st.z); if(LASTBUY&&LASTBUY.t>=A.ts&&LASTBUY.shop===s.buy&&(!s.item||LASTBUY.item===s.item)) return nextStep(); info=st.inside||d<8?`podejdź do kasy i naciśnij E${s.item?' · '+s.item:''}`:''; }
     else if(s.room){ const o=s.room; cpMark.scale.set(1,1,1); if(st.inside&&CUR===o){ const tx=o.x+s.lp[0], tz=o.z+s.lp[1], lv=s.lv||0, lvOK=((st.gy||0)>1.8?1:0)===lv; d=Math.hypot(tx-st.x,tz-st.z); cpMark.position.set(tx,o.y+lv*SCH_F,tz); cpMark.scale.set(.32,.085,.32);
         if(d<(s.r||1.6)&&lvOK){ if(s.wait){ A.w+=dt; info=`${Math.ceil(s.wait-A.w)} s`; if(A.w>=s.wait){ if(s.done) toast(s.done,3.5); return nextStep(); } } else return nextStep(); } else { if(s.wait) A.w=Math.max(0,A.w-dt*.5); if(!lvOK) info=lv?'wejdź schodami na piętro':'zejdź schodami na parter'; } }
       else if(o.ent){ const e=o.ent.p; d=Math.hypot(e[0]-st.x,e[1]-st.z); cpMark.position.set(e[0],H(e[0],e[1]),e[1]); info=st.inside?'wyjdź i wejdź do szkoły':'wejdź do szkoły'; } }
@@ -3585,18 +3602,24 @@ async function boot(saved){
   function winGame(){ const w=document.getElementById('winScreen'); if(!w)return; w.hidden=false; w.querySelector('.stats').textContent=`Poziom ${st.level} · misje główne: ${DONE.size}/20 · czas gry: ${Math.round(tAll/60)} min`; }
   function extBlips(rx,px,py,sc){ const dot=(x,z,c,r)=>{ const [a,b]=mp(x,z); rx.beginPath(); rx.arc(a-px,b-py,r/sc,0,7); rx.fillStyle=c; rx.fill(); rx.lineWidth=2/sc; rx.strokeStyle='#000'; rx.stroke(); };
     if(ACTIVE){ const s=ACTIVE.steps[ACTIVE.i]; if(s.p) dot(s.p[0],s.p[1],'#ff3a3a',8); } else MISSIONS.forEach(m=>{ if(m.mk.visible) dot(m.sp[0],m.sp[1],m.main?'#ffd23a':'#3fb0ff',6); }); if(WAYPOINT) dot(WAYPOINT[0],WAYPOINT[1],'#c86bff',7);
-    COPS.forEach(c=>dot(c.x,c.z,Math.floor(tAll*4)%2?'#2040ff':'#ff2020',5)); mpBlips(dot); }
+    COPS.forEach(c=>dot(c.x,c.z,Math.floor(tAll*4)%2?'#2040ff':'#ff2020',5)); NPC.forEach(n=>{ const s=npcStage(n.id); if(s!=='zadanie'&&s!=='ma')return; const t=npcTarget(n); if(t) dot(t.p[0],t.p[1],s==='ma'?'#7ee08a':'#ffd34a',5); }); mpBlips(dot); }
   let WAYPOINT=null;
   // dziennik misji (Q)
   const logEl=document.getElementById('questLog'); let LOG_SEL=null;
   function renderLog(){ const row=(m)=>{ const done=m.main?DONE.has(m.id):false, a=avail(m), cd=!m.main&&SIDE_T[m.id]?Math.max(0,Math.ceil((SIDE_CD*1000-(Date.now()-SIDE_T[m.id]))/1000)):0; const lock=m.main&&!done&&!a; const act=ACTIVE&&ACTIVE.m===m;
       const st2=act?'▶':done?'✓':lock?'🔒':cd?'⏳':'●'; const sub=m.main?(done?'ukończona':lock?(st.level<m.lvl?`wymaga poziomu ${m.lvl}`:'najpierw poprzednia misja'):act?'w trakcie':'dostępna'):(act?'w trakcie':cd?`znów za ${Math.floor(cd/60)}:${String(cd%60).padStart(2,'0')}`:'dostępna');
       return `<button class="q${LOG_SEL===m.id?' sel':''}${done?' done':''}${lock?' lock':''}" data-id="${m.id}"><span class="ic">${st2}</span><span class="nm">${m.main?CAMPAIGN.indexOf(m)+1+'. ':''}${m.n}</span><span class="sb">${sub}</span></button>`; };
-    const sel=MISSIONS.find(m=>m.id===LOG_SEL)||ACTIVE&&ACTIVE.m||CAMPAIGN.find(m=>!DONE.has(m.id))||CAMPAIGN[19];
-    logEl.querySelector('.ql').innerHTML='<h3>Fabuła</h3>'+CAMPAIGN.map(row).join('')+'<h3>Poboczne</h3>'+SIDE.map(row).join('');
-    logEl.querySelector('.qd').innerHTML=sel?`<h2>${sel.n}</h2><p class="meta">${sel.main?`Misja ${CAMPAIGN.indexOf(sel)+1} z 20 · poziom ${sel.lvl}`:'Misja poboczna · co 5 min'} · nagroda ${sel.reward?fmt(sel.main?sel.reward:Math.round(sel.reward*(1+st.level*.35))):'—'} · ${sel.xp} XP</p><p>${sel.desc}</p>${avail(sel)&&!ACTIVE?'<button class="btn" id="qWay">Pokaż na mapie</button>':''}${ACTIVE&&ACTIVE.m===sel?'<button class="btn" id="qAbort">Przerwij misję</button>':''}`:'';
+    const npcRow=n=>{ const s=npcStage(n.id); const ic=s==='koniec'?'✓':s==='ma'?'?':s==='zadanie'?'▶':s.startsWith('obraz')?'☹':'!'; const sb=s==='koniec'?'ukończone':s==='ma'?'wróć po nagrodę':s==='zadanie'?'w trakcie':s.startsWith('obraz')?'obrażony':'porozmawiaj'; return `<button class="q${LOG_SEL==='npc:'+n.id?' sel':''}${s==='koniec'?' done':''}" data-id="npc:${n.id}"><span class="ic">${ic}</span><span class="nm">${n.name}</span><span class="sb">${sb}</span></button>`; };
+    const selN=LOG_SEL&&LOG_SEL.startsWith('npc:')?NPC.find(n=>'npc:'+n.id===LOG_SEL):null;
+    const sel=selN?null:MISSIONS.find(m=>m.id===LOG_SEL)||ACTIVE&&ACTIVE.m||CAMPAIGN.find(m=>!DONE.has(m.id))||CAMPAIGN[19];
+    const nDone=NPC.filter(n=>npcStage(n.id)==='koniec').length;
+    logEl.querySelector('.ql').innerHTML='<h3>Fabuła</h3>'+CAMPAIGN.map(row).join('')+'<h3>Poboczne</h3>'+SIDE.map(row).join('')+`<h3>Postacie · ${nDone}/${NPC.length}</h3>`+NPC.map(npcRow).join('')+`<h3>Kolekcja</h3><button class="q${LOG_SEL==='turbo'?' sel':''}" data-id="turbo"><span class="ic">🍬</span><span class="nm">Historyjki z gum Turbo</span><span class="sb">${TURBO_HAVE.size}/${TURBO_CARS.length}</span></button>`;
+    if(selN){ const n=selN, s=npcStage(n.id), I=NPC_INFO[n.id]||{}; const now=s==='start'?`Porozmawiaj z postacią ${I.where?'– stoi '+I.where:''}.`:s==='zadanie'?I.task:s==='ma'?'Masz to, czego potrzebuje – wróć i oddaj.':s.startsWith('obraz')?(I.bad||'Przeproś.'):'Zadanie ukończone – możesz dalej pogadać.';
+      logEl.querySelector('.qd').innerHTML=`<h2>${n.name}</h2><p class="meta">${n.title}${I.where?' · '+I.where:''} · nagroda ${fmt(I.money||0)} · ${I.xp||0} XP</p><p>${now}</p><p class="meta">Rozmowa przez AI: możesz pisać własne pytania. Gdy serwer nie odpowiada, postać mówi gotowymi kwestiami.</p>${s!=='koniec'?'<button class="btn" id="qWay">Pokaż na mapie</button>':''}`; }
+    else if(LOG_SEL==='turbo'){ logEl.querySelector('.qd').innerHTML=`<h2>Historyjki z gum Turbo</h2><p class="meta">Kupuj gumy Turbo w sklepiku szkolnym (1 zł). Każda ma losową historyjkę z autem. Za pełną kolekcję: ${fmt(1500)} i 150 XP.</p><div class="turboGrid">${TURBO_CARS.map((c,i)=>TURBO_HAVE.has(i)?`<span class="have"><b>${i+1}</b>${c}</span>`:`<span><b>${i+1}</b>?</span>`).join('')}</div>`; }
+    else logEl.querySelector('.qd').innerHTML=sel?`<h2>${sel.n}</h2><p class="meta">${sel.main?`Misja ${CAMPAIGN.indexOf(sel)+1} z 20 · poziom ${sel.lvl}`:'Misja poboczna · co 5 min'} · nagroda ${sel.reward?fmt(sel.main?sel.reward:Math.round(sel.reward*(1+st.level*.35))):'—'} · ${sel.xp} XP</p><p>${sel.desc}</p>${avail(sel)&&!ACTIVE?'<button class="btn" id="qWay">Pokaż na mapie</button>':''}${ACTIVE&&ACTIVE.m===sel?'<button class="btn" id="qAbort">Przerwij misję</button>':''}`:'';
     logEl.querySelectorAll('button.q').forEach(b=>b.addEventListener('click',()=>{ LOG_SEL=b.dataset.id; renderLog(); }));
-    const w=document.getElementById('qWay'); if(w) w.addEventListener('click',()=>{ try{ WAYPOINT=sel.start(); }catch(e){} toast('Cel zaznaczony na radarze (fioletowy)',2.5); const fm=LOG_FROM_MENU; LOG_FROM_MENU=false; toggleLog(false); if(fm) showMenu(false); });
+    const w=document.getElementById('qWay'); if(w) w.addEventListener('click',()=>{ try{ if(selN){ const t=npcTarget(selN); if(t) WAYPOINT=t.p.slice(); } else WAYPOINT=sel.start(); }catch(e){} toast('Cel zaznaczony na radarze (fioletowy)',2.5); const fm=LOG_FROM_MENU; LOG_FROM_MENU=false; toggleLog(false); if(fm) showMenu(false); });
     const ab=document.getElementById('qAbort'); if(ab) ab.addEventListener('click',()=>{ endMission(false); renderLog(); });
     $('qMoney').textContent=fmt(st.money); $('qLvl').textContent='Poziom '+st.level+' · '+st.xp+' XP'; }
   let LOG_FROM_MENU=false;
@@ -3605,8 +3628,8 @@ async function boot(saved){
   document.getElementById('qClose').addEventListener('click',()=>toggleLog(false)); if(IS_TOUCH) document.getElementById('qClose').textContent='Zamknij';
 
   /* ---------- zapis postępu ---------- */
-  function saveGame(){ try{ localStorage.setItem('trebaczew-gra',JSON.stringify({v:2,money:st.money,xp:st.xp,turbo:st.turbo||0,done:[...DONE],side:SIDE_T,season:ENV.season,time:ENV.time,weather:ENV.weather})); }catch(e){} }
-  try{ const sv=JSON.parse(localStorage.getItem('trebaczew-gra')||'null'); if(sv){ if(saved.money===undefined){ st.money=+sv.money||0; shownMoney=st.money; } if(sv.v===2){ (sv.done||[]).forEach(d=>{ if(CAMPAIGN.some(m=>m.id===d)) DONE.add(d); }); st.xp=Math.max(0,+sv.xp||0); if(sv.side&&typeof sv.side==='object') Object.keys(sv.side).forEach(k=>{ if(SIDE.some(m=>m.id===k)) SIDE_T[k]=+sv.side[k]||0; }); } if(sv.turbo) st.turbo=+sv.turbo||0; if(sv.season!==undefined)ENV.season=sv.season; if(sv.time!==undefined)ENV.time=sv.time; } }catch(e){}
+  function saveGame(){ try{ localStorage.setItem('trebaczew-gra',JSON.stringify({v:2,money:st.money,xp:st.xp,turbo:st.turbo||0,turboSet:[...TURBO_HAVE],done:[...DONE],side:SIDE_T,season:ENV.season,time:ENV.time,weather:ENV.weather})); }catch(e){} }
+  try{ const sv=JSON.parse(localStorage.getItem('trebaczew-gra')||'null'); if(sv){ if(saved.money===undefined){ st.money=+sv.money||0; shownMoney=st.money; } if(sv.v===2){ (sv.done||[]).forEach(d=>{ if(CAMPAIGN.some(m=>m.id===d)) DONE.add(d); }); st.xp=Math.max(0,+sv.xp||0); if(sv.side&&typeof sv.side==='object') Object.keys(sv.side).forEach(k=>{ if(SIDE.some(m=>m.id===k)) SIDE_T[k]=+sv.side[k]||0; }); } if(sv.turbo) st.turbo=+sv.turbo||0; if(Array.isArray(sv.turboSet)) sv.turboSet.forEach(i=>{ if(Number.isInteger(i)&&i>=0&&i<TURBO_CARS.length) TURBO_HAVE.add(i); }); if(sv.season!==undefined)ENV.season=sv.season; if(sv.time!==undefined)ENV.time=sv.time; } }catch(e){}
   { let has=false; try{ has=!!localStorage.getItem('trebaczew-gra'); }catch(e){} if(!has&&saved.money===undefined&&st.money<200){ st.money=200; shownMoney=st.money; } }
   st.level=levelOf(st.xp); updLevel(); refreshMarks();
   let sideRef=0; function sideRefresh(dt){ sideRef-=dt; if(sideRef<0){ sideRef=5; if(!ACTIVE) MISSIONS.forEach(m=>{ if(!m.main&&!m.mk.visible&&avail(m)){ try{ m.sp=walkSpot(m.start(),false); }catch(e){} m.mk.position.set(m.sp[0],H(m.sp[0],m.sp[1]),m.sp[1]); m.mk.visible=true; } }); } }

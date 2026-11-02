@@ -9,7 +9,8 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 - **Menu główne**: tryb jednoosobowy, tryb wieloosobowy (wkrótce), opcje (przypisywanie klawiszy, grafika, czułość myszy), kreator postaci (płeć, imię, fryzura, kolory, ubranie) i przycisk „Zgłoś błąd”, który otwiera gotowe zgłoszenie w Issues tego repozytorium.
 - **Kampania**: 20 misji fabularnych odblokowywanych poziomami (1–10). Na początku awans jest szybki, później wolniejszy. Ostatnia misja to kupno domu za 450 000 zł, co kończy grę.
 - **Misje poboczne** (niebieskie znaczniki) dają pieniądze i trochę doświadczenia. Po ukończeniu wracają po 5 minutach.
-- **Dziennik misji** (Q): ukończone, dostępne i zablokowane misje z opisami; można zaznaczyć cel na radarze.
+- **Dziennik misji** (Q): ukończone, dostępne i zablokowane misje z opisami; można zaznaczyć cel na radarze. Osobna sekcja „Postacie” pokazuje zadania wszystkich 9 rozmawiających postaci (co teraz zrobić, gdzie stoją, nagroda), a „Kolekcja” – zebrane historyjki z gum Turbo.
+- Nad postaciami z zadaniem świeci **„!”** (zadanie do wzięcia) albo **„?”** (można je oddać). Cele trwających zadań postaci są na radarze: żółte kropki (gdzie iść) i zielone (komu oddać).
 - Do Lewiatana można wejść (E przy drzwiach). W środku są regały, lodówki, kasy z kasjerkami, kolejka i klienci.
 - Na Orlenie w Działoszynie (przy DK42) można zatankować.
 - Każdy dom ma płot z furtką, a przy podjazdach są bramy, które otwiera się klawiszem E.
@@ -175,7 +176,7 @@ Przebieg zadań i nagrody są zaprogramowane w grze. Model prowadzi tylko swobod
 
 ## Szkoła podstawowa
 
-Szkoła ma płaski dach z attyką (model `szkola` w `tools/blender/budynki2.py`). Głównymi drzwiami w ganku wchodzi się do dużego, dwukondygnacyjnego wnętrza. Na obu piętrach jest długi korytarz z salami po obu stronach: klasy z ławkami, krzesłami, tablicami z tematem lekcji, biurkiem nauczyciela i plakatami, pracownie (biologiczna, chemiczna, komputerowa, geograficzna), świetlica, pokój nauczycielski i gabinet dyrektora. Na piętro prowadzą schody z poręczą z holu. W sklepiku szkolnym u Pani Krysi są gumy Turbo z historyjkami (gra liczy kolekcję), Prince Polo, drożdżówki, Kubuś i oranżada w proszku. Misja poboczna „Zastępstwo w podstawówce” prowadzi przez pokój nauczycielski na piętrze, sklepik i klasę 1a.
+Szkoła ma płaski dach z attyką (model `szkola` w `tools/blender/budynki2.py`). Głównymi drzwiami w ganku wchodzi się do dużego, dwukondygnacyjnego wnętrza. Na obu piętrach jest długi korytarz z salami po obu stronach: klasy z ławkami, krzesłami, tablicami z tematem lekcji, biurkiem nauczyciela i plakatami, pracownie (biologiczna, chemiczna, komputerowa, geograficzna), świetlica, pokój nauczycielski i gabinet dyrektora. Na piętro prowadzą schody z poręczą z holu. W sklepiku szkolnym u Pani Krysi są gumy Turbo z historyjkami – 30 różnych aut do zebrania, za pełną kolekcję jest 1500 zł i 150 XP –, Prince Polo, drożdżówki, Kubuś i oranżada w proszku. Co jakiś czas dzwoni dzwonek na przerwę. Misja poboczna „Zastępstwo w podstawówce” prowadzi przez pokój nauczycielski na piętrze, sklepik i klasę 1a.
 
 ## Postacie
 
