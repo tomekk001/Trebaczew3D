@@ -139,7 +139,17 @@ Minigry są częścią misji (m4, m5, m8, s6–s8). Można też zagrać w nie w 
 
 ## Statystyki
 
-`statystyki.html` pokazuje anonimowe liczniki z serwera (`/stats`): graczy, uruchomienia, czas gry, misje, minigry i rankingi.
+Prywatny dashboard statystyk jest dostępny przez GitHub OAuth dla konta `tomekk001`. Adres `https://trebaczew.io/statystyki.html` przekierowuje na stronę obsługiwaną przez Worker, który wymaga zalogowania i sprawdza konto również przy każdym żądaniu `/stats`.
+
+Aby włączyć logowanie, utwórz GitHub OAuth App z Homepage URL `https://trebaczew.io/` i callback URL `https://trebaczew-mp.kontakt-3e3.workers.dev/auth/callback`, a następnie ustaw sekrety w katalogu `server`:
+
+```sh
+npx wrangler secret put GITHUB_OAUTH_CLIENT_ID
+npx wrangler secret put GITHUB_OAUTH_CLIENT_SECRET
+npx wrangler secret put STATS_SESSION_SECRET
+```
+
+`STATS_SESSION_SECRET` powinien być losowym ciągiem co najmniej 32 znaków. Nie zapisuj sekretów w repozytorium.
 
 ## Multiplayer: emotki i wyścigi
 
