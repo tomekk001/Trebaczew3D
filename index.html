@@ -1225,9 +1225,8 @@ async function boot(saved){
     tri(g,6.2,2.9,cx,WH,D/2+2.0,new THREE.MeshLambertMaterial({map:woodT}));
     [-1.3,1.3].forEach(o=>bx(g,.35,WH-FL,.35,cx+o,FL,D/2+2.4,whiteM)); bx(g,4.6,.3,1.8,cx,WH-.3,D/2+2.0,whiteM);
     const prem=tex(512,96,(x,w2,h2)=>{ x.fillStyle='#d6474a'; x.fillRect(0,0,w2,h2); x.fillStyle='#7a6a6a'; x.fillRect(w2*.36,4,w2*.28,h2-8); x.fillStyle='#fff'; x.font='italic 700 46px Georgia, serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('Premium',w2/2,h2/2); });
-    const keep=new Set(); keep.add(pl(g,6.0,1.0,cx,WH-.4,D/2+2.93,new THREE.MeshLambertMaterial({map:prem,emissive:0x000000})));
+    const keep=new Set(); // sklep Delikatesy już nie istnieje – budynek bez szyldów
     const dlk=tex(1024,128,(x,w2,h2)=>{ x.fillStyle='#c8262c'; x.fillRect(0,0,w2,h2); x.fillStyle='#fff'; x.font='700 92px Georgia, serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('DELIKATESY',w2/2,h2/2+4); });
-    const dM=new THREE.MeshLambertMaterial({map:dlk,emissive:0x000000}); brandLights.push(dM); keep.add(pl(g,Math.min(9,L*.42),1.1,L*.27,WH-.75,D/2+.07,dM));
     pl(g,2.4,2.4,cx,FL+1.2,D/2+1.22,glassDk);
     // okna: parter z plakatami po prawej, brązowe ramy po lewej
     const post=tex(64,64,(x,w2,h2)=>{ x.fillStyle='#f3e7d6'; x.fillRect(0,0,w2,h2); x.fillStyle='#c0392b'; x.fillRect(6,8,24,18); x.fillStyle='#e9b77a'; x.fillRect(34,30,24,26); x.fillStyle='#7a4a2a'; x.fillRect(4,38,26,16); });
@@ -1644,7 +1643,6 @@ async function boot(saved){
     {n:'Paczkomat przy Lewiatanie',p:[-121,7],c:'#ffcd00',h:4,ic:'P'},
     {n:'Paczkomat · Wyzwolenia (Żabka)',p:[-75,46],c:'#ffcd00',h:4,ic:'P'},
     {n:'Euforia Trębaczew',p:[-151,-350],c:'#f07a1f',ic:'R'},
-    {n:'Delikatesy Premium',p:[-145,-334],c:'#2f8de4',ic:'$'},
     {n:'Apteka Magnolia',p:[-94,-201],c:'#3fa34d',ic:'+'},
     {n:'Ośrodek zdrowia',p:[-99,-213],c:'#d0312d',ic:'+'},
     {n:'Biblioteka',p:[-136,-125],c:'#7d5ab5',ic:'B'},
@@ -2451,7 +2449,7 @@ async function boot(saved){
     const k=Math.max(0,1-dm/220), t=C.currentTime; AU.rum.gain.setTargetAtTime(.22*k*k,t,.3);
     if(k>.4&&t>AU.rumNext){ AU.rumNext=t+.45; noiseHit(t,.05,.045*k*k,'lowpass',520); noiseHit(t+.1,.05,.035*k*k,'lowpass',520); } }
   function audioUpdate(dt){ if(!AU.ctx||!AU.on)return; const C=AU.ctx, now=C.currentTime;
-    { const tg=(ENV.W?ENV.W[1]:(ENV.weather===1?1:0))*(st.inside?.15:.32); AU.rain.gain.setTargetAtTime(tg,C.currentTime,.6); if(tg>.05&&rnd()<dt*14) noiseHit(C.currentTime+R(0,.05),R(.03,.07),R(.006,.016)*tg*3,'bandpass',R(1800,3600)); }
+    AU.rain.gain.value=0; // deszcz i grad bez dźwięku (szum i stukanie były nieprzyjemne)
     const inCar=st.car&&st.car.kind!=='bike'; AU.engG.gain.value=inCar?.05+Math.min(.06,Math.abs(st.car.v)*.003):0; if(inCar) AU.eng.frequency.value=(st.car.kind==='tractor'?28:38)+Math.abs(st.car.v)*(st.car.kind==='moto'?6:3.2);
     carVoices(); // pociąg jest bezgłośny (na życzenie): bez dudnienia, stukotu, sygnału i dzwonka przejazdu
     const copNear=COPS.some(c=>Math.hypot(c.x-st.x,c.z-st.z)<120); AU.sirG.gain.value=copNear?.035:0; if(copNear) AU.siren.frequency.value=800+Math.sin(now*3)*350;
@@ -2465,8 +2463,8 @@ async function boot(saved){
       if(mk){ const sp=mk==='organ'?.5:mk==='rest'?60/132/2:60/100/2; if(AU.mNext<now-.3) AU.mNext=now+.05; while(AU.mNext<now+.2){ storeStep(mk,AU.mNext,AU.mStep++); AU.mNext+=sp; } } }
     // tło przyrody: w aucie przytłumione
     const E=natureEnv(), day=ENV.time>5&&ENV.time<20.5, muf=st.inside?0:inCar?.25:1, gust=.6+.4*Math.sin(now*.23)*Math.sin(now*.071+1);
-    if(AU.wind){ /* bez stałego szumu: wiatr słychać tylko podczas burzy */ AU.wind.g.gain.value=(ENV.weather===2?.022:0)*gust*muf; AU.wind.fl.frequency.value=180+gust*160;
-      AU.leaves.g.gain.value=0; AU.crick.g.gain.value=(!day&&ENV.season>0&&ENV.season<3&&ENV.weather===0?.005:0)*muf; }
+    if(AU.wind){ /* bez stałego szumu: wiatr słychać tylko podczas burzy */ AU.wind.g.gain.value=0; AU.wind.fl.frequency.value=180+gust*160;
+      AU.leaves.g.gain.value=0; AU.crick.g.gain.value=0; }
     AU.amb-=dt; if(AU.amb<0&&!st.inside){ AU.amb=R(1.2,4); if(ENV.weather===1||ENV.weather===2){ if(rnd()<.2) NAT.crow(); return; } const h=ENV.time, r=rnd();
       if(day){ if(E.forest){ if(r<.35)NAT.blackbird(); else if(r<.5)NAT.cuckoo(); else if(r<.65)NAT.woodpecker(); else if(r<.8)NAT.sparrow(); }
         else if(E.houses>2){ if(r<.4)NAT.sparrow(); else if(r<.6)NAT.blackbird(); else if(r<.68&&h>4.5&&h<9)NAT.rooster(); else if(r<.8)NAT.dog(); }
@@ -2486,7 +2484,7 @@ async function boot(saved){
     {n:'Żabka',get p(){ const f=B_ZAB.front; return [f.x+f.nx*2,f.z+f.nz*2]; },items:[['Kawa z ekspresu',9,'hp',20],['Zapiekanka',12,'hp',50],['Napój energetyczny',6,'boost',60],['Hot-dog',8,'hp',40]]},
     {n:'Euforia Trębaczew',p:[-151,-344],items:[['Pizza',32,'hp',100],['Burger',24,'hp',70],['Frytki',10,'hp',25]]},
     {n:'Apteka Magnolia',p:[-94,-195],items:[['Plastry',6,'hp',25],['Witaminy',15,'hp',45]]},
-    {n:'Delikatesy Premium',p:[-145,-330],items:[['Kanapka',9,'hp',30],['Sok',5,'hp',10]]}];
+];
   let SHOP_OPEN=null;
   function openShop(s){ SHOP_OPEN=s; keys.clear(); shopEl.hidden=false; shopEl.innerHTML=`<h2>${s.n}</h2><p class="sub">${s.sub||'Kasa'} · masz ${fmt(st.money)}</p>`+s.items.map((it,i)=>`<button data-i="${i}"><kbd>${i+1}</kbd> ${it[0]}<span>${it[1]} zł</span></button>`).join('')+`<button data-i="x" class="close">Wyjdź <kbd>E</kbd></button>`;
     shopEl.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ const i=b.dataset.i; if(i==='x')closeShop(); else buy(+i); })); }
@@ -2510,7 +2508,7 @@ async function boot(saved){
   function nearMission(){ return !ACTIVE&&!st.inside&&MISSIONS.find(m=>m.mk.visible&&Math.hypot(m.sp[0]-st.x,m.sp[1]-st.z)<(st.car?5:3)); }
   /* ---------- postacie z AI: Mietek (Lewiatan), Seba (przystanek PKS), Pani Jadzia (płot przy remizie) ----------
      Zadania są zaprogramowane w grze (stały przebieg i nagrody); swobodną rozmowę prowadzi model językowy na serwerze (Workers AI). */
-  const NPC_GOSSIP=['Kaśka od sąsiadów wracała z dyskoteki z Darkiem z Działoszyna','Zbyszek ze Stacji odprowadzał Agnieszkę aż pod sam kościół','Wiesiek wracał sam, bo Monika uciekła mu z Krystianem','Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku','Grzesiek z Zagrodowej i Ola szli piechotą aż do świtu'];
+  const NPC_GOSSIP=['Kaśka od sąsiadów wracała z dyskoteki z Darkiem z Działoszyna','Zbyszek ze Stacji odprowadzał Agnieszkę aż pod sam kościół','Wiesiek wracał sam, bo Monika uciekła mu z Krystianem','Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku','Grzesiek z Zagrodowej i Weronika szli piechotą aż do świtu'];
   const NQ=(()=>{ let q=null; try{ q=JSON.parse(localStorage.getItem('trebaczew-npc')||'null'); }catch(e){} return Object.assign({mietek:'start',seba:'start',jadzia:'start',items:[],gi:0,hist:{}},q||{}); })();
   const nqSave=()=>{ try{ localStorage.setItem('trebaczew-npc',JSON.stringify(NQ)); }catch(e){} };
   const hasIt=i=>NQ.items.includes(i), giveIt=i=>{ if(!hasIt(i)) NQ.items.push(i); nqSave(); }, takeIt=i=>{ NQ.items=NQ.items.filter(q=>q!==i); nqSave(); };
@@ -2610,21 +2608,21 @@ async function boot(saved){
       ask:'Pomóc w roznoszeniu?',give:'O, przyda się! Noga mnie boli, a jeszcze paczka na plebanię. Zaniesie pan? Wystarczy zostawić w skrzynce przy drzwiach.',task:'Nowe zadanie: zanieś paczkę do skrzynki przy plebanii.',
       startItem:'paczka',item:'pokwitowanie',pick:{kind:'skrzynka',keep:true,at:()=>[-34,146],label:'zostaw paczkę w skrzynce przy plebanii',got:'Paczka doręczona – wróć do listonosza'},
       doneBtn:'Paczka doręczona',done:'Dziękuję! Fachowo, jak u nas na poczcie. Proszę, za fatygę.',money:140,xp:40,talk:['Jakie są najdziwniejsze przesyłki?','Ma pan dużo pracy?']} };
-  // --- kolejne postacie: park w Trębaczewie (szachista, trener LZS, dziewczyna z psem, ogrodnik, dziadek z gołębiami) ---
+  // --- kolejne postacie: park w Trębaczewie (szachista, piłkarz LZS, właścicielka psa, ogrodnik, dziadek z gołębiami) ---
   Object.assign(NPC_DEF,{
     zenek:{name:'Pan Zenek',title:'szachista z ławki w parku',col:'#8a7ad8',bench:1,kind:'quiz',look:{top:0x5a5a6a,bot:0x3a3a40,hair:0xd0d0d0,opt:{female:false,style:'coat',hairStyle:'short',skin:0xe8c0a0,shoe:0x2a2420}},
       canned:{start:'Dzień dobry, młody człowieku. Partyjka? A może najpierw sprawdzimy, co wiesz o naszej wsi?',zadanie:'',ma:'',koniec:'Szach i mat! Zapraszam na partyjkę w każde popołudnie.'},
       ask:'Chętnie, panie Zenku!',give:'To trzy pytania o Trębaczewie. Jak odpowiesz na wszystkie, dostaniesz ode mnie nagrodę.',task:'Nowe zadanie: odpowiedz na trzy pytania Pana Zenka o Trębaczewie.',
       quiz:[{q:'Pierwsze pytanie: jaka droga krajowa biegnie przez Trębaczew?',a:['DK42','DK1','DK8'],ok:0},{q:'Drugie: jak nazywa się nasz klub piłkarski?',a:['Wisła Trębaczew','LZS Trębaczew','Orlęta Działoszyn'],ok:1},{q:'I trzecie: w jakiej gminie leży Trębaczew?',a:['Pajęczno','Wieluń','Działoszyn'],ok:2}],
       done:'Brawo! Głowa jak u arcymistrza. Proszę, to dla ciebie.',money:160,xp:45,talk:['Kto zwykle wygrywa w szachy w parku?','Jak było w Trębaczewie dawniej?']},
-    marek:{name:'Trener Marek',title:'trener młodzików LZS',col:'#2f9a4a',at:()=>[-60,-270],kind:'mini',mini:'karne',mo:{mode:'lzs'},item:'karne_ok',look:{top:0x1f7a3a,bot:0x1f7a3a,hair:0x2a1d14,opt:{female:false,style:'hoodie',hairStyle:'buzz',skin:0xe2b496,shoe:0xf2f2f2}},
-      canned:{start:'Cześć! Szukam ludzi do LZS-u. Umiesz strzelać karne?',zadanie:'No to co, strzelamy? Pokaż, co potrafisz.',ma:'Widziałem! Ale strzały! Podejdź, pogadamy o drużynie.',koniec:'W sobotę trening na orliku, przyjdź koniecznie!'},
-      ask:'Umiem, sprawdź mnie!',give:'Dobra, seria rzutów karnych. Wygrasz – masz miejsce w drużynie i premię od klubu.',task:'Nowe zadanie: wygraj serię rzutów karnych z Trenerem Markiem.',playBtn:'Gramy w karne!',win:'Wygrana! Wróć do Trenera Marka po nagrodę.',lose:'Tym razem nie wyszło – porozmawiaj z trenerem i spróbuj jeszcze raz.',
-      doneBtn:'No i jak, biorę miejsce w drużynie?',done:'Jasne! Witamy w LZS Trębaczew. Masz tu premię od klubu.',money:250,xp:60,talk:['Jak idzie LZS w tym sezonie?','Kiedy są treningi?']},
-    ola:{name:'Ola',title:'spacer z psem Burkiem',col:'#e0709a',at:()=>[42,-238],dog:true,look:{top:0x6a9ad8,bot:0x2a2a30,hair:0xb08a50,opt:{female:true,style:'jacket',hairStyle:'long',skin:0xf0cfb2,shoe:0xe8e8e4}},
+    marek:{name:'Marek',title:'gra w LZS Trębaczew',col:'#2f9a4a',at:()=>[-60,-270],kind:'mini',mini:'karne',mo:{mode:'lzs'},item:'karne_ok',look:{top:0x1f7a3a,bot:0x1f7a3a,hair:0x2a1d14,opt:{female:false,style:'hoodie',hairStyle:'buzz',skin:0xe2b496,shoe:0xf2f2f2}},
+      canned:{start:'Cześć! Szukamy ludzi do LZS-u. Umiesz strzelać karne?',zadanie:'No to co, strzelamy? Pokaż, co potrafisz.',ma:'Widziałem! Ale strzały! Podejdź, pogadamy o drużynie.',koniec:'W sobotę gramy na orliku, przyjdź koniecznie!'},
+      ask:'Umiem, sprawdź mnie!',give:'Dobra, seria rzutów karnych. Wygrasz – załatwię ci miejsce w drużynie i premię od klubu.',task:'Nowe zadanie: wygraj serię rzutów karnych z Markiem.',playBtn:'Gramy w karne!',win:'Wygrana! Wróć do Marka po nagrodę.',lose:'Tym razem nie wyszło – porozmawiaj z trenerem i spróbuj jeszcze raz.',
+      doneBtn:'No i jak, biorę miejsce w drużynie?',done:'Jasne! Witamy w LZS Trębaczew. Masz tu premię od klubu.',money:250,xp:60,talk:['Jak idzie LZS w tym sezonie?','Na jakiej pozycji grasz?']},
+    burek:{name:'Właścicielka Burka',title:'spacer z psem po parku',col:'#e0709a',at:()=>[42,-238],dog:true,look:{top:0x6a9ad8,bot:0x2a2a30,hair:0xb08a50,opt:{female:true,style:'jacket',hairStyle:'long',skin:0xf0cfb2,shoe:0xe8e8e4}},
       canned:{start:'Cześć! Burek, siad! Przepraszam, on jest bardzo ciekawski.',zadanie:'Czerwona piłka Burka wpadła gdzieś w krzaki na skraju parku. Poszukasz?',ma:'Burek już merda ogonem – chyba czuje swoją piłkę!',koniec:'Dzięki! Burek jest najszczęśliwszym psem w Trębaczewie.'},
       ask:'Co się stało?',give:'Rzuciłam Burkowi piłkę za mocno i poleciała w krzaki na skraju parku. On sam jej nie znajdzie. Pomożesz?',task:'Nowe zadanie: znajdź czerwoną piłkę Burka w krzakach na skraju parku.',
-      item:'pilka_burka',pick:{kind:'pilka',at:()=>[60,-222],label:'wyciągnij piłkę Burka z krzaków',got:'Masz <b>piłkę Burka</b> – oddaj ją Oli'},
+      item:'pilka_burka',pick:{kind:'pilka',at:()=>[60,-222],label:'wyciągnij piłkę Burka z krzaków',got:'Masz <b>piłkę Burka</b> – oddaj ją właścicielce psa'},
       doneBtn:'Proszę, piłka Burka',done:'Burek, patrz! Dziękuję, masz tu coś na lody.',money:90,xp:30,talk:['Jakiej rasy jest Burek?','Często tu spacerujecie?']},
     heniek:{name:'Ogrodnik Heniek',title:'dba o park w Trębaczewie',col:'#6aa02a',at:()=>[22,-282],barrow:true,look:{top:0x3f6b3a,bot:0x3a4a30,hair:0x6a5a4a,opt:{female:false,style:'jacket',hairStyle:'cap',capC:0x3f6b3a,skin:0xd09a7a,shoe:0x3a2a1a,stubble:true}},
       canned:{start:'Dzień dobry! Jesień, liście lecą, a ja sam do grabienia.',zadanie:'Trzy worki z liśćmi stoją w różnych miejscach parku. Przynieś je do mojej taczki.',ma:'O, widzę worki! Dawaj je tutaj.',koniec:'Park jak z obrazka. Dziękuję za pomoc!'},
@@ -2663,7 +2661,27 @@ async function boot(saved){
     if(d.kind==='mini'){ const pc=propModel('pacholki'); const q=[n.x+1.5,n.z-1.5]; pc.position.set(q[0],H(q[0],q[1]),q[1]); pc.rotation.y=R(0,6.28); scene.add(pc); }
     (d.picks||(d.pick?[Object.assign({item:d.item},d.pick)]:[])).forEach((pi,k)=>{ const pa=pi.at(); const pp=npcFind(pa[0],pa[1],pi.keep?1:.7); const g=pickMesh(pi.kind); g.position.set(pp[0],H(pp[0],pp[1]),pp[1]); g.rotation.y=rnd()*6.28; scene.add(g); if(pi.keep) addSolid({x:pp[0],z:pp[1],hw:.4,hd:.4,c:1,s:0,r:.6});
       const it=pi.item; NPC_PICKS.push({id:id+'_pick'+(d.picks?k:''),p:pp,g,keep:pi.keep,label:pi.label,on:()=>NQ[id]==='zadanie'&&!hasIt(it)&&(!d.startItem||hasIt(d.startItem)),act:()=>{ if(d.startItem) takeIt(d.startItem); giveIt(it); toast(d.items.every(hasIt)&&d.gotAll?d.gotAll:(pi.got||'Masz: <b>'+pi.label.replace(/^weź /,'')+'</b>'),3); }}); }); });
-  function parkAnim(dt){ PARK_ANIM.forEach(a=>{ a.t+=dt; const d2=Math.hypot(a.g.position.x-st.x,a.g.position.z-st.z); if(d2>60)return; if(a.k==='dog'){ a.g.userData.tail.rotation.x=Math.sin(a.t*14)*.6; a.g.userData.head.rotation.y=Math.sin(a.t*.7)*.4; }
+  // schronisko dla zwierząt w Trębaczewie: tablica, budy z psami, pracownik; pies do adopcji (misja „Pies ze schroniska”)
+  const SHELTER=(()=>{ const P=POIS.find(q=>q.n.startsWith('Schronisko')); if(!P) return null; const b=BLD.filter(q=>Math.hypot(q.x-P.x,q.z-P.z)<12).sort((a,c)=>Math.hypot(a.x-P.x,a.z-P.z)-Math.hypot(c.x-P.x,c.z-P.z))[0]||{x:P.x,z:P.z};
+    const nr=nearestRoad(b.x,b.z,r=>r.t!=='track'); const a=nr.r.pts[nr.seg], c=nr.r.pts[nr.seg+1]; const dx=c[0]-a[0], dz=c[1]-a[1], L=dx*dx+dz*dz; const t=clamp(((b.x-a[0])*dx+(b.z-a[1])*dz)/L,0,1); const rx=a[0]+dx*t, rz=a[1]+dz*t; let nx=b.x-rx, nz=b.z-rz; const nl=Math.hypot(nx,nz)||1; nx/=nl; nz/=nl;
+    const gate=npcFind(rx+nx*(nr.r.w/2+2.5),rz+nz*(nr.r.w/2+2.5),1.2);
+    { const g=new THREE.Group(); g.position.set(gate[0]+(-nz)*3,H(gate[0],gate[1]),gate[1]+nx*3); g.rotation.y=Math.atan2(-nx,-nz); scene.add(g); const wood=new THREE.MeshLambertMaterial({color:0x5b3e28}); [-1.1,1.1].forEach(o=>bx(g,.12,2.4,.12,o,0,0,wood));
+      pl(g,2.4,.9,0,2.0,.07,new THREE.MeshLambertMaterial({map:signTex('SCHRONISKO DLA ZWIERZĄT','#2f7a3a','#ffffff',512,128,'800 40px Barlow, Arial')})); pl(g,2.4,.9,0,2.0,-.07,new THREE.MeshLambertMaterial({map:signTex('🐾 Trębaczew','#2f7a3a','#ffffff',512,128,'800 52px Barlow, Arial')}),Math.PI); }
+    const kennel=(x,z,ry)=>{ const g=new THREE.Group(); g.position.set(x,H(x,z),z); g.rotation.y=ry; scene.add(g); const w=new THREE.MeshLambertMaterial({color:0x8a5a34}), rf=new THREE.MeshLambertMaterial({color:0x6a2a20}); bx(g,1.0,.7,1.2,0,0,0,w); const r1=new THREE.Mesh(new THREE.BoxGeometry(.75,.05,1.3),rf); r1.position.set(-.25,.85,0); r1.rotation.z=.6; g.add(r1); const r2=r1.clone(); r2.position.x=.25; r2.rotation.z=-.6; g.add(r2); bx(g,.4,.45,.02,0,0,.61,new THREE.MeshLambertMaterial({color:0x1a120c})); addSolid({x,z,hw:.55,hd:.65,c:Math.cos(-ry),s:Math.sin(-ry),r:.9}); };
+    const cols=[0x2a2420,0xc8a070,0xf2f2ea,0x6a4a2a,0x8a8a8a]; const tx=-nz, tz=nx;
+    for(let k=0;k<4;k++){ const q=npcFind(gate[0]+nx*5+tx*(k*3.2-4.8),gate[1]+nz*5+tz*(k*3.2-4.8),1.1,300); kennel(q[0]+nx*1.2,q[1]+nz*1.2,Math.atan2(-nx,-nz)); const dg=dogModel(cols[k%cols.length]); dg.position.set(q[0],H(q[0],q[1]),q[1]); dg.rotation.y=Math.atan2(-nz,nx)+R(-.6,.6); scene.add(dg); PARK_ANIM.push({k:'dog',g:dg,t:R(0,3)}); }
+    const wk=makePerson(0x2f7a3a,0x2a2c30,0x6b4426,{female:true,style:'jacket',hairStyle:'pony',exact:true}); const wq=npcFind(gate[0]+tx*2,gate[1]+tz*2,1,200); wk.position.set(wq[0],H(wq[0],wq[1])+.1,wq[1]); wk.rotation.y=Math.atan2(-nx,-nz); scene.add(wk); addSolid({x:wq[0],z:wq[1],hw:.25,hd:.25,c:1,s:0,r:.4});
+    return {gate,b,nx,nz,road:[rx,rz]}; })();
+  const ADOPT=(()=>{ const f=B_LEW&&B_LEW.front; if(!f) return null; const h=houses.filter(q=>q.kind==='house'&&!q.isPart&&!q.cust).map(q=>[q,Math.hypot(q.x-f.x,q.z-f.z)]).filter(q=>q[1]>18).sort((a,b)=>a[1]-b[1])[0]; if(!h) return null; const p=frontOf(h[0]); const yard=npcFind(p[0]+(h[0].x-p[0])*.25,p[1]+(h[0].z-p[1])*.25,.8,300); return {h:h[0],p,yard}; })();
+  const AZOR={on:false,g:null,home:false};
+  function azorMake(){ if(AZOR.g) return AZOR.g; const g=dogModel(0xc8a070); g.scale.setScalar(.95); scene.add(g); PARK_ANIM.push({k:'dog',g,t:0}); AZOR.g=g; return g; }
+  function azorHome(){ const g=azorMake(); AZOR.on=false; AZOR.home=true; if(g.parent!==scene){ scene.add(g); } g.position.set(ADOPT.yard[0],H(ADOPT.yard[0],ADOPT.yard[1]),ADOPT.yard[1]); g.rotation.set(0,R(0,6.28),0); }
+  function azorUpdate(dt){ if(!AZOR.on||!AZOR.g) return; const g=AZOR.g;
+    if(st.car&&st.car.g){ if(g.parent!==st.car.g){ st.car.g.add(g); } g.position.set(-.55,.62,.32); g.rotation.set(0,0,0); }
+    else { if(g.parent!==scene) scene.add(g); if(st.inside){ g.visible=false; return; } g.visible=true; const tx=st.x-Math.sin(st.face)*1.4+Math.cos(st.face)*.5, tz=st.z-Math.cos(st.face)*1.4-Math.sin(st.face)*.5; const dx=tx-g.position.x, dz=tz-g.position.z, d=Math.hypot(dx,dz);
+      if(d>25){ g.position.set(tx,H(tx,tz),tz); } else if(d>.3){ const sp=Math.min(d*3,9)*dt; g.position.x+=dx/d*sp; g.position.z+=dz/d*sp; g.rotation.y=Math.atan2(-dz,dx); } g.position.y=H(g.position.x,g.position.z)+(d>.3?Math.abs(Math.sin(tAll*14))*.04:0); } }
+  if(NQ.azor==='dom'&&ADOPT) azorHome();
+  function parkAnim(dt){ azorUpdate(dt); PARK_ANIM.forEach(a=>{ a.t+=dt; const d2=Math.hypot(a.g.position.x-st.x,a.g.position.z-st.z); if(d2>60)return; if(a.k==='dog'){ a.g.userData.tail.rotation.x=Math.sin(a.t*14)*.6; a.g.userData.head.rotation.y=Math.sin(a.t*.7)*.4; }
       else if(a.k==='pigeon'){ const ph=(a.t%2.4); a.g.userData.h.position.y=ph<.3?.1:.18; if(ph>2.3) a.g.rotation.y+=R(-.8,.8)*dt*10; if(d2<2.5&&!a.fly){ a.fly=1.2; } if(a.fly){ a.fly-=dt; a.g.position.y+=dt*3; if(a.fly<=0){ a.fly=0; a.g.position.y=H(a.g.position.x,a.g.position.z)+.02; } } } }); }
   // remiza OSP: grill strażaków i dwóch druhów, którzy plotkują przy bramie
   if(OSP_YARD){ const {w,L,FZ,toRoad,f}=OSP_YARD; const gp=OSP_YARD.inYard(L/2-1.2,FZ+Math.min(6,toRoad*.6),1.6); const g=new THREE.Group(); g.position.set(gp[0],H(gp[0],gp[1]),gp[1]); g.rotation.y=f.rot; scene.add(g);
@@ -2678,7 +2696,7 @@ async function boot(saved){
   const NPC_INFO={ mietek:{where:'pod Lewiatanem',task:'Przynieś Mietkowi kiełbasę z grilla przy remizie OSP.',pick:'grill',money:150,xp:40},
     seba:{where:'w parku przy Zielonej, obok czarnego BMW E46',task:'Przynieś Sebie klucz 10 mm i trytytki ze skrzynki przy garażu.',pick:'narzedzia',money:200,xp:50,bad:'Seba jest obrażony – przeproś go i doceń jego BMW.'},
     jadzia:{where:'przed domem niedaleko remizy OSP',task:'Podsłuchaj strażaków pod remizą OSP (postój chwilę obok) i wróć z plotką.',pick:'plotka',money:120,xp:40,bad:'Pani Jadzia jest obrażona – przeproś i idź jeszcze raz pod remizę.'} };
-  Object.keys(NPC_DEF).forEach(id=>{ const D=NPC_DEF[id]; NPC_INFO[id]={where:{andrzej:'przy przystanku przy kościele',soltys:'przy bibliotece',halina:'przy Szkolnej, niedaleko Lewiatana',stasiek:'przy swoim ciągniku',kasia:'przy orliku',wiesiek:'przy Szkolnej, koło ośrodka zdrowia',zenek:'na ławce w parku, przy szachownicy',marek:'w parku przy orliku',ola:'w parku, z psem Burkiem',heniek:'w parku przy placu zabaw, z taczką',jozek:'na ławce w parku, wśród gołębi'}[id]||'',task:D.task.replace(/^Nowe zadanie: /,'').replace(/^./,c=>c.toUpperCase()),pick:id+'_pick',money:D.money,xp:D.xp}; });
+  Object.keys(NPC_DEF).forEach(id=>{ const D=NPC_DEF[id]; NPC_INFO[id]={where:{andrzej:'przy przystanku przy kościele',soltys:'przy bibliotece',halina:'przy Szkolnej, niedaleko Lewiatana',stasiek:'przy swoim ciągniku',kasia:'przy orliku',wiesiek:'przy Szkolnej, koło ośrodka zdrowia',zenek:'na ławce w parku, przy szachownicy',marek:'w parku przy orliku',burek:'w parku, z psem Burkiem',heniek:'w parku przy placu zabaw, z taczką',jozek:'na ławce w parku, wśród gołębi'}[id]||'',task:D.task.replace(/^Nowe zadanie: /,'').replace(/^./,c=>c.toUpperCase()),pick:id+'_pick',money:D.money,xp:D.xp}; });
   function npcTarget(n){ const s=npcStage(n.id), I=NPC_INFO[n.id], D=NPC_DEF[n.id]; if(s==='zadanie'&&I){ if(D&&D.buy){ const sh=SHOPS.find(q=>q.n===D.buy.shop); if(sh&&!hasIt(D.item)) return {p:sh.p.slice(),what:D.buy.shop}; } const k=NPC_PICKS.find(q=>(q.id===I.pick||q.id.startsWith(I.pick))&&q.on()); if(k) return {p:k.p,what:'cel zadania'}; } if(s==='koniec') return null; return {p:[n.x,n.z],what:n.name}; }
   // znaczek nad głową: „!” – zadanie do wzięcia, „?” – można oddać zadanie
   const markTex=(ch,bg)=>{ const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d'); x.fillStyle=bg; x.beginPath(); x.arc(32,32,28,0,7); x.fill(); x.lineWidth=4; x.strokeStyle='#1a1a1a'; x.stroke(); x.fillStyle='#1a1a1a'; x.font='900 44px Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(ch,32,35); const t=new THREE.CanvasTexture(c); return new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}); };
@@ -3352,7 +3370,7 @@ async function boot(saved){
     const wallSeg=(x0,z0,x1,z1,lv,h)=>{ const cx=(x0+x1)/2, cz=(z0+z1)/2, sx=Math.max(.2,Math.abs(x1-x0)), sz=Math.max(.2,Math.abs(z1-z0)); h=h||F; ib(wallM,cx,lv*F,cz,sx,h,sz); ib(lamp,cx,lv*F,cz,sx+.02,1.3,sz+.02); };
     const sign=(t,x,y,z,ry,w)=>pl(g,w||1.4,.3,x,y,z,new THREE.MeshBasicMaterial({map:signTex(t,'#f4f1e6','#1d3a6a',320,68,'700 34px Barlow, Arial')}),ry);
     // ściany korytarza (z = ±2) z otworami drzwiowymi, ściany działowe między salami
-    const doorGap=r=>[r[1]-2.3,r[1]-.9];
+    const doorGap=r=>[r[1]-2.6,r[1]-.8];
     const PW=new Set(); [0,1].forEach(lv=>['S','N'].forEach(sd=>{ const zw=sd==='S'?2:-2, zs=sd==='S'?1:-1; const rs=SCH_ROOMS.filter(r=>r[3]===lv&&r[2]===sd).sort((a,b)=>a[0]-b[0]);
       let x=-W/2; const segs=[]; const cut=(a,b)=>{ if(b>a+.05) segs.push([a,b]); };
       const open=lv===0&&sd==='S'?[[-3,3]]:sd==='N'?(lv===0?[[-3,-.2]]:[[-3,3]]):[]; // hol wejściowy, schody, przejście na piętrze
@@ -3384,13 +3402,13 @@ async function boot(saved){
       tex(128,96,(c,w,h)=>{ c.fillStyle='#fff6d8'; c.fillRect(0,0,w,h); c.fillStyle='#8a1c1c'; c.font='700 18px Arial'; ['Aa Bb Cc','Dd Ee Ff','Gg Hh Ii'].forEach((t,i)=>c.fillText(t,14,28+i*26)); }),
       tex(128,96,(c,w,h)=>{ c.fillStyle='#f4f1e6'; c.fillRect(0,0,w,h); c.fillStyle='#1d3a6a'; c.font='700 12px Arial'; c.fillText('TABLICZKA MNOŻENIA',8,16); c.font='11px Arial'; for(let r=1;r<6;r++) for(let k=1;k<6;k++) c.fillText(String(r*k),k*20,18+r*14); })].map(t=>new THREE.MeshBasicMaterial({map:t}));
     const kid=(lv,x,z,ry)=>{ const p=npcPerson(o,rnd()<.5,pick(PCOL),pick([0x2c3e66,0x2a2a2c,0x1e2a44,0x4a4a4a]),pick([0x2a1d14,0x6b4426,0xb08a50,0xd2b27a]),{hairStyle:pick(['short','pony','bob','short'])}); p.scale.setScalar(.8); p.position.set(x,0,z); sitPose(p,.44); p.position.y=lv*F+.44-.9*.8+.02; p.rotation.y=ry; o.npc.push({p,role:'read',t:R(0,6)}); };
-    SCH_ROOMS.forEach(r=>{ const [x0,x1,sd,lv,name,kind,board]=r, Y=lv*F, zs=sd==='S'?1:-1, zIn=zs*2, zOut=zs*D/2, zc=zs*6.5, cols=[4.4,6.9,9.4].map(v=>v*zs);
+    SCH_ROOMS.forEach(r=>{ const [x0,x1,sd,lv,name,kind,board]=r, Y=lv*F, zs=sd==='S'?1:-1, zIn=zs*2, zOut=zs*D/2, zc=zs*6.5, cols=[5.2,7.6,10.0].map(v=>v*zs);
       const posterOn=(i,x)=>pl(g,1.1,.82,x,Y+1.9,zOut-zs*.03,posters[i%posters.length],sd==='S'?Math.PI:0);
       if(kind==='class'||kind==='lab'||kind==='comp'||kind==='geo'){
         pl(g,3.4,1.25,x0+.13,Y+1.65,zc,new THREE.MeshLambertMaterial({map:boardTex(board),emissive:0x0c120e}),Math.PI/2); ib(woodD,x0+.1,Y+.98,zc,.06,1.38,3.6); ib(woodD,x0+.16,Y+.98,zc,.14,.04,3.4);
         ib(woodM,x0+1.7,Y,zc+zs*2.4,.8,.76,1.5); ib(dark,x0+2.4,Y,zc+zs*2.4,.42,.46,.42); col(x0+1.2,zc+zs*1.55,x0+2.7,zc+zs*3.25,lv);
-        const rows=[]; for(let x=x0+3.3;x<x1-1.3;x+=1.55) rows.push(x); const lab=kind==='lab', comp=kind==='comp';
-        rows.forEach(x=>cols.forEach(z=>{ const dw=lab?1.7:1.3; if(lab&&Math.abs(z)>9)return; ib(lab?M(0x3a3a3a,0x0a0a0a):woodM,x,Y+.72,z,.6,.05,dw); [[-.24,-dw/2+.06],[-.24,dw/2-.06],[.24,-dw/2+.06],[.24,dw/2-.06]].forEach(([a,b])=>ib(lab?steel:metal,x+a,Y,z+b,.04,.72,.04));
+        const rows=[]; for(let x=x0+3.4;x<x1-1.7;x+=1.65) rows.push(x); const lab=kind==='lab', comp=kind==='comp';
+        rows.forEach(x=>(lab?[5.2*zs,8.5*zs]:cols).forEach(z=>{ const dw=lab?1.7:1.3; ib(lab?M(0x3a3a3a,0x0a0a0a):woodM,x,Y+.72,z,.6,.05,dw); [[-.24,-dw/2+.06],[-.24,dw/2-.06],[.24,-dw/2+.06],[.24,dw/2-.06]].forEach(([a,b])=>ib(lab?steel:metal,x+a,Y,z+b,.04,.72,.04));
           [-.33,.33].forEach(o2=>{ ib(woodM,x+.52,Y+.43,z+o2,.4,.03,.4); ib(woodM,x+.72,Y+.46,z+o2,.03,.36,.4); ib(metal,x+.52,Y,z+o2,.34,.43,.04); if(comp){ ib(dark,x-.12,Y+.77,z+o2,.06,.34,.48); ib(screenM,x-.085,Y+.82,z+o2,.01,.26,.42); ib(dark,x+.08,Y+.77,z+o2,.16,.02,.36); } });
           col(x-.32,z-dw/2-.04,x+.78,z+dw/2+.04,lv); if(kind!=='comp'&&rnd()<.3) kid(lv,x+.52,z+(rnd()<.5?-.33:.33),-Math.PI/2); }));
         if(kind==='geo'){ const gl=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),new THREE.MeshLambertMaterial({map:posters[1].map,emissive:0x101010})); gl.position.set(x0+1.7,Y+1.0,zc+zs*2.1); g.add(gl); }
@@ -3416,11 +3434,11 @@ async function boot(saved){
     });
     // korytarz: ławki, donice, gablota z pucharami, gazetka szkolna, szafki
     [-15,-6.5,7,15.5].forEach((x,i)=>[0,1].forEach(lv=>{ const z=(i===1?-1:1)*1.62; ib(woodM,x,lv*F+.42,z,1.8,.05,.38); ib(metal,x-.8,lv*F,z,.05,.42,.34); ib(metal,x+.8,lv*F,z,.05,.42,.34); col(x-.95,z-.22,x+.95,z+.22,lv); }));
-    [[-19.4,1.4],[19.4,-1.4],[-19.4,-1.4],[19.4,1.4]].forEach(([x,z])=>[0,1].forEach(lv=>{ const pot=new THREE.Mesh(new THREE.CylinderGeometry(.25,.2,.45,10),M(0xb06a3a,0x140804)); pot.position.set(x,lv*F+.22,z); g.add(pot); const pl2=new THREE.Mesh(new THREE.SphereGeometry(.42,8,6),M(0x3f7a3a,0x08100a)); pl2.position.set(x,lv*F+.85,z); pl2.scale.y=1.3; g.add(pl2); col(x-.3,z-.3,x+.3,z+.3,lv); }));
+    [[-19.5,.9],[19.5,-.9],[-19.5,-.9],[19.5,.9]].forEach(([x,z])=>[0,1].forEach(lv=>{ const pot=new THREE.Mesh(new THREE.CylinderGeometry(.25,.2,.45,10),M(0xb06a3a,0x140804)); pot.position.set(x,lv*F+.22,z); g.add(pot); const pl2=new THREE.Mesh(new THREE.SphereGeometry(.42,8,6),M(0x3f7a3a,0x08100a)); pl2.position.set(x,lv*F+.85,z); pl2.scale.y=1.3; g.add(pl2); col(x-.3,z-.3,x+.3,z+.3,lv); }));
     ib(woodD,2.5,0,9.2,.45,1.9,1.8); ib(glassM,2.24,.2,9.2,.02,1.6,1.7); [8.6,9.2,9.8].forEach((z,k)=>{ const cup=new THREE.Mesh(new THREE.CylinderGeometry(.08,.05,.26,10),M(0xd8b030,0x2a2000)); cup.position.set(2.5,1.0+k%2*.5,z); g.add(cup); }); col(2.2,8.2,3,10.2,0);
     pl(g,3.0,.75,1.4,2.45,-1.87,new THREE.MeshBasicMaterial({map:signTex('SZKOŁA PODSTAWOWA','#1d3a6a','#ffffff',512,128,'800 60px Barlow, Arial')}),0);
     pl(g,2.4,1.2,-8,1.6,-1.89,new THREE.MeshBasicMaterial({map:tex(256,128,(c,w,h)=>{ c.fillStyle='#c9a26a'; c.fillRect(0,0,w,h); c.fillStyle='#1d3a6a'; c.font='700 20px Barlow, Arial'; c.fillText('GAZETKA SZKOLNA',58,24); [[12,36,'#f4f1e6'],[92,40,'#bfe0f0'],[172,34,'#fff6d8'],[30,82,'#e8c8d8'],[120,84,'#f4f1e6']].forEach(([x,y,cl])=>{ c.fillStyle=cl; c.fillRect(x,y,70,38); }); })}),0);
-    for(let x=11;x<17.4;x+=.62) ib(M(0x5a7a9a,0x0a0e14),x,F,-1.78,.58,1.75,.4); col(10.7,-2,17.6,-1.55,1);
+    for(let x=11.5;x<16.6;x+=.62) ib(M(0x5a7a9a,0x0a0e14),x,F,-1.78,.58,1.75,.4); col(11.2,-2,16.8,-1.55,1);
     // spacerujący uczniowie i woźny
     const wl=(lv,path,sc)=>{ const n=addWalker(o,path,null); n.p.position.y=lv*F; if(sc) n.p.scale.setScalar(sc); };
     wl(0,[[-18,.4],[17,.4]],.82); wl(0,[[16,-.6],[-12,-.6],[-1.6,-1.2]],.82); wl(1,[[-18,.3],[18,.3]],.82); wl(1,[[17,-.5],[1.5,-.5],[1.5,-9.8]],null);
@@ -3435,7 +3453,7 @@ async function boot(saved){
   function entFromShop(shopName,room,label,center){ const s=SHOPS.find(q=>q.n===shopName); if(!s)return; s.room=room; const p=s.p; const n=[p[0]-center[0],p[1]-center[1]]; addEnt(room,label,p,n); room.items=s.items; room.shopName=s.n; }
   const logoT=(bg,fg,txt,font)=>tex(512,128,(c,w,h)=>{ c.fillStyle=bg; c.fillRect(0,0,w,h); c.fillStyle=fg; c.font=font||'800 74px Barlow, Arial'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(txt,w/2,h/2+4); });
   { const r=defRoom({kind:'zabka',W:12,D:10,HT:3.6,doorX:1.0,col:0x1a8a3a,wall:0xe6e6e2,floor:'#cfcdc6',wallE:0x121212,floorE:0x0c0c0c,noLights:true,logoW:2.4,logoX:3.4,logoY:2.6,walkers:2,logo:logoT('#1a8a3a','#ffffff','żabka')}); entFromShop('Żabka',r,'Żabki',[B_ZAB.x,B_ZAB.z]); }
-  { const r=defRoom({kind:'shop',W:13,D:11,col:0x2b2b2b,rows:2,checkouts:1,walkers:2,logo:logoT('#1b1b1b','#e8c25a','Delikatesy Premium','700 54px Barlow, Arial')}); entFromShop('Delikatesy Premium',r,'Delikatesów',CB.delik?[CB.delik.x,CB.delik.z]:[-150,-336]); }
+  // (Delikatesy Premium – sklep zamknięty, bez wejścia)
   { const r=defRoom({kind:'pharm',W:10,D:9,HT:3.7,logoW:3.4,logoY:3.08,col:0x2a9a5a,wall:0xaebdb2,floor:'#8f877b',ceil:0xc9c9c3,ceilE:0x161615,wallE:0x0e100e,floorE:0x0c0b0a,walkers:1,logo:logoT('#1b2a22','#57d68d','✚ APTEKA MAGNOLIA','700 50px Barlow, Arial')}); const a=typeof APT!=='undefined'&&APT?centroid(APT.pts):[-100,-200]; if(APT_DOORS){ const sh=SHOPS.find(q=>q.n==='Apteka Magnolia'); if(sh){ sh.p=APT_DOORS.pharm; sh.room=r; addEnt(r,'apteki',APT_DOORS.pharm,APT_DOORS.n); r.items=sh.items; r.shopName=sh.n; } } else entFromShop('Apteka Magnolia',r,'apteki',a); }
   const CLINIC_ROOM=defRoom({kind:'clinic',W:12,D:10,HT:3.4,col:0x2f7fbf,wall:0xa3b0b4,floor:'#7d878b',ceil:0xc9c9c3,ceilE:0x161615,wallE:0x0e100e,floorE:0x0c0b0a,walkers:1,logo:logoT('#ffffff','#2f7fbf','✚ OŚRODEK ZDROWIA','700 52px Barlow, Arial')});
   if(APT_DOORS) addEnt(CLINIC_ROOM,'ośrodka zdrowia',APT_DOORS.clinic,APT_DOORS.n); CLINIC_ROOM.title='Ośrodek zdrowia';
@@ -3638,7 +3656,13 @@ async function boot(saved){
         return [S('teach','Weź dziennik z pokoju nauczycielskiego na piętrze (schody na końcu holu)',{wait:2}),{buy:'Sklepik szkolny',item:'Guma Turbo',p:[e[0],e[1]],t:'Kup w sklepiku szkolnym gumę Turbo – nagroda dla 1a za ciszę'},S('board','Napisz temat lekcji na tablicy w klasie 1a',{wait:4}),S('k1a','Poprowadź lekcję przy biurku nauczyciela – dotrwaj do dzwonka',{wait:10,done:'Dzwonek! Uczniowie 1a biją brawo, a pani dyrektor dziękuje za pomoc.'})]; }},
     {id:'s11',n:'Beemka na próbę',xp:55,reward:650,req:()=>NQ.seba==='koniec'&&!!SEBA_CAR,start:()=>{ const n=NPC.find(q=>q.id==='seba'); return n?[n.x+1.5,n.z+1.5]:[SEBA_CAR.x,SEBA_CAR.z]; },desc:'Seba w podzięce daje ci kluczyki do swojego BMW E46. Przejedź rundkę po wsi i odstaw beemkę w całości!',time:170,
       steps(){ const h=SEBA_CAR.home, n=NPC.find(q=>q.id==='seba'); const lew=B_LEW&&B_LEW.front?[B_LEW.front.x+B_LEW.front.nx*14,B_LEW.front.z+B_LEW.front.nz*14]:SPAWN_P();
-        return [{p:[SEBA_CAR.x,SEBA_CAR.z],t:'Wsiądź do beemki Seby',car:'bmw',r:6},{p:SCHOOL_P,t:'Przejedź obok szkoły',car:'bmw',r:9},{p:lew,t:'Pokaż się pod Lewiatanem',car:'bmw',r:9},{p:[h[0],h[1]],t:'Odstaw beemkę na plac w parku',car:'bmw',r:6},{p:n?[n.x+1.2,n.z+1.2]:[h[0],h[1]],t:'Oddaj kluczyki Sebie',onfoot:1,r:3.5}]; }}];
+        return [{p:[SEBA_CAR.x,SEBA_CAR.z],t:'Wsiądź do beemki Seby',car:'bmw',r:6},{p:SCHOOL_P,t:'Przejedź obok szkoły',car:'bmw',r:9},{p:lew,t:'Pokaż się pod Lewiatanem',car:'bmw',r:9},{p:[h[0],h[1]],t:'Odstaw beemkę na plac w parku',car:'bmw',r:6},{p:n?[n.x+1.2,n.z+1.2]:[h[0],h[1]],t:'Oddaj kluczyki Sebie',onfoot:1,r:3.5}]; }},
+    {id:'s12',n:'Pies ze schroniska',xp:60,reward:900,req:()=>!!(SHELTER&&ADOPT),start:()=>ADOPT.p.slice(),desc:'Rodzina z domu obok Lewiatana adoptuje psa. Pojedź autem do schroniska dla zwierząt w Trębaczewie, odbierz Azora i przywieź go do nowego domu.',
+      steps(){ const S=SHELTER, A=ADOPT; return [
+        {p:[S.gate[0],S.gate[1]],t:'Pojedź autem do schroniska dla zwierząt w Trębaczewie',car:1,r:14},
+        {p:[S.gate[0],S.gate[1]],t:'Wysiądź i odbierz Azora – podpisz papiery adopcyjne',onfoot:1,r:4,wait:4,onDone:()=>{ azorMake(); AZOR.on=true; AZOR.home=false; NQ.azor='jedzie'; nqSave(); toast('Azor merda ogonem i idzie za tobą. Wsiądź z nim do auta!',3.5); }},
+        {p:A.p.slice(),t:'Zawieź Azora do nowego domu obok Lewiatana',car:1,r:9},
+        {p:A.p.slice(),t:'Wysiądź i przekaż Azora nowej rodzinie',onfoot:1,r:4,wait:3,onDone:()=>{ NQ.azor='dom'; nqSave(); azorHome(); toast('Azor ma nowy dom! Rodzina dziękuje.',3.5); }}]; }}];
   const MISSIONS=[...CAMPAIGN,...SIDE]; const SIDE_CD=300;                                // misje poboczne wracają po 5 min
   const DONE=new Set(); const SIDE_T={}; let ACTIVE=null;
   // dom na sprzedaż (ostatnia misja)
@@ -3657,7 +3681,7 @@ async function boot(saved){
     const steps=(typeof m.steps==='function'?m.steps.call(m):m.steps).filter(s=>s&&(s.p||s.escape)); steps.forEach(s=>{ if(s.p&&!s.buy) s.p=walkSpot(s.p,!!s.car&&!s.onfoot); }); ACTIVE={m,steps,i:0,t:m.time||0,w:0,t0:tAll}; MISSIONS.forEach(q=>q.mk.visible=false); toast(`<b>${m.n}</b><br>${m.desc}`,4.5); stepBegin(); }
   function stepBegin(){ const s=ACTIVE.steps[ACTIVE.i]; ACTIVE.w=0; ACTIVE.ts=tAll; if(s.escape){ setWanted(Math.max(st.wanted,s.escape)); ACTIVE.hadW=true; cpMark.visible=false; } else { cpMark.position.set(s.p[0],H(s.p[0],s.p[1]),s.p[1]); cpMark.visible=true; }
     smoke.visible=!!s.fire; if(s.fire) smoke.position.set(s.p[0]+8,H(s.p[0],s.p[1]),s.p[1]+6); }
-  function endMission(ok){ const m=ACTIVE.m; cpMark.visible=false; cpMark.scale.set(1,1,1); smoke.visible=false; ACTIVE=null;
+  function endMission(ok){ const m=ACTIVE.m; if(!ok&&m.id==='s12'&&AZOR.on){ AZOR.on=false; if(AZOR.g){ if(AZOR.g.parent) AZOR.g.parent.remove(AZOR.g); } AZOR.g=null; NQ.azor=''; nqSave(); } cpMark.visible=false; cpMark.scale.set(1,1,1); smoke.visible=false; ACTIVE=null;
     if(ok){ statEvent('mission',{main:m.main?1:0}); if(m.main) DONE.add(m.id); else SIDE_T[m.id]=Date.now(); const rw=m.main?m.reward:Math.round(m.reward*(1+st.level*.35)); if(rw) addMoney(rw); if(m.xp) addXP(m.xp); toast(`<b>MISJA ZALICZONA</b><br>${m.n}${rw?` · +${fmt(rw)}`:''}${m.xp?` · +${m.xp} XP`:''}`,4.5); if(AU.ctx&&AU.on)sfx.win(); saveGame(); }
     else toast('<b>MISJA NIEUDANA</b><br>Spróbuj jeszcze raz',3.5); refreshMarks(); }
   function stepOK(s){ if(s.car&&!st.car){ return 'Wsiądź do pojazdu'; } if(s.car==='fire'&&!(st.car&&st.car.kind==='fire')) return 'Potrzebny wóz strażacki z OSP'; if(s.car==='tractor'&&!(st.car&&st.car.kind==='tractor')) return 'Potrzebny ciągnik'; if(s.car==='bmw'&&st.car!==SEBA_CAR) return 'Wsiądź do BMW Seby'; if(s.onfoot&&st.car) return 'Wysiądź z pojazdu'; return ''; }
@@ -3676,7 +3700,7 @@ async function boot(saved){
         else if(s.mini){ A.mIn=true; if(!MG.on&&!A.mLock){ A.mLock=true; A.mRetry=false; openMini(s.mini,{...(s.mo||{}),mission:true,sub:A.m.n,onEnd:w=>{ if(ACTIVE===A&&A.steps[A.i]===s){ if(w) nextStep(); else A.mRetry=true; } }}); } info=A.mRetry?(IS_TOUCH?'Jeszcze raz – przycisk akcji':'E – spróbuj ponownie'):''; }
         else return nextStep(); } else { if(s.wait) A.w=Math.max(0,A.w-dt*.5); if(s.mini){ A.mIn=false; if(d>R0+2&&A.mRetry){ A.mLock=false; A.mRetry=false; } } } }
     missionEl.hidden=false; missionEl.innerHTML=`<b>${A.m.n}</b><span>${s.t}${s.p&&d>1?' · '+Math.round(d)+' m':''}${info?' · '+info:''}</span>${A.m.time?`<em>${Math.max(0,Math.ceil(A.t))} s</em>`:''}`; }
-  function nextStep(){ const A=ACTIVE, s=A.steps[A.i]; if(s.win){ endMission(true); winGame(); return; } A.i++; if(AU.ctx&&AU.on)sfx.cash(); if(A.i>=A.steps.length) endMission(true); else { stepBegin(); toast(A.steps[A.i].t,2.2); } }
+  function nextStep(){ const A=ACTIVE, s=A.steps[A.i]; if(s.onDone){ try{ s.onDone(); }catch(e){} } if(s.win){ endMission(true); winGame(); return; } A.i++; if(AU.ctx&&AU.on)sfx.cash(); if(A.i>=A.steps.length) endMission(true); else { stepBegin(); toast(A.steps[A.i].t,2.2); } }
   function winGame(){ const w=document.getElementById('winScreen'); if(!w)return; w.hidden=false; w.querySelector('.stats').textContent=`Poziom ${st.level} · misje główne: ${DONE.size}/20 · czas gry: ${Math.round(tAll/60)} min`; }
   function extBlips(rx,px,py,sc){ const dot=(x,z,c,r)=>{ const [a,b]=mp(x,z); rx.beginPath(); rx.arc(a-px,b-py,r/sc,0,7); rx.fillStyle=c; rx.fill(); rx.lineWidth=2/sc; rx.strokeStyle='#000'; rx.stroke(); };
     if(ACTIVE){ const s=ACTIVE.steps[ACTIVE.i]; if(s.p) dot(s.p[0],s.p[1],'#ff3a3a',8); } else MISSIONS.forEach(m=>{ if(m.mk.visible) dot(m.sp[0],m.sp[1],m.main?'#ffd23a':'#3fb0ff',6); }); if(WAYPOINT) dot(WAYPOINT[0],WAYPOINT[1],'#c86bff',7);

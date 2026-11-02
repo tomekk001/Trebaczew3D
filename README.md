@@ -8,14 +8,15 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 
 - **Menu główne**: tryb jednoosobowy, tryb wieloosobowy (wkrótce), opcje (przypisywanie klawiszy, grafika, czułość myszy), kreator postaci (płeć, imię, fryzura, kolory, ubranie) i przycisk „Zgłoś błąd”, który otwiera gotowe zgłoszenie w Issues tego repozytorium.
 - **Kampania**: 20 misji fabularnych odblokowywanych poziomami (1–10). Na początku awans jest szybki, później wolniejszy. Ostatnia misja to kupno domu za 450 000 zł, co kończy grę.
-- **Misje poboczne** (niebieskie znaczniki) dają pieniądze i trochę doświadczenia. Po ukończeniu wracają po 5 minutach.
+- **Misje poboczne** (niebieskie znaczniki) dają pieniądze i trochę doświadczenia. Po ukończeniu wracają po 5 minutach. Wśród nich: „Pies ze schroniska” – autem do schroniska dla zwierząt w Trębaczewie (tablica, budy, psy, opiekunka), odbiór psa Azora, który idzie za graczem i jedzie z nim w aucie, i dostawa do nowego domu obok Lewiatana (pies zostaje tam na stałe); „Beemka na próbę” – rundka BMW Seby.
+- Deszcz, grad i burza są bezgłośne, a pociągi jeżdżą bez dźwięku.
 - **Dziennik misji** (Q): ukończone, dostępne i zablokowane misje z opisami; można zaznaczyć cel na radarze. Osobna sekcja „Postacie” pokazuje zadania wszystkich 9 rozmawiających postaci (co teraz zrobić, gdzie stoją, nagroda), a „Kolekcja” – zebrane historyjki z gum Turbo.
 - Nad postaciami z zadaniem świeci **„!”** (zadanie do wzięcia) albo **„?”** (można je oddać). Cele trwających zadań postaci są na radarze: żółte kropki (gdzie iść) i zielone (komu oddać).
 - Do Lewiatana można wejść (E przy drzwiach). W środku są regały, lodówki, kasy z kasjerkami, kolejka i klienci.
 - Na Orlenie w Działoszynie (przy DK42) można zatankować.
 - Każdy dom ma płot z furtką, a przy podjazdach są bramy, które otwiera się klawiszem E.
 
-- Można wejść do środka: Lewiatan, Żabka, Delikatesy, apteka, pizzeria Euforia, kościół, biblioteka (wypożyczanie książek), a w Działoszynie ORLEN, Biedronka i Lidl. W środku chodzą ludzie, są kasjerki i klienci.
+- Można wejść do środka: Lewiatan, Żabka, apteka, pizzeria Euforia, kościół, biblioteka (wypożyczanie książek), a w Działoszynie ORLEN, Biedronka i Lidl. W środku chodzą ludzie, są kasjerki i klienci.
 - Auta mają bak i wskaźnik paliwa. Gdy paliwo się skończy, auto nie pojedzie. Tankuje się na ORLENIE w Działoszynie (ul. Piłsudskiego), a na stacji można też kupić kanister.
 - Ceny paliw na pylonie i przy dystrybutorze pochodzą z pliku `ceny_paliw.json`, który codziennie aktualizuje GitHub Action (`.github/workflows/ceny-paliw.yml`, skrypt `tools/ceny_paliw.py`). Gdy pliku nie da się pobrać, gra używa cen wpisanych w kod.
 - Przejazd kolejowy na DK42: przed pociągiem migają czerwone światła i dzwoni sygnalizator, potem opuszczają się rogatki, a auta czekają w kolejce. Po przejeździe pociągu rogatki się podnoszą.
@@ -151,7 +152,7 @@ Formularz `zglos.html` wysyła zgłoszenia na serwer gry (`/report`). Autor czyt
 - `sklep.py`: regał z alkoholem, gondola, lodówka i lada Żabki.
 - `pociagi.py`: elektryczny zespół trakcyjny (człony czołowe i środkowe) oraz lokomotywa i węglarki pociągu towarowego.
 - `budynki2.py`: kolejne miejsca ze zdjęć: szkoła podstawowa (obrys w kształcie litery L), domy przy Wyzwolenia 159–163 naprzeciw kościoła, kwiaciarnia „Sas-Anka” (Szkolna 9), dom przy Szkolnej 3, OSP, budynek Żabki, trzy bryły przedszkola i elektrownia wiatrowa z obracającym się wirnikiem.
-- `budynki.py`: budynki według zdjęć: ośrodek zdrowia z Apteką Magnolia (Szkolna 12, taras ze schodami, ganek z dwojgiem drzwi), Delikatesy Premium, dworzec PKP, Minerał, świetlica, ORLEN (sklep i wiata), Biedronka, Lidl. Można zbudować wybrane, np. `python3 tools/blender/budynki.py lidl orlen_wiata`.
+- `budynki.py`: budynki według zdjęć: ośrodek zdrowia z Apteką Magnolia (Szkolna 12, taras ze schodami, ganek z dwojgiem drzwi), dawne Delikatesy (dziś budynek bez szyldów i bez wejścia), dworzec PKP, Minerał, świetlica, ORLEN (sklep i wiata), Biedronka, Lidl. Można zbudować wybrane, np. `python3 tools/blender/budynki.py lidl orlen_wiata`.
 
 ```
 for f in tools/blender/{lewiatan,kosciol,dzwonnica,kosciol_in,regal_apteka,sklep,budynki,pociagi}.py; do python3 $f; done
@@ -175,8 +176,8 @@ Czternaście postaci ma własne zadania i rozmawia przez model językowy na serw
 W parku można porozmawiać z pięcioma kolejnymi osobami, każda z innym rodzajem zadania:
 
 - **Pan Zenek** na ławce przy szachownicy: quiz – trzy pytania o Trębaczewie.
-- **Trener Marek** przy orliku (pachołki, piłka): wygraj z nim serię rzutów karnych (minigra) i dołącz do LZS.
-- **Ola** z psem Burkiem (pies merda ogonem): czerwona piłka Burka wpadła w krzaki na skraju parku.
+- **Marek** z LZS przy orliku (pachołki, piłka): wygraj z nim serię rzutów karnych (minigra) i dołącz do drużyny.
+- **Właścicielka Burka** z psem (pies merda ogonem): czerwona piłka Burka wpadła w krzaki na skraju parku.
 - **Ogrodnik Heniek** przy taczce z liśćmi: zbierz trzy worki liści rozrzucone po parku.
 - **Dziadek Józek** na ławce wśród gołębi (gołębie dziobią i podfruwają, gdy ktoś podejdzie): kup w Żabce bułkę dla gołębi.
 
