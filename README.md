@@ -160,10 +160,10 @@ python3 tools/glb2js.py && python3 build.py
 
 ## Rozmowy z postaciami (AI)
 
-Dziewięć postaci ma własne zadania i rozmawia przez model językowy na serwerze (Cloudflare Workers AI, `server/src/index.js`, adres `/npc`). Każda stoi na wolnym miejscu, z dala od bram, furtek, drzwi, jezdni i alejek, więc nikt nie blokuje przejścia:
+Czternaście postaci ma własne zadania i rozmawia przez model językowy na serwerze (Cloudflare Workers AI, `server/src/index.js`, adres `/npc`). Każda stoi na wolnym miejscu, z dala od bram, furtek, drzwi, jezdni i alejek, więc nikt nie blokuje przejścia:
 
 - **Mietek** pod Lewiatanem: chce kiełbasę z grilla przy remizie OSP.
-- **Seba** w parku, na placu od Zielonej, obok swojego Passata B5 FL. Trzeba docenić furę (obraza kończy rozmowę) i przynieść klucz 10 mm i trytytki ze skrzynki przy garażu.
+- **Seba** w parku, na placu od Zielonej, obok swojego czarnego BMW E46. Trzeba docenić beemkę (obraza kończy rozmowę) i przynieść klucz 10 mm i trytytki ze skrzynki przy garażu.
 - **Pani Jadzia** przed domem niedaleko remizy: trzeba podsłuchać strażaków i wrócić z prawdziwą plotką. Kłamstwo kończy się obrazą i zadanie zaczyna się od nowa.
 - **Andrzej** przy przystanku przy kościele: wesoły i lekko podchmielony, zgubił klucze od domu na trawniku przy kościele. Po zadaniu idzie do domu na herbatę.
 - **Sołtys Zdzisław** przy bibliotece: ogłoszenie o zebraniu wiejskim do przypięcia na tablicy przy Żabce.
@@ -171,6 +171,14 @@ Dziewięć postaci ma własne zadania i rozmawia przez model językowy na serwer
 - **Rolnik Stasiek** przy ciągniku: kanister ropy do odebrania z TRANS-BUD-u.
 - **Kasia** przy orliku: słuchawki zostały na ławce w parku.
 - **Listonosz Wiesiek** przy Szkolnej: paczka do skrzynki przy plebanii.
+
+W parku można porozmawiać z pięcioma kolejnymi osobami, każda z innym rodzajem zadania:
+
+- **Pan Zenek** na ławce przy szachownicy: quiz – trzy pytania o Trębaczewie.
+- **Trener Marek** przy orliku (pachołki, piłka): wygraj z nim serię rzutów karnych (minigra) i dołącz do LZS.
+- **Ola** z psem Burkiem (pies merda ogonem): czerwona piłka Burka wpadła w krzaki na skraju parku.
+- **Ogrodnik Heniek** przy taczce z liśćmi: zbierz trzy worki liści rozrzucone po parku.
+- **Dziadek Józek** na ławce wśród gołębi (gołębie dziobią i podfruwają, gdy ktoś podejdzie): kup w Żabce bułkę dla gołębi.
 
 Przebieg zadań i nagrody są zaprogramowane w grze. Model prowadzi tylko swobodną rozmowę i dostaje od gry wyłącznie identyfikator postaci, etap zadania, listę przedmiotów i treść pytania. Osobowości i zasady (bez wulgaryzmów, tylko zmyślone osoby, bez danych prawdziwych mieszkańców) są zapisane na serwerze. Limity: 12 wiadomości na minutę i 80 dziennie z jednego adresu oraz 900 dziennie dla całej gry (pierwsze ~250 rozmów obsługuje lepszy po polsku Mistral Small, potem Llama 8B – razem mieści się w darmowym limicie Cloudflare). Gdy serwer jest niedostępny albo limit się wyczerpie, postacie odpowiadają gotowymi kwestiami.
 
