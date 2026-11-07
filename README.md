@@ -12,7 +12,7 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 - Deszcz, grad i burza są bezgłośne, a pociągi jeżdżą bez dźwięku.
 - **Dziennik misji** (Q): ukończone, dostępne i zablokowane misje z opisami; można zaznaczyć cel na radarze. Osobna sekcja „Postacie” pokazuje zadania wszystkich 9 rozmawiających postaci (co teraz zrobić, gdzie stoją, nagroda), a „Kolekcja” – zebrane historyjki z gum Turbo.
 - Nad postaciami z zadaniem świeci **„!”** (zadanie do wzięcia) albo **„?”** (można je oddać). Cele trwających zadań postaci są na radarze: żółte kropki (gdzie iść) i zielone (komu oddać).
-- Do Lewiatana można wejść (E przy drzwiach). W środku są regały, lodówki, kasy z kasjerkami, kolejka i klienci.
+- Do Lewiatana można wejść (E przy drzwiach). To duży market (30 × 22 m): owoce i warzywa przy wejściu, pieczywo, sześć rzędów regałów z wiszącymi tabliczkami działów, nabiał w lodówkach przy tylnej ścianie, napoje po prawej, stoisko z wędlinami, mięsem i serami z ekspedientką, alkohole, trzy kasy z regałem papierosów, kosze i wózki. Przy kasie 1 Pani Stasia rozmawia z kasjerką Panią Grażyną (dymki nad głowami); do obu można się odezwać (rozmowa przez AI), a Pani Stasia prosi o zaniesienie siatki z zakupami pod jej dom. Zakupy robi się przy kasie 2.
 - Na Orlenie w Działoszynie (przy DK42) można zatankować.
 - Każdy dom ma płot z furtką, a przy podjazdach są bramy, które otwiera się klawiszem E.
 
@@ -29,6 +29,12 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 - **Zlecenia postaci:** jednorazowo 80–250 zł i trochę doświadczenia. Kolekcja gum Turbo: 1500 zł.
 - **Pieniądze na chodnikach:** do 30 banknotów naraz, głównie 10–50 zł, czasem 100–150 zł, rzadko zgubiony portfel (300 zł); co 90 s pojawia się nowy.
 - **Wydatki:** mandat po złapaniu przez policję 10% pieniędzy (najwyżej 5000 zł), rachunek ze szpitala po utracie zdrowia 5% (najwyżej 2000 zł), paliwo, zakupy w sklepach.
+- **Auto-Komis Trębaczew przy DK42:** własne auto (Fiat 126p 3 000 zł, Polonez Caro 8 000 zł, VW Golf III 15 000 zł, BMW E36 35 000 zł), rower (300 zł), tuning (chip tuning 6 000 zł: +15% prędkości i +25% przyspieszenia; większy bak 3 000 zł) i ubrania (dres, kurtka skórzana, garnitur). Kupione auto stoi pod wiatą „Twoje auto” obok punktu informacyjnego.
+- **Twój dom:** po kupnie (misja „Własny kąt”) można wejść do środka i urządzić go z katalogu mebli na laptopie: kanapa, telewizor, stół, łóżko, regał, konsola, obraz, roślina, dywan i pies ze schroniska z legowiskiem.
+- **Zlecenia dnia:** codziennie trzy misje poboczne z różnych kategorii (dostawa, jazda, pomoc); za komplet premia 2000 zł + 400 zł × poziom.
+- **Osiągnięcia (13):** m.in. pierwsza misja, pomoc postaciom, kolekcja Turbo, godzina bez mandatu, 25 km za kierownicą, własne auto, Azor w nowym domu, komplet zleceń dnia, 100 000 zł, wszystkie misje poboczne, dom i meble. Lista z postępem jest w dzienniku (Q).
+- **Ranking graczy:** najwięcej pieniędzy i najszybszy „Wyścig dookoła wsi”; liczy się nazwa podana w trybie wieloosobowym.
+- **Łańcuchy zadań:** po „Beemce na próbę” – „Wyścig z Sebą na stadion”, po adopcji Azora – „Grill u rodziny Azora”, po zadaniu Marka – „Mecz z drużyną LZS”.
 - **Cel:** dom za 450 000 zł. Przy rozsądnej grze to ok. 6–7,5 godziny: kampania zajmuje ok. 2 godzin i daje ok. 90 000 zł, resztę dają misje poboczne (ok. 60–75) i zlecenia.
 
 ## Sterowanie (domyślne, można zmienić w Opcjach)
