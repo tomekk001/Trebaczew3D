@@ -299,6 +299,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 <div class="hud" id="hint"></div>
 <div class="hud" id="mission" hidden></div>
 <button id="mMute" aria-label="Dźwięk" style="position:fixed;z-index:8;right:calc(6px + env(safe-area-inset-right,0px));top:calc(6px + env(safe-area-inset-top,0px));width:26px;height:26px;padding:0;border:0;border-radius:13px;background:rgba(0,0,0,.35);color:#fff;font-size:13px;line-height:26px;cursor:pointer;opacity:.6">🔊</button>
+<button id="dChip" hidden style="position:fixed;z-index:8;right:calc(6px + env(safe-area-inset-right,0px));top:calc(38px + env(safe-area-inset-top,0px));padding:3px 9px;border:0;border-radius:12px;background:rgba(0,0,0,.4);color:#fff;font-size:12px;cursor:pointer">📋</button>
 <button class="btn" id="mAbort" hidden style="position:fixed;z-index:7;left:50%;top:calc(112px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-size:13px;padding:4px 12px;opacity:.85">Anuluj misję</button>
 <div class="hud" id="toast"></div>
 <div id="shop" hidden></div>
@@ -3833,7 +3834,16 @@ async function boot(saved){
     if(ok){ statEvent('mission',{main:m.main?1:0}); if(m.main) DONE.add(m.id); else SIDE_T[m.id]=Date.now(); const rw=m.main?m.reward:sideReward(m); if(!m.main) sideDone(m); if(rw) addMoney(rw); if(m.xp) addXP(m.xp); toast(`<b>MISJA ZALICZONA</b><br>${m.n}${rw?` · +${fmt(rw)}`:''}${m.xp?` · +${m.xp} XP`:''}`,4.5); if(AU.ctx&&AU.on)sfx.win(); saveGame(); }
     else toast('<b>MISJA NIEUDANA</b><br>Spróbuj jeszcze raz',3.5); refreshMarks(); }
   function stepOK(s){ if(s.car&&!st.car){ return 'Wsiądź do pojazdu'; } if(s.car==='passat'&&st.car!==PASSAT) return 'Potrzebne auto z parkingu przy Lewiatanie'; if(s.car==='fire'&&!(st.car&&st.car.kind==='fire')) return 'Potrzebny wóz strażacki z OSP'; if(s.car==='tractor'&&!(st.car&&st.car.kind==='tractor')) return 'Potrzebny ciągnik'; if(s.car==='bmw'&&st.car!==SEBA_CAR) return 'Wsiądź do BMW Seby'; if(s.onfoot&&st.car) return 'Wysiądź z pojazdu'; return ''; }
-  function missionUpdate(dt){ sideRefresh(dt); MISSIONS.forEach((m,i)=>{ if(m.mk.visible) m.mk.children[0].material.opacity=.25+Math.sin(tAll*3+i)*.08; });
+  // strzałka prowadząca do celu aktualnej misji (a na początku do pierwszej misji) i wskazówki dla nowego gracza
+  const GUIDE=new THREE.Group(); { const gm=new THREE.Mesh(new THREE.ConeGeometry(.45,1.5,4),new THREE.MeshBasicMaterial({color:0xffd23a,depthTest:false,transparent:true,opacity:.95})); gm.rotation.x=Math.PI/2; gm.renderOrder=999; GUIDE.add(gm); GUIDE.visible=false; scene.add(GUIDE); }
+  function guideTarget(){ if(ACTIVE){ const s=ACTIVE.steps[ACTIVE.i]; if(s.escape) return null; if(s.room) return st.inside?null:(s.room.ent?s.room.ent.p:null); return s.p||null; } if(!DONE.has('m1')){ const m=MISSIONS.find(q=>q.id==='m1'); return m&&m.sp?m.sp:null; } return WAYPOINT; }
+  function guideUpdate(){ const t=(!GAME.started||GAME.paused||st.inside)?null:guideTarget(); if(!t){ GUIDE.visible=false; return; }
+    if(!GUIDE.h1&&!DONE.has('m1')&&!ACTIVE){ GUIDE.h1=1; toast('<b>Pierwsza misja</b><br>Idź za żółtą strzałką do znacznika',5.5); }
+    const px=st.car?st.car.x:st.x, pz=st.car?st.car.z:st.z, dx=t[0]-px, dz=t[1]-pz, d=Math.hypot(dx,dz); if(d<(ACTIVE?9:7)){ GUIDE.visible=false; return; }
+    GUIDE.visible=true; GUIDE.position.set(px+dx/d*2.6,H(px,pz)+(st.car?3.4:2.9)+Math.sin(tAll*4)*.12,pz+dz/d*2.6); GUIDE.rotation.y=Math.atan2(dx,dz); }
+  function dailyHud(){ const chip=document.getElementById('dChip'); if(!chip) return; const on=GAME.started&&!GAME.paused&&!st.inside; chip.hidden=!on; if(!on) return; const D=dailyGet(); chip.textContent=`📋 ${D.done.length}/${D.ids.length}${OWN.streak>1&&D.paid?' 🔥'+OWN.streak:''}`; if(!GUIDE.d1&&DONE.has('m1')){ GUIDE.d1=1; if(!D.paid){ setTimeout(()=>toast(`<b>📋 Zlecenia dnia ${D.done.length}/${D.ids.length}</b><br>Za komplet premia ${fmt(dailyPrize())} + bonus za serię dni${OWN.streak>0?' (obecnie '+OWN.streak+')':''}`,6),4000); } } }
+  { const chip=document.getElementById('dChip'); if(chip) chip.addEventListener('click',e=>{ e.stopPropagation(); LOG_SEL='daily'; toggleLog(true); }); setInterval(dailyHud,1000); }
+  function missionUpdate(dt){ try{ guideUpdate(); }catch(e){} sideRefresh(dt); MISSIONS.forEach((m,i)=>{ if(m.mk.visible) m.mk.children[0].material.opacity=.25+Math.sin(tAll*3+i)*.08; });
     if(smoke.visible) smoke.children.forEach(s=>{ const k=(s.userData.o+tAll*.12)%1; s.position.set(Math.sin(k*9)*1.5,2+k*18,Math.cos(k*7)*1.5); s.scale.setScalar(1+k*4); });
     if(!ACTIVE){ missionEl.hidden=true; if(!abortEl.hidden) abortEl.hidden=true; return; } if(abortEl.hidden) abortEl.hidden=false; const A=ACTIVE, s=A.steps[A.i]; if(A.m.time){ A.t-=dt; if(A.t<=0){ endMission(false); return; } }
     let info='', d=0;
@@ -3977,7 +3987,7 @@ async function boot(saved){
   function dayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
   function dailyGet(){ const k=dayKey(); if(!OWN.daily||OWN.daily.day!==k){ let h=0; for(const ch of k) h=(h*31+ch.charCodeAt(0))>>>0; const ids=Object.values(DAILY_CAT).map(list=>{ const ok=list.filter(id=>{ const m=SIDE.find(q=>q.id===id); return m&&(!m.req||m.req()); }); const L=ok.length?ok:list.filter(id=>SIDE.find(q=>q.id===id)&&!SIDE.find(q=>q.id===id).req); h=(h*1103515245+12345)>>>0; return L[h%L.length]; }).filter(Boolean); OWN.daily={day:k,ids,done:[],paid:false}; ownSave(); } return OWN.daily; }
   const dailyPrize=()=>2000+400*st.level;
-  function dailyOn(id){ const D=dailyGet(); if(!D.ids.includes(id)||D.done.includes(id)) return; D.done.push(id); toast(`Zlecenie dnia wykonane (${D.done.length}/3)`,3); if(D.done.length>=D.ids.length&&!D.paid){ D.paid=true; const pz=dailyPrize(); setTimeout(()=>{ toast(`<b>KOMPLET ZLECEŃ DNIA!</b><br>Premia +${fmt(pz)}`,4.5); addMoney(pz); saveGame(); },2500); OWN.dailyDone=(OWN.dailyDone||0)+1; } ownSave(); }
+  function dailyOn(id){ const D=dailyGet(); if(!D.ids.includes(id)||D.done.includes(id)) return; D.done.push(id); toast(`Zlecenie dnia wykonane (${D.done.length}/3)`,3); if(D.done.length>=D.ids.length&&!D.paid){ D.paid=true; const yd=new Date(Date.now()-864e5), yk=yd.getFullYear()+'-'+(yd.getMonth()+1)+'-'+yd.getDate(); OWN.streak=OWN.lastPaid===yk?(OWN.streak||0)+1:1; OWN.lastPaid=dayKey(); const sb=Math.min(OWN.streak,7)*500, pz=dailyPrize()+sb; setTimeout(()=>{ toast(`<b>KOMPLET ZLECEŃ DNIA!</b><br>Premia +${fmt(pz)}${OWN.streak>1?` · seria ${OWN.streak} dni (+${fmt(sb)})`:''}`,5); addMoney(pz); saveGame(); },2500); OWN.dailyDone=(OWN.dailyDone||0)+1; } ownSave(); }
   // osiągnięcia
   const ACH=[
     {id:'start',n:'Pierwsze kroki',d:'Ukończ pierwszą misję',r:100,t:()=>DONE.has('m1')},

@@ -58,6 +58,7 @@ kbd{background:var(--bg2);border:1px solid var(--line);border-bottom-width:2px;b
 .gal figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .gal img{display:block;width:100%;height:auto;transition:transform .5s}.gal figure:hover img{transform:scale(1.04)}.gal figure{overflow:hidden}
 .gal figcaption{padding:10px 14px;font-size:14px;color:var(--mut)}
+.vid{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#000}.vid video{display:block;width:100%;height:auto}
 .band{margin:60px auto 0;max-width:1040px;padding:0 20px}
 .band div{border-radius:22px;padding:44px 24px;text-align:center;background:linear-gradient(135deg,#0b3d2a,#14604a 55%,#c48a00);color:#fff}
 .band h2{border:0;margin:0 0 8px}.band h2::after{margin:8px auto 0}.band p{max-width:34em;margin:0 auto 20px;opacity:.92}
@@ -102,6 +103,9 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
 <figure><img loading="lazy" src="img/passat.jpg" alt="Parking przy Lewiatanie" width="900" height="504"><figcaption>Parking, z którego zaczyna się pierwsza misja</figcaption></figure>
 </div></section>
 
+<section id="przelot" data-s="Film" hidden><h2>Zobacz, jak to wygląda</h2>
+<p class="mut">Przelot nad wsią: kościół, szkoła, Żabka i Lewiatan.</p>
+<div class="vid"><video id="filmv" controls muted loop playsinline preload="metadata" poster="img/hero.jpg"><source src="img/film.mp4" type="video/mp4"></video></div></section>
 <section id="swiat" data-s="Świat"><h2>Świat</h2>
 <p>Mapa obejmuje Trębaczew i okolice: ulice Szkolną, Wyzwolenia, Spacerową i Cmentarną, kościół, szkołę podstawową, park z placem zabaw, cmentarz, stadion, orlik, schronisko dla zwierząt oraz fragment DK42 z przejazdem kolejowym i stacją ORLEN w Działoszynie. Drzewa, szpalery, ścieżki piesze i ławki pochodzą z danych OpenStreetMap, a chodniki i drzewa przy ulicach takich jak Reja czy Dojazdowa odwzorowano na wzór centrum. W Sadowcu stoi własny orlik.</p>
 <h3>Wnętrza, do których wejdziesz</h3>
@@ -127,7 +131,7 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
 <section id="misje" data-s="Misje"><h2>Misje</h2>
 <h3>Kampania</h3><p>Zaczyna się od misji „Pierwsza jazda” (zaparkowane auto, ORLEN, paliwo), a dalej jest 20 misji odblokowywanych kolejnymi poziomami (1–10). Nagrody od 250 zł za pierwsze zakupy do 25 000 zł za wielki wyścig gminny.</p>
 <h3>Misje poboczne</h3><p>Niebieskie znaczniki na mapie. Dostawy, wyścigi, turniej flanek, mecz, grill u rodziny, pies ze schroniska i wiele innych. Powtarzanie tej samej misji płaci coraz mniej, a co 20 minut trzy losowe misje dostają premię ×1,5. Każdą trwającą misję możesz anulować.</p>
-<h3>Zlecenia dnia i osiągnięcia</h3><p>Codziennie trzy zlecenia z różnych kategorii, a za komplet premia. Do zdobycia jest 13 osiągnięć.</p></section>
+<h3>Zlecenia dnia i osiągnięcia</h3><p>Codziennie trzy zlecenia z różnych kategorii, a za komplet premia. Do zdobycia jest 13 osiągnięć.</p><h3>Prowadzenie i zlecenia dnia</h3><p>Nowy gracz dostaje żółtą strzałkę, która prowadzi do pierwszej misji, a potem do celu każdego zadania. Codziennie pojawiają się trzy zlecenia dnia z premią za komplet i rosnącym bonusem za kolejne dni z rzędu (do 7). Postęp widać w przycisku 📋 w rogu ekranu.</p></section>
 
 <section id="ekonomia" data-s="Ekonomia"><h2>Ekonomia</h2>
 <table>
@@ -179,7 +183,7 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
 <footer>Symulator życia w Trębaczewie · gra fanowska, postaci i wydarzenia są fikcyjne · dane: © OpenStreetMap, © GUGiK<br><a href="gra/">Zagraj</a> · <a href="zglos.html">Zgłoś błąd</a></footer>
 <script>
 (function(){
-  var secs=[].slice.call(document.querySelectorAll('main section[data-s]')),nav=document.getElementById('nav'),top=document.getElementById('top'),bg=document.getElementById('burger');
+  var secs=[].slice.call(document.querySelectorAll('main section[data-s]:not([hidden])')),nav=document.getElementById('nav'),top=document.getElementById('top'),bg=document.getElementById('burger');
   nav.innerHTML=secs.map(function(s){return '<button type="button" data-go="'+s.id+'">'+s.getAttribute('data-s')+'</button>';}).join('');
   function go(id){var e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'start'});nav.classList.remove('open');}
   document.addEventListener('click',function(ev){var b=ev.target.closest('[data-go]');if(b)go(b.getAttribute('data-go'));});
@@ -188,6 +192,7 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
   addEventListener('scroll',spy,{passive:true});spy();
   var rv=document.querySelectorAll('.rv,main section');[].forEach.call(rv,function(e){e.classList.add('rv');});
   if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('on');io.unobserve(x.target);}});},{threshold:.08});[].forEach.call(document.querySelectorAll('.rv'),function(e){io.observe(e);});}else{[].forEach.call(document.querySelectorAll('.rv'),function(e){e.classList.add('on');});}
+  var fv=document.getElementById('filmv');if(fv&&'IntersectionObserver' in window){var vo=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){fv.play().catch(function(){});}else{fv.pause();}});},{threshold:.5});vo.observe(fv);}
   var API='https://trebaczew-mp.kontakt-3e3.workers.dev/ranking', t=document.getElementById('rk');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   fetch(API).then(function(r){return r.json();}).then(function(j){
