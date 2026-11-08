@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /zgloszenia.html
+Sitemap: https://trebaczew.io/sitemap.xml
