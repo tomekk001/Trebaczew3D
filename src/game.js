@@ -1654,7 +1654,7 @@ async function boot(saved){
     hpb.style.width=st.hp+'%';
     let hint=extHint()||''; if(!hint&&!st.car){ const c=nearestParked(); if(c) hint=`Naciśnij <kbd>${keyName(KEYMAP.f)}</kbd>, aby wsiąść do auta`; else { const pk=LOCKERS.find(l=>Math.hypot(l.x-st.x,l.z-st.z)<4); if(pk) hint='Paczkomat · '+pk.n; } } hintEl.innerHTML=hint; hintEl.classList.toggle('on',!!hint); if(IS_TOUCH) actLabel();
     if(st.car) vehEl.textContent=vehEl.textContent.split(' · ')[0]+' · '+(vehEl.dataset.kmh||0)+' km/h'; fuelHud();
-    const far=st.mode===2?600:70; POIS.forEach(p=>{ p.sp.visible=Math.hypot(p.x-st.x,p.z-st.z)<far; }); }
+    const far=st.mode===2?600:70; POIS.forEach(p=>{ const d=Math.hypot(p.x-st.x,p.z-st.z); p.sp.visible=d<far&&!(p.npcTag&&d<26); }); }
 
   /* ======================= ROZSZERZENIA ======================= */
   const EXT_UPD=[];
@@ -2127,7 +2127,7 @@ async function boot(saved){
   function addNPC(id,name,title,col,pos,face,look){ const p=makePerson(look.top,look.bot,look.hair,Object.assign({exact:true},look.opt)); p.position.set(pos[0],H(pos[0],pos[1])+.1,pos[1]); p.rotation.y=face; scene.add(p);
     const sol={x:pos[0],z:pos[1],hw:.24,hd:.24,c:1,s:0,r:.4}; addSolid(sol); const tag=labelSprite(name,col); tag.scale.multiplyScalar(.22); tag.position.set(pos[0],H(pos[0],pos[1])+2.35,pos[1]); scene.add(tag);
     const n={id,name,title,col,p,x:pos[0],z:pos[1],face0:face,tag,sol}; NPC.push(n);
-    POIS.push({n:`${name} – ${title}`,x:pos[0],z:pos[1],p:pos,c:col,ic:'💬',sp:labelSprite(name,col)}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(pos[0],H(pos[0],pos[1])+9,pos[1]); lp.sp.visible=false; scene.add(lp.sp);
+    POIS.push({n:`${name} – ${title}`,x:pos[0],z:pos[1],p:pos,c:col,ic:'💬',npcTag:true,sp:labelSprite(name,col)}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(pos[0],H(pos[0],pos[1])+9,pos[1]); lp.sp.visible=false; scene.add(lp.sp);
       const b=document.createElement('button'); b.innerHTML=`<i style="background:${col}"></i>`; b.append(`💬 ${name} – ${title}`); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.prepend(b); }
     return n; }
   // --- miejsce dla postaci: z dala od bram, furtek, przejść, jezdni i alejek, z wolnym miejscem dookoła (da się obejść) ---
