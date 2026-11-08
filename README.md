@@ -2,7 +2,7 @@
 
 Gra 3D w stylu GTA (dawniej „Trębaczew 3D”), w której można chodzić i jeździć po prawdziwym Trębaczewie (gm. Działoszyn, pow. pajęczański). Ulice, budynki, działki i rzeźba terenu pochodzą z otwartych danych, a charakterystyczne miejsca (Lewiatan, Żabka, kościół, apteka, park, przedszkole, OSP, cmentarz) odwzorowano ze zdjęć.
 
-Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.html`.
+Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `gra/index.html` (strona opisowa projektu to `index.html` w katalogu głównym, trebaczew.io).
 
 ## Rozgrywka
 
@@ -16,7 +16,7 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 - **Pierwsza misja „Pierwsza jazda”:** szary Passat (B5 FL, EPJ 03338) stoi na parkingu Lewiatana z prawie pustym bakiem; trzeba nim dojechać na ORLEN w Działoszynie i zatankować. Wsiąść można tylko do kilku aut (Passat, BMW Seby, jedno zapasowe przy starcie i własne z komisu), reszta to dekoracja.
 - Strona ze statystykami jest prywatna: dostęp tylko po zalogowaniu GitHubem przez serwer (nie ma jej w grze ani w plikach strony).
 - Ukryty kod na teleport z mapy działa 10 sekund (instrukcji nie ma w grze).
-- Podstrona `/info` (folder `info/`) opisuje grę i pokazuje globalny ranking graczy po poziomie (`GET /ranking` na serwerze).
+- Strona główna (`index.html`) opisuje grę, zawiera galerię, nowości i globalny ranking graczy po poziomie (`GET /ranking` na serwerze). Gra jest pod `/gra/`; `/info` i `/ranking` przekierowują na stronę główną. Każda nowa funkcja musi trafić do sekcji „Nowości” i opisu na stronie głównej.
 - **Dziennik misji** (Q): ukończone, dostępne i zablokowane misje z opisami; można zaznaczyć cel na radarze. Osobna sekcja „Postacie” pokazuje zadania wszystkich 9 rozmawiających postaci (co teraz zrobić, gdzie stoją, nagroda), a „Kolekcja” – zebrane historyjki z gum Turbo.
 - Nad postaciami z zadaniem świeci **„!”** (zadanie do wzięcia) albo **„?”** (można je oddać). Cele trwających zadań postaci są na radarze: żółte kropki (gdzie iść) i zielone (komu oddać).
 - Do Lewiatana można wejść (E przy drzwiach). To duży market (30 × 22 m): owoce i warzywa przy wejściu, pieczywo, sześć rzędów regałów z wiszącymi tabliczkami działów, nabiał w lodówkach przy tylnej ścianie, napoje po prawej, stoisko z wędlinami, mięsem i serami z ekspedientką, alkohole, trzy kasy z regałem papierosów, kosze i wózki. Przy kasie 1 Pani Stasia rozmawia z kasjerką Panią Grażyną (dymki nad głowami); do obu można się odezwać (rozmowa przez AI), a Pani Stasia prosi o zaniesienie siatki z zakupami pod jej dom. Zakupy robi się przy kasie 2.
@@ -74,8 +74,9 @@ Kod gry wieloosobowej (funkcja `room` artefaktów Claude) jest w `src/game.js`, 
 ## Struktura
 
 ```
-index.html        gotowa, złożona gra (jeden plik)
-build.py          składa index.html ze źródeł
+index.html        strona opisowa (trebaczew.io)
+gra/index.html    gotowa, złożona gra (jeden plik) + gra/models_in.js, gra/sw.js, gra/manifest.webmanifest
+build.py          składa gra/index.html ze źródeł
 src/head.html     HTML, CSS interfejsu, biblioteki (three.js r128 z CDN)
 src/game.js       cały kod gry (świat, pojazdy, postacie, misje, multiplayer)
 src/data.js       OSM: drogi, obszary, budynki-wielokąty (kościół itp.), punkty

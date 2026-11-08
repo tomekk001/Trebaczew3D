@@ -734,7 +734,7 @@ async function boot(saved){
       pl(g,1.0,2.1,-L/2-.04,H1+1.05,-D/2+1.5,new THREE.MeshLambertMaterial({color:0x6b6f72}),-Math.PI/2); }
     g.traverse(o=>{ if(o.isMesh&&o.geometry.type!=='PlaneGeometry')o.castShadow=true; });
     // plac z kostki przed bramami, maszt z flagą na trawniku, ogrodzenie z siatki z bramą przesuwną
-    const w=L2W(b.x,b.z,f.rot); const toRoad=clamp(roadDist(ST,f.x,f.z)-ST.w/2-1.2,4,22);
+    const w=L2W(b.x,b.z,f.rot); let toRoad=clamp(roadDist(ST,f.x,f.z)-ST.w/2-1.2,4,22); for(let k=0;k<44&&toRoad>1.5&&[[-L/2,0],[L/2,0],[-L/2-7,0],[L/2+3,0],[0,0],[-L/2-7,-.5]].some(([x])=>{ for(const zz of [FZ+toRoad+.6,FZ+toRoad*.5]){ const q=w(x,zz); if(roadNearF(q[0],q[1],1.6)) return true; } return false; });k++) toRoad-=.5;
     const yard=[[-L/2,FZ],[L/2-.0,FZ],[L/2,FZ+toRoad],[-L/2+5.2,FZ+toRoad],[-L/2+.5,FZ+toRoad*.5]].map(([x,z])=>w(x,z)); drape(yard,lotPaver,0.13,2.2); LOTS.push(yard); OSP_YARD={w,L,FZ,toRoad,f,inYard:(x,z,m)=>{ let q=w(x,z); for(let k=0;k<30&&z>FZ+.6&&roadNearF(q[0],q[1],m||1.2);k++){ z-=.3; q=w(x,z); } return q; }};
     { const q=w(-L/2-2.5,FZ+toRoad*.55); const fg=new THREE.Group(); fg.position.set(q[0],H(q[0],q[1]),q[1]); fg.rotation.y=f.rot; scene.add(fg); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,8,8).translate(0,4,0),white); pole.castShadow=true; fg.add(pole);
       const flag=tex(64,40,(x,w,h)=>{ x.fillStyle='#ffffff'; x.fillRect(0,0,w,h/2); x.fillStyle='#d4213d'; x.fillRect(0,h/2,w,h/2); }); const fm=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.9,6,1),new THREE.MeshLambertMaterial({map:flag,side:THREE.DoubleSide})); fm.position.set(.78,7.4,0); fg.add(fm); OSP_FLAG=fm; }
@@ -2100,7 +2100,7 @@ async function boot(saved){
   await LP(92);
   /* ---------- postacie z AI: Mietek (Lewiatan), Seba (przystanek PKS), Pani Jadzia (płot przy remizie) ----------
      Zadania są zaprogramowane w grze (stały przebieg i nagrody); swobodną rozmowę prowadzi model językowy na serwerze (Workers AI). */
-  const NPC_GOSSIP=['Kaśka od sąsiadów wracała z dyskoteki z Darkiem z Działoszyna','Zbyszek ze Stacji odprowadzał Agnieszkę aż pod sam kościół','Wiesiek wracał sam, bo Monika uciekła mu z Krystianem','Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku','Grzesiek z Zagrodowej i Alicja szli piechotą aż do świtu'];
+  const NPC_GOSSIP=['Kaśka od sąsiadów wracała z dyskoteki z Darkiem z Działoszyna','Zbyszek ze Stacji odprowadzał Agnieszkę aż pod sam kościół','Wiesiek wracał sam, bo Monika uciekła mu z Krystianem','Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku','Grzesiek z Zagrodowej i Agnieszka szli piechotą aż do świtu'];
   const NQ=(()=>{ let q=null; try{ q=JSON.parse(localStorage.getItem('trebaczew-npc')||'null'); }catch(e){} return Object.assign({mietek:'start',seba:'start',jadzia:'start',items:[],gi:0,hist:{}},q||{}); })();
   const nqSave=()=>{ try{ localStorage.setItem('trebaczew-npc',JSON.stringify(NQ)); }catch(e){} };
   const hasIt=i=>NQ.items.includes(i), giveIt=i=>{ if(!hasIt(i)) NQ.items.push(i); nqSave(); }, takeIt=i=>{ NQ.items=NQ.items.filter(q=>q!==i); nqSave(); };
@@ -3207,7 +3207,7 @@ async function boot(saved){
       for(let k=1;k<=40&&!best;k++){ const d=k*.4; for(const sd of [0,.5,-.5,1,-1]){ const x=p0[0]+n[0]*d-n[1]*sd*d*.5, z=p0[1]+n[1]*d+n[0]*sd*d*.5; if(!blocked(x,z,.5)&&reachRoad(x,z)){ best=[x,z]; break; } } }
       if(best){ e.p=best; e.f=[best[0]-n[0]*1.4,best[1]-n[1]*1.4]; const sh=SHOPS.find(q=>q.room===e.room); if(sh){ const ds=Object.getOwnPropertyDescriptor(sh,'p'); if(ds&&!ds.get) sh.p=best; } const poi=POIS.find(q=>q.n===(sh&&sh.n)); if(poi){ poi.x=best[0]; poi.z=best[1]; poi.p=best; } } }); }
   // ceny paliw: próba pobrania aktualnych cen (plik aktualizowany codziennie na trebaczew.io)
-  (async()=>{ try{ const ctl=new AbortController(); setTimeout(()=>ctl.abort(),5000); const u=location.hostname.endsWith('trebaczew.io')?'ceny_paliw.json':'https://trebaczew.io/ceny_paliw.json'; const r=await fetch(u,{cache:'no-store',signal:ctl.signal}); if(!r.ok)return; const j=await r.json();
+  (async()=>{ try{ const ctl=new AbortController(); setTimeout(()=>ctl.abort(),5000); const u=location.hostname.endsWith('trebaczew.io')?'../ceny_paliw.json':'https://trebaczew.io/ceny_paliw.json'; const r=await fetch(u,{cache:'no-store',signal:ctl.signal}); if(!r.ok)return; const j=await r.json();
       const ok=v=>typeof v==='number'&&v>1&&v<20; let ch=false; ['pb95','on','lpg','pb98'].forEach(k=>{ if(ok(j[k])){ FUEL[k]=j[k]; ch=true; } }); if(ch){ if(typeof j.date==='string') FUEL.date=j.date.slice(0,10); if(typeof j.src==='string') FUEL.src=j.src.slice(0,80); refreshPylons(); } }catch(e){} })();
 
   /* ---------- paliwo: bak, spalanie, tankowanie na Orlenie ---------- */
@@ -3416,8 +3416,6 @@ async function boot(saved){
   const OUTFITS={dres:{n:'Dres sportowy',p:400,o:{style:'hoodie',top:0x1f2a44,bot:0x1f2a44}},skora:{n:'Kurtka skórzana',p:1200,o:{style:'jacket',top:0x161616,bot:0x2c3e66}},garnitur:{n:'Garnitur',p:2500,o:{style:'coat',top:0x23262f,bot:0x23262f}}};
   // garaż gracza: wiata obok punktu informacyjnego
   const GARAGE=(()=>{ if(!INFO) return null; const fx=-Math.sin(SPAWN.yaw), fz=-Math.cos(SPAWN.yaw); const q=npcFind(INFO.p[0]-fz*7,INFO.p[1]+fx*7,2.6,900); const h=Math.atan2(fz,fx);
-    const g=new THREE.Group(); g.position.set(q[0],H(q[0],q[1]),q[1]); g.rotation.y=-h; scene.add(g); const steelM=new THREE.MeshLambertMaterial({color:0x5c666c}), roofM=new THREE.MeshLambertMaterial({color:0x3a5a7a,transparent:true,opacity:.85});
-    [[-2.6,-1.5],[2.6,-1.5],[-2.6,1.5],[2.6,1.5]].forEach(([a,b])=>bx(g,.1,2.4,.1,a,0,b,steelM)); bx(g,5.6,.08,3.4,0,2.4,0,roofM); pl(g,1.6,.4,0,2.15,1.72,new THREE.MeshBasicMaterial({map:signTex('TWOJE AUTO','#1d5fae','#ffffff',256,64,'800 34px Barlow, Arial')}));
     return {x:q[0],z:q[1],h}; })();
   let OWN_CAR=null, OWN_BIKE=null;
   function spawnOwnCar(){ if(OWN_CAR){ scene.remove(OWN_CAR.g); const i=parked.indexOf(OWN_CAR); if(i>=0) parked.splice(i,1); OWN_CAR=null; } const C=CARS[OWN.car]; if(!C||!GARAGE) return;
@@ -3445,7 +3443,7 @@ async function boot(saved){
     pl(py,3.2,1.1,0,4.6,.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')})); pl(py,3.2,1.1,0,4.6,-.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')}),Math.PI);
     const door=W(-6,4.2-1.2-1.4); const pd=npcFind(door[0],door[1],.6,200);
     const it=[]; Object.keys(CARS).forEach(k=>it.push([CARS[k].n,CARS[k].p,'car',k])); it.push(['Rower',300,'bike',1]); Object.keys(TUNE).forEach(k=>it.push(['Tuning: '+TUNE[k].n,TUNE[k].p,'tune',k])); Object.keys(OUTFITS).forEach(k=>it.push(['Ubranie: '+OUTFITS[k].n,OUTFITS[k].p,'outfit',k]));
-    const shop={n:'Auto-Komis Trębaczew',sub:'samochody, rower, tuning i ubrania · auto czeka na twoim parkingu obok punktu „i”',p:pd,items:it,komis:true};
+    const shop={n:'Auto-Komis Trębaczew',sub:'samochody, rower, tuning i ubrania · kupione auto podstawimy obok punktu „i”',p:pd,items:it,komis:true};
     POIS.push({n:'Auto-Komis Trębaczew',x:pd[0],z:pd[1],p:pd,c:'#c4221e',ic:'K',sp:labelSprite('Auto-Komis','#c4221e')}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(pd[0],H(pd[0],pd[1])+9,pd[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
     return {shop,p:pd}; })();
   // zakupy w komisie i katalogu mebli: sprawdzenie przed zapłatą
@@ -3453,7 +3451,7 @@ async function boot(saved){
     if(it[2]==='tune'){ if(!OWN.car) return 'Najpierw kup auto w komisie'; if(OWN.tune[it[3]]) return 'To już jest w twoim aucie'; }
     if(it[2]==='outfit'&&OWN.outfits.includes(it[3])){ applyOutfit(it[3]); return 'Ubranie założone (masz je już)'; } if(it[2]==='mebel'&&OWN.furn.includes(it[3])) return 'Ten mebel już stoi w domu'; return ''; }
   function shopBuyExtra(it){ const t=it[2];
-    if(t==='car'){ OWN.car=it[3]; OWN.tune={}; ownSave(); spawnOwnCar(); WAYPOINT=GARAGE?[GARAGE.x,GARAGE.z]:null; toast(`Kupiono: <b>${it[0]}</b><br>Auto czeka na twoim parkingu obok punktu informacyjnego (fioletowy znacznik)`,4.5); }
+    if(t==='car'){ OWN.car=it[3]; OWN.tune={}; ownSave(); spawnOwnCar(); WAYPOINT=GARAGE?[GARAGE.x,GARAGE.z]:null; toast(`Kupiono: <b>${it[0]}</b><br>Auto stoi przy punkcie informacyjnym (fioletowy znacznik)`,4.5); }
     else if(t==='bike'){ OWN.bike=true; ownSave(); spawnOwnBike(); toast('Kupiono rower – stoi przy twoim parkingu',3); }
     else if(t==='tune'){ OWN.tune[it[3]]=true; ownSave(); if(OWN_CAR){ const C=CARS[OWN.car]; OWN_CAR.maxV=C.v*(OWN.tune.chip?1.15:1); OWN_CAR.acc=C.a*(OWN.tune.chip?1.25:1); if(OWN.tune.bak&&OWN_CAR.capMul!==1.5){ OWN_CAR.capMul=1.5; if(OWN_CAR.cap) OWN_CAR.cap=Math.round(OWN_CAR.cap*1.5); } } toast(`Zamontowano: <b>${TUNE[it[3]].n}</b>`,3); }
     else if(t==='outfit'){ OWN.outfits.push(it[3]); ownSave(); applyOutfit(it[3]); toast(`Kupiono i założono: <b>${OUTFITS[it[3]].n}</b>`,3); }

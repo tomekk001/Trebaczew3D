@@ -28,7 +28,7 @@ function cleanPresence(p) {
 // lepszy po polsku Mistral Small przez pierwsze ~250 rozmów dziennie, potem tańsza Llama 8B (razem mieści się w darmowych 10 000 neuronów na dzień)
 const NPC_BEST = '@cf/mistralai/mistral-small-3.1-24b-instruct', NPC_CHEAP = '@cf/meta/llama-3.1-8b-instruct-fast', NPC_BEST_N = 250;
 const GOSSIP = ['Kaśka od sąsiadów wracała z dyskoteki z Darkiem z Działoszyna', 'Zbyszek ze Stacji odprowadzał Agnieszkę aż pod sam kościół',
-  'Wiesiek wracał sam, bo Monika uciekła mu z Krystianem', 'Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku', 'Grzesiek z Zagrodowej i Alicja szli piechotą aż do świtu'];
+  'Wiesiek wracał sam, bo Monika uciekła mu z Krystianem', 'Marta wracała z Pawłem rowerem, we dwoje na jednym siodełku', 'Grzesiek z Zagrodowej i Agnieszka szli piechotą aż do świtu'];
 const NPCS = {
   mietek: { name: 'Mietek', who: 'stały bywalec spod sklepu Lewiatan w Trębaczewie, około sześćdziesiątki, w wytartej kurtce',
     char: 'filozof życiowy, zna na wylot lokalną piłkę w B-klasie i LZS Trębaczew, zawsze narzeka, że ma „sucho w gardle”, dobroduszny, trochę marudny',
