@@ -100,6 +100,10 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b0d10;color:var(--in
 #soc .row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}#soc input{flex:1;min-width:90px;background:#0e1012;border:1px solid var(--line);border-radius:4px;color:var(--ink);padding:5px 8px;text-transform:uppercase}
 #soc .socP{display:flex;align-items:center;gap:7px;margin-top:5px}#soc .socP i{width:10px;height:10px;border-radius:50%;flex:none}#soc .socP span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#soc .socP em{font-size:11px;opacity:.6}#soc .socM{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px 17px}
 .btn.sm{font-size:12px;padding:3px 8px}
+#raceBox{position:fixed;z-index:14;top:calc(70px + env(safe-area-inset-top,0px));left:10px;background:rgba(18,21,24,.95);border:1px solid var(--line);border-top:3px solid #f2c230;padding:10px 14px;color:var(--ink);font-size:14px;max-width:min(60vw,300px);pointer-events:auto}
+#raceBox .sub{opacity:.75;font-size:12px;margin:2px 0 4px}
+#raceBox table{width:100%;border-collapse:collapse;font-size:13px}#raceBox td{padding:1px 4px}#raceBox tr.me{color:#f2c230;font-weight:600}
+#raceBox .row{display:flex;gap:8px;margin-top:8px}#raceBox .btn.hot{background:var(--accent);color:#111;border-color:var(--accent)}
 #duelBox .row{display:flex;gap:8px;margin-top:8px;justify-content:center}
 #duelBox .btn.hot{background:var(--accent);color:#111;border-color:var(--accent)}
 #mp{pointer-events:auto;margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 10px;min-width:190px;max-width:240px}
@@ -3453,7 +3457,7 @@ async function boot(saved){
     if(meR.bubble){ meR.bubT-=dt; const px=st.car?st.car.x:st.x, pz=st.car?st.car.z:st.z; meR.bubble.position.set(px,H(px,pz)+(st.car?4:3.1),pz); if(meR.bubT<=0){ scene.remove(meR.bubble); meR.bubble=null; } }
     if(!MP.on)return;
     MP.sendT-=dt; if(MP.sendT<=0){ MP.sendT=1/12; const p=myPresence(); const k=JSON.stringify(p); if(k!==MP.last){ MP.last=k; MP.room.presence(p).catch(()=>{}); } }
-    rideTick(dt); coTick();
+    rideTick(dt); coTick(); raceTick(dt);
     MP.remote.forEach(r=>{ if(r.rd){ const dv=r.rd==='bus'?{x:BUS.x,z:BUS.z,h:BUS.h,vk:'bus'}:r.rd===(MP.room.me&&MP.room.me())?(st.car&&{x:st.car.x,z:st.car.z,h:st.car.h,vk:st.car.kind||'car'}):MP.remote.get(r.rd); if(dv){ r.x=dv.x; r.z=dv.z; r.tx=dv.x; r.tz=dv.z; const y0=H(dv.x,dv.z); if(dv.vk==='melex'){ const ch=Math.cos(dv.h), sh=Math.sin(dv.h); r.body.visible=true; r.body.position.set(dv.x-.02*ch-.26*sh,y0-.25,dv.z-.02*sh+.26*ch); r.body.rotation.y=-dv.h+Math.PI/2; animPerson(r.body,0,0); } else r.body.visible=false; const idx=riders(r.rd).indexOf(r.peer)+1; const big=dv.vk==='bus'||dv.vk==='fire'; r.tag.position.set(dv.x,y0+(big?4.2:2.9)+.62*idx,dv.z); const d0=camera.position.distanceTo(r.tag.position); const sc0=clamp(d0/18,1,7); r.tag.scale.set(3.2*sc0,.6*sc0,1); return; } }
       const k=Math.min(1,dt*10); r.x+=(r.tx-r.x)*k; r.z+=(r.tz-r.z)*k; let dh=r.th-r.h; dh=Math.atan2(Math.sin(dh),Math.cos(dh)); r.h+=dh*k; const same=(r.in||'')===inKey(); const y=r.in?(same?CUR.y+(r.gy||0):0):H(r.x,r.z);
       if(r.veh){ seatCar(r.veh,r.x,r.z,r.h,r.vk==='bus'?.1:0); (r.veh.userData.wheels||[]).forEach(w=>w.rotation.z-=r.spd*dt/.36); const rider=r.vk==='bike'||r.vk==='moto'; r.body.visible=rider; if(rider){ r.body.position.set(r.x,y+.35,r.z); r.body.rotation.y=-r.h+Math.PI/2; animPerson(r.body,tAll*r.spd*.8,r.vk==='bike'?.5:0); } }
@@ -3508,7 +3512,7 @@ async function boot(saved){
     h+=`<div class="socS"><b>Gracze w pokoju (${peers.length+1})</b>`; if(!peers.length) h+='<div class="sub">Nikogo więcej tu nie ma. Zaproś znajomego kodem pokoju.</div>';
     peers.forEach(r=>{ const fr=r.fc&&isFriend(r.fc); h+=`<div class="socP"><i style="background:${esc2(r.col)}"></i><span>${esc2(r.name||'Gracz')}</span>${r.fc&&!fr?`<button class="btn sm" data-a="addf" data-p="${esc2(r.peer)}">+ znajomy</button>`:fr?'<em>znajomy</em>':''}<button class="btn sm" data-a="menu" data-p="${esc2(r.peer)}">Zaproś…</button></div>`;
       if(CO.menu===r.peer){ h+='<div class="socM"><button class="btn sm" data-a="invroom" data-p="'+esc2(r.peer)+'">do pokoju prywatnego</button>'+CO.actions.map((a,i)=>`<button class="btn sm" data-a="act" data-i="${i}" data-p="${esc2(r.peer)}">${esc2(a.l)}</button>`).join('')+'</div>'; } });
-    h+='</div>'; h+=`<div class="socS"><b>Znajomi (${CO.friends.length})</b>`; if(!CO.friends.length) h+='<div class="sub">Dodaj znajomych przyciskiem „+ znajomy” albo wpisz kod:</div>';
+    h+='</div>'; h+=raceSocHtml(); h+=`<div class="socS"><b>Znajomi (${CO.friends.length})</b>`; if(!CO.friends.length) h+='<div class="sub">Dodaj znajomych przyciskiem „+ znajomy” albo wpisz kod:</div>';
     CO.friends.forEach(f=>{ const o=CO.on[f.fc]; h+=`<div class="socP"><i style="background:${o?'#47b04b':'#666'}"></i><span>${esc2(f.nick||f.fc.toUpperCase())}</span>${o?`<button class="btn sm" data-a="goto" data-r="${esc2(o.room)}">Dołącz (pokój ${esc2(o.room.slice(1))})</button>`:'<em>offline</em>'}<button class="btn sm" data-a="delf" data-f="${f.fc}">✕</button></div>`; });
     h+=`<div class="row"><input id="socFc" maxlength="6" placeholder="Kod znajomego" aria-label="Kod znajomego"><button class="btn sm" data-a="addc">Dodaj</button></div></div>`;
     socEl.innerHTML=h; }
@@ -3522,6 +3526,7 @@ async function boot(saved){
     if(a==='delf'){ CO.friends=CO.friends.filter(f=>f.fc!==b.dataset.f); coSaveFr(); renderSoc(); return; }
     if(a==='goto'){ MP.room.switchTo(b.dataset.r); MP.last=''; socToggle(false); return; }
     if(a==='menu'){ CO.menu=CO.menu===p?null:p; renderSoc(); return; } if(a==='invroom'){ coInviteRoom(p); CO.menu=null; renderSoc(); return; }
+    if(a==='rjoin'){ raceJoin(p); renderSoc(); return; } if(a==='rsel'){ RACE.sel=+b.dataset.i|0; renderSoc(); return; } if(a==='rfee'){ RACE.feeSel=+b.dataset.i|0; renderSoc(); return; } if(a==='rmk'){ raceCreate(); socToggle(false); return; }
     if(a==='act'){ const act=CO.actions[+b.dataset.i]; if(act){ CO.menu=null; socToggle(false); act.fn(p); } } });
   addEventListener('keydown',e=>{ if(CO.open&&e.key==='Escape'){ e.stopPropagation(); socToggle(false); } },true);
   { const bs=document.getElementById('mp'); if(bs){ const b=document.createElement('button'); b.className='btn'; b.id='bSoc'; b.textContent='Znajomi i pokoje'; b.style.cssText='margin-top:6px;width:100%'; b.addEventListener('click',()=>socToggle()); bs.appendChild(b); } }
@@ -3533,6 +3538,74 @@ async function boot(saved){
   CO.h.jobok=(d,from)=>{ const w=CO.jobWait; if(!w||w.peer!==from||tAll-w.t>45||d.kind!==w.kind) return; CO.jobWait=null; if(MG.on){ coSend(from,'jobno',{kind:w.kind}); return; } const J=JOBS[w.kind]; openMini(w.kind+'2',{peer:from,host:true,title:J.t+' - Cementownia Warta',sub:w.kind==='cysterna'?'Ty ładujesz cysternę - partner obsługuje wagę':J.sub}); };
   CO.h.jobno=(d,from)=>{ if(CO.jobWait&&CO.jobWait.peer===from){ CO.jobWait=null; toast(peerName(from)+' nie może teraz pracować',2); } };
   CO.actions.push({l:'wspólna praca (cementownia)',fn:peer=>{ const s=typeof nearMini==='function'?nearMini():null; const k=s&&s.id; if(!JOBS[k]){ toast('Stań przy stanowisku: załadunek cystern albo paletyzacja worków',3); return; } CO.jobWait={peer,kind:k,t:tAll}; coSend(peer,'inv',{w:'job',kind:k}); toast('✉ Zaproszenie do pracy wysłane: '+esc2(peerName(peer)),2); }});
+  /* ---------- wyścigi w pokoju: lobby, wpisowe, punkty kontrolne, policja jako przeszkoda, tablica wyników ---------- */
+  const RACE={st:'idle',routes:null,id:'',ri:0,fee:0,host:null,mine:false,pl:new Map(),pot:0,go:0,t0:0,cp:0,openers:new Map(),openT:0,joinT:0,cops:[],pen:0,penT:-9,firstFin:0,endT:0,resT:0,box:document.createElement('div'),bt:0,sel:0,feeSel:20,left:0};
+  RACE.box.id='raceBox'; RACE.box.hidden=true; document.body.appendChild(RACE.box);
+  RACE.group=new THREE.Group(); RACE.group.visible=false; scene.add(RACE.group);
+  const RACE_FEES=[0,20,50,100];
+  function raceRoutes(){ if(RACE.routes) return RACE.routes; const L=DK.L; const mk=(n,a,b,k)=>{ const cps=[]; for(let i=1;i<=k;i++){ const s=sampleLine(DK.pts,DK.len,a+(b-a)*i/k); cps.push([s.x,s.z]); } const s0=sampleLine(DK.pts,DK.len,a), dir=b>a?1:-1; const cops=[.38,.72].map(f=>{ const s=sampleLine(DK.pts,DK.len,a+(b-a)*f); return {x:s.x-s.tz*2.2*dir,z:s.z+s.tx*2.2*dir,h:Math.atan2(s.tz*dir,s.tx*dir)+Math.PI/2*0}; }); return {n,cps,start:{x:s0.x,z:s0.z,tx:s0.tx*dir,tz:s0.tz*dir},cops,len:Math.round(Math.abs(b-a))}; };
+    RACE.routes=[mk('Sprint przez Trębaczew',L*.2,L*.42,5),mk('Długi dystans DK',L*.08,L*.92,9),mk('Powrót do Trębaczewa',L*.82,L*.5,6)]; return RACE.routes; }
+  const raceMe=()=>MP.room&&MP.room.me?MP.room.me():'';
+  const raceName=p=>p===raceMe()?'Ty':peerName(p);
+  const raceBcast=(m,d)=>coSend('*','rc',Object.assign({m,id:RACE.id},d||{}));
+  const raceBest=()=>{ try{ return JSON.parse(localStorage.getItem('trebaczew-race')||'{}')||{}; }catch(e){ return {}; } };
+  function raceSetMarks(){ while(RACE.group.children.length) RACE.group.remove(RACE.group.children[0]); const R=raceRoutes()[RACE.ri]; R.cps.forEach((p,i)=>{ const g=new THREE.Group(); const last=i===R.cps.length-1; const m=new THREE.MeshBasicMaterial({color:last?0xffffff:0xf2c230,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide}); for(let k=0;k<5;k++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(9,9,3,28,1,true),m); c.position.y=1.5+k*3; g.add(c); } g.position.set(p[0],H(p[0],p[1]),p[1]); g.userData.i=i; RACE.group.add(g); });
+    RACE.cops.forEach(c=>scene.remove(c)); RACE.cops=R.cops.map(o=>{ const g=makeCop(); g.position.set(o.x,H(o.x,o.z)+.05,o.z); seatCar(g,o.x,o.z,o.h+Math.PI/2); scene.add(g); return g; }); }
+  function raceClear(){ RACE.group.visible=false; RACE.cops.forEach(c=>scene.remove(c)); RACE.cops=[]; WAYPOINT=null; }
+  function raceReset(){ RACE.st='idle'; RACE.pl.clear(); RACE.mine=false; RACE.host=null; RACE.id=''; RACE.pen=0; raceClear(); raceRender(); }
+  function raceCreate(){ if(!MP.room||!MP.room.connected()||!MP.room.me) return toast('Wyścigi działają w trybie wieloosobowym',2); if(RACE.st!=='idle') return toast('Już uczestniczysz w wyścigu',2); if(!st.car) return toast('Wsiądź do auta, żeby zorganizować wyścig',2.5); if(st.money<RACE.feeSel) return toast('Za mało pieniędzy na wpisowe',2);
+    RACE.id=Math.random().toString(36).slice(2,8); RACE.ri=RACE.sel; RACE.fee=RACE.feeSel; RACE.mine=true; RACE.host=raceMe(); RACE.st='lobby'; RACE.pl.clear(); RACE.pl.set(raceMe(),{cp:0,t:null}); addMoney(-RACE.fee); RACE.openT=0; toast(`🏁 Lobby wyścigu otwarte: <b>${esc2(raceRoutes()[RACE.ri].n)}</b>. Poczekaj na graczy i naciśnij Start.`,4); raceRender(); }
+  function raceJoin(host){ const o=RACE.openers.get(host); if(!o||RACE.st!=='idle') return; if(!st.car) return toast('Wsiądź do auta, żeby dołączyć do wyścigu',2.5); if(st.money<o.f) return toast('Za mało pieniędzy na wpisowe',2); addMoney(-o.f); RACE.id=o.id; RACE.ri=o.r; RACE.fee=o.f; RACE.host=host; RACE.mine=false; RACE.st='joined'; RACE.joinT=tAll; RACE.pl.clear(); coSend(host,'rc',{m:'join',id:o.id}); toast('Zapisano na wyścig. Czekaj na start…',2.5); raceRender(); }
+  function raceRefund(msg){ if(RACE.fee>0) addMoney(RACE.fee); const m=msg; raceReset(); if(m) toast(m,3); }
+  function raceCancel(){ if(RACE.st==='lobby'&&RACE.mine){ raceBcast('cancel'); raceRefund('Lobby zamknięte - wpisowe zwrócone'); } else if(RACE.st==='joined'){ coSend(RACE.host,'rc',{m:'leave',id:RACE.id}); raceRefund('Wypisano z wyścigu - wpisowe zwrócone'); } }
+  function raceStart(){ if(RACE.st!=='lobby'||!RACE.mine||RACE.pl.size<2) return toast('Potrzeba co najmniej 2 zawodników',2); const ids=[...RACE.pl.keys()]; raceBcast('go',{p:ids}); raceBegin(ids); }
+  function raceBegin(ids){ RACE.pl.clear(); ids.slice(0,8).forEach(p=>RACE.pl.set(p,{cp:0,t:null})); RACE.pot=RACE.fee*RACE.pl.size; RACE.st='count'; RACE.go=tAll+6; RACE.cp=0; RACE.pen=0; RACE.left=99; raceSetMarks(); RACE.group.visible=true;
+    const R=raceRoutes()[RACE.ri], slot=Math.max(0,ids.indexOf(raceMe())), c=st.car; if(c){ const back=8+(slot>>1)*8, side=(slot&1?1:-1)*2.3; const x=R.start.x-R.start.tx*back-R.start.tz*side, z=R.start.z-R.start.tz*back+R.start.tx*side; c.x=x; c.z=z; c.h=Math.atan2(R.start.tz,R.start.tx); c.v=0; try{ seatCar(c.g,x,z,c.h); }catch(e){} } else { st.x=R.start.x; st.z=R.start.z; }
+    WAYPOINT=[R.cps[0][0],R.cps[0][1]]; toast(`🏁 <b>${esc2(R.n)}</b> · pula ${fmt(RACE.pot)}<br>Start za 5…`,3); raceRender(); }
+  function raceFinishMe(){ const ms=Math.max(1000,Math.round((tAll-RACE.t0+RACE.pen)*1000)); const me=RACE.pl.get(raceMe()); if(me) me.t=ms; raceBcast('fin',{t:ms}); RACE.st='fin'; WAYPOINT=null; if(!RACE.firstFin) RACE.firstFin=tAll; toast(`🏁 Meta! Twój czas: <b>${(ms/1000).toFixed(1)} s</b>`,3.5); raceRender(); }
+  function raceResult(){ const arr=[...RACE.pl.entries()].map(([p,o])=>({p,cp:o.cp,t:o.t})); arr.sort((a,b)=>(a.t!==null&&b.t!==null)?(a.t-b.t||(a.p<b.p?-1:1)):a.t!==null?-1:b.t!==null?1:(b.cp-a.cp)); const w=arr[0]&&arr[0].t!==null?arr[0]:null; RACE.res=arr; RACE.st='result'; RACE.resT=tAll; const meT=RACE.pl.get(raceMe()); let txt='Wyścig zakończony';
+    if(w&&w.p===raceMe()){ addMoney(RACE.pot); addXP(25); txt=`🏆 Wygrywasz wyścig! +${fmt(RACE.pot)}`; if(AU.ctx&&AU.on) sfx.win(); duelBanner(true,txt); } else if(w){ txt=`Wygrywa ${esc2(raceName(w.p))} (${(w.t/1000).toFixed(1)} s)`; duelBanner(false,txt); }
+    if(meT&&meT.t!==null){ const b=raceBest(), k='r'+RACE.ri; if(!b[k]||meT.t<b[k]){ b[k]=meT.t; try{ localStorage.setItem('trebaczew-race',JSON.stringify(b)); }catch(e){} } }
+    try{ statEvent('mini',{g:'race',m:'r'+RACE.ri,s:meT&&meT.t?Math.round(meT.t/100):0,w:w&&w.p===raceMe()?1:0}); }catch(e){} raceClear(); raceRender(); }
+  CO.h.rc=(d,from)=>{ const m=String(d.m||''), id=String(d.id||'').slice(0,8);
+    if(m==='open'){ const r=d.r|0, f=d.f|0; if(r<0||r>2||!RACE_FEES.includes(f)) return; RACE.openers.set(from,{id,r,f,n:d.c|0,t:tAll}); if(CO.open) renderSoc(); if(!RACE.noted||RACE.noted!==id){ RACE.noted=id; if(RACE.st==='idle') toast(`🏁 ${esc2(peerName(from))} organizuje wyścig (${esc2(raceRoutes()[r].n)}, wpisowe ${fmt(f)}) - Znajomi i pokoje → Wyścigi`,4.5); } return; }
+    if(id!==RACE.id) { if(m==='cancel'||m==='go') RACE.openers.delete(from); return; }
+    if(m==='join'&&RACE.mine&&RACE.st==='lobby'){ if(RACE.pl.size>=8){ coSend(from,'rc',{m:'full',id}); return; } RACE.pl.set(from,{cp:0,t:null}); raceBcast('lst',{p:[...RACE.pl.keys()]}); raceRender(); return; }
+    if(m==='leave'&&RACE.mine&&RACE.st==='lobby'){ RACE.pl.delete(from); raceBcast('lst',{p:[...RACE.pl.keys()]}); raceRender(); return; }
+    if(from!==RACE.host&&!RACE.pl.has(from)) return;
+    if(m==='full'&&RACE.st==='joined'&&from===RACE.host){ raceRefund('Wyścig jest pełny - wpisowe zwrócone'); return; }
+    if(m==='lst'&&from===RACE.host&&RACE.st==='joined'){ RACE.pl.clear(); (Array.isArray(d.p)?d.p:[]).slice(0,8).forEach(p=>RACE.pl.set(String(p),{cp:0,t:null})); raceRender(); return; }
+    if(m==='cancel'&&from===RACE.host&&RACE.st==='joined'){ raceRefund('Organizator zamknął lobby - wpisowe zwrócone'); return; }
+    if(m==='go'&&from===RACE.host&&RACE.st==='joined'){ const ids=(Array.isArray(d.p)?d.p:[]).map(String); if(!ids.includes(raceMe())){ raceRefund('Nie załapałeś się na start - wpisowe zwrócone'); return; } raceBegin(ids); return; }
+    const o=RACE.pl.get(from); if(!o) return;
+    if(m==='prog') o.cp=d.c|0; else if(m==='fin'){ o.t=Math.max(1000,d.t|0); if(!RACE.firstFin) RACE.firstFin=tAll; } else if(m==='quit') o.dnf=true; raceRender(); };
+  function raceTick(dt){ RACE.openers.forEach((o,k)=>{ if(tAll-o.t>8||!MP.remote.has(k)) RACE.openers.delete(k); });
+    if(RACE.st==='lobby'&&RACE.mine){ RACE.openT-=dt; if(RACE.openT<=0){ RACE.openT=2.5; raceBcast('open',{r:RACE.ri,f:RACE.fee,c:RACE.pl.size}); } for(const p of [...RACE.pl.keys()]) if(p!==raceMe()&&!MP.remote.has(p)){ RACE.pl.delete(p); raceBcast('lst',{p:[...RACE.pl.keys()]}); raceRender(); } }
+    if(RACE.st==='joined'&&tAll-RACE.joinT>40) raceRefund('Brak startu - wpisowe zwrócone');
+    if(RACE.st==='count'){ const l=Math.ceil(RACE.go-tAll); if(l!==RACE.left){ RACE.left=l; if(l>0&&l<=5){ toast(`<b>${l}</b>`,.8); if(AU.ctx&&AU.on) tone('square',660,AU.ctx.currentTime,.12,.05); } } if(st.car){ st.car.v=0; } if(tAll>=RACE.go){ RACE.st='race'; RACE.t0=tAll; RACE.firstFin=0; toast('<b>START!</b>',1.6); if(AU.ctx&&AU.on) tone('square',990,AU.ctx.currentTime,.3,.06); raceRender(); } }
+    if(RACE.st==='race'){ const R=raceRoutes()[RACE.ri]; const x=st.car?st.car.x:st.x, z=st.car?st.car.z:st.z; const c=R.cps[RACE.cp];
+      if(c&&Math.hypot(c[0]-x,c[1]-z)<14){ RACE.cp++; const me=RACE.pl.get(raceMe()); if(me) me.cp=RACE.cp; raceBcast('prog',{c:RACE.cp}); if(RACE.cp>=R.cps.length) raceFinishMe(); else { WAYPOINT=[R.cps[RACE.cp][0],R.cps[RACE.cp][1]]; toast(`Punkt ${RACE.cp}/${R.cps.length}`,1); if(AU.ctx&&AU.on) tone('square',880,AU.ctx.currentTime,.1,.05); } }
+      if(st.car&&tAll-RACE.penT>2) for(const cg of RACE.cops){ if(Math.hypot(cg.position.x-x,cg.position.z-z)<4.2){ RACE.penT=tAll; RACE.pen+=1.5; st.car.v*=.2; toast('🚓 Policja na drodze! Kara +1,5 s',1.8); break; } }
+      if(tAll-RACE.t0>360){ raceBcast('quit'); const me=RACE.pl.get(raceMe()); if(me) me.dnf=true; RACE.st='fin'; WAYPOINT=null; toast('Limit czasu wyścigu minął',3); }
+      RACE.group.children.forEach(g=>{ g.visible=g.userData.i>=RACE.cp; g.children.forEach((c2,i)=>c2.material.opacity=g.userData.i===RACE.cp?.55+.2*Math.sin(tAll*6+i):.22); g.rotation.y=tAll*.6; }); }
+    if(RACE.st==='race'||RACE.st==='fin'){ for(const [p,o] of RACE.pl) if(p!==raceMe()&&!MP.remote.has(p)&&!o.dnf&&o.t===null) o.dnf=true; const act=[...RACE.pl.values()].filter(o=>o.t===null&&!o.dnf).length; if(act===0||(RACE.firstFin&&tAll-RACE.firstFin>25)||(RACE.st==='fin'&&tAll-RACE.t0>370)) raceResult(); }
+    if(RACE.st==='result'&&tAll-RACE.resT>14) raceReset();
+    RACE.bt-=dt; if(RACE.bt<=0&&RACE.st!=='idle'){ RACE.bt=.25; raceRender(); } }
+  const fmtT=ms=>(ms/1000).toFixed(1)+' s';
+  function raceRender(){ const b=RACE.box; if(RACE.st==='idle'||RACE.st==='joined'||(RACE.st==='lobby'&&false)){ if(RACE.st==='idle'){ b.hidden=true; return; } }
+    const R=raceRoutes()[RACE.ri]; let h=''; b.hidden=false;
+    if(RACE.st==='joined'||RACE.st==='lobby'){ h=`<b>🏁 ${esc2(R.n)}</b><div class="sub">wpisowe ${fmt(RACE.fee)} · ${RACE.pl.size}/8 zawodników${RACE.st==='joined'?' · czekam na start':''}</div><div class="row">${RACE.mine?`<button class="btn hot" data-r="start">Start (${RACE.pl.size})</button>`:''}<button class="btn" data-r="cancel">${RACE.mine?'Zamknij lobby':'Wypisz się'}</button></div>`; }
+    else { const sorted=[...RACE.pl.entries()].sort((a,b)=>(a[1].t!==null&&b[1].t!==null)?a[1].t-b[1].t:a[1].t!==null?-1:b[1].t!==null?1:b[1].cp-a[1].cp);
+      const head=RACE.st==='count'?`Start za ${Math.max(0,Math.ceil(RACE.go-tAll))}…`:RACE.st==='result'?'Wyniki':RACE.st==='fin'?'Meta - czekam na resztę':`Punkt ${Math.min(RACE.cp+1,R.cps.length)}/${R.cps.length} · ${((tAll-RACE.t0)).toFixed(1)} s${RACE.pen?` (+${RACE.pen.toFixed(1)} kary)`:''}`;
+      h=`<b>🏁 ${esc2(R.n)}</b> · pula ${fmt(RACE.pot)}<div class="sub">${head}</div><table>${sorted.map(([p,o],i)=>`<tr${p===raceMe()?' class="me"':''}><td>${i+1}.</td><td>${esc2(raceName(p))}</td><td>${o.t!==null?fmtT(o.t):o.dnf?'DNF':`pkt ${o.cp}/${R.cps.length}`}</td></tr>`).join('')}</table>`;
+      if(RACE.st==='result'){ const bs=raceBest()['r'+RACE.ri]; h+=`<div class="sub">Twój rekord na trasie: ${bs?fmtT(bs):'-'}</div>`; }
+      h+=`<div class="row">${RACE.st==='result'?'<button class="btn" data-r="close">Zamknij</button>':'<button class="btn" data-r="quit">Poddaj się</button>'}</div>`; }
+    b.innerHTML=h; }
+  RACE.box.addEventListener('click',e=>{ const r=e.target.closest('button'); if(!r) return; const a=r.dataset.r; if(a==='start') raceStart(); else if(a==='cancel') raceCancel(); else if(a==='close') raceReset(); else if(a==='quit'){ if(RACE.st==='race'||RACE.st==='count'||RACE.st==='fin'){ raceBcast('quit'); const me=RACE.pl.get(raceMe()); if(me) me.dnf=true; RACE.st='fin'; WAYPOINT=null; raceRender(); } } });
+  function raceSocHtml(){ let h='<div class="socS"><b>Wyścigi</b>'; const R=raceRoutes(); if(RACE.st!=='idle'){ h+=`<div class="sub">Bierzesz udział w wyścigu: ${esc2(R[RACE.ri].n)}</div>`; } else {
+      RACE.openers.forEach((o,k)=>{ h+=`<div class="socP"><i style="background:#f2c230"></i><span>${esc2(peerName(k))}: ${esc2(R[o.r].n)} · ${fmt(o.f)} · ${o.n} os.</span><button class="btn sm" data-a="rjoin" data-p="${esc2(k)}">Dołącz</button></div>`; });
+      h+=`<div class="sub">Zorganizuj własny (siedząc w aucie). Trasa i wpisowe:</div><div class="row">${R.map((r,i)=>`<button class="btn sm${RACE.sel===i?' hot':''}" data-a="rsel" data-i="${i}">${esc2(r.n)} (${(r.len/1000).toFixed(1)} km)</button>`).join('')}</div><div class="row">${RACE_FEES.map(f=>`<button class="btn sm${RACE.feeSel===f?' hot':''}" data-a="rfee" data-i="${f}">${f?fmt(f):'bez wpisowego'}</button>`).join('')}</div><div class="row"><button class="btn sm hot" data-a="rmk">Utwórz lobby wyścigu</button></div>`; }
+    return h+'</div>'; }
   const MP_ENABLED=false; if(MP_ENABLED) mpInit();
 
   /* ---------- zwierzęta: psy na podwórkach, koty, kury, krowy na pastwiskach, sarny przy lesie ---------- */
