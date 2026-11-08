@@ -7,7 +7,8 @@ const MAX = 30;
 // klucz publiczny do szyfrowania zgłoszeń pobieranych automatycznie (odszyfrować je może tylko właściciel klucza prywatnego)
 const REPORT_PUB = 'MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnuhjs05kJ4EJnGva2gaJpmzrOrO9D45uNN3d0MuLzCYkgIoB7YKiBimVCTwU+eDPuTLZ7Dfe256RLfXUNbvZsTXtmYFChy1U5/OE7v1cVisldTh/cEwMhbQjP00KGfu59x10siny2AfUUnZqIxuJZh7wjKr4SqQ+vHns/4VJe0q/q8OETw/MIAFWdGvJZMph2wUP6cSzM9B0t0bshPcjIay7Qmix+OLUXBuORgk4gOzKCfyyslRKhRX6oSehBen6f+g7AqXCJgMqKb5RUZ7nNgeKEAU5qfuzCn0By90p4XxQwI/0MO9ct5AImz+i3MkzLpFRgqor9iEtLzaNguMP4XVrYhntiN5drwoEhNRs3BuAaMUy0WxJy3cPVj5RfQJxuLwB5T4Ta8G2plmiVcZ9p3vdPDdxTObfCSiuAORSEzqUcvICjf0PBI+UMqijr8Snsf2gzrXkhV5ZKV9C6IeTsE2xB3EKaOwwvJDUStShXqbtAgmRA3DT8jxt3HvaF84LAgMBAAE=';
 const REPORT_HASH = 'a9ec3e12248619df754f448947d3957ab891bb8f9b9782ca6c298c0f04127c1a';
-const ROOMS = /^t[1-9]$/;
+const ROOMS = /^(t[1-9]|p[a-z0-9]{5,8})$/;
+const MAX_PRIV = 8;
 const BAD = ['kurw','chuj','huj','pierdol','jeb','pizd','cip','skurw','dziwk','pedal','pedał','spierdal','zajeb','wypierdal','fiut','kutas','szmat','debil','cwel','nigg','nigg'];
 const clean = (t, n) => String(t == null ? '' : t).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯﻿]/g, '').slice(0, n).trim();
 function censor(t) {
@@ -20,7 +21,17 @@ const hex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : null;
 const VEH = ['car', 'van', 'moto', 'tractor', 'bus', 'bike', 'fire', 'melex'];
 function cleanPresence(p) {
   p = p || {};
-  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)) || null, in: String(p.in || '').replace(/[^0-9,.-]/g, '').slice(0, 24) || null, g: num(p.g, 0, 12), pk: String(p.pk || '').replace(/[^0-9,-]/g, '').slice(0, 20) || null, rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null };
+  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)) || null, in: String(p.in || '').replace(/[^0-9,.-]/g, '').slice(0, 24) || null, g: num(p.g, 0, 12), pk: String(p.pk || '').replace(/[^0-9,-]/g, '').slice(0, 20) || null, rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null, fc: String(p.fc || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6) || null };
+}
+// Bezpieczne czyszczenie ładunku zdarzeń współpracy (krótkie liczby, napisy i płytkie struktury)
+function cleanCo(v, depth = 0) {
+  if (typeof v === 'number') return Number.isFinite(v) ? Math.max(-1e7, Math.min(1e7, v)) : 0;
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'string') return censor(clean(v, 80));
+  if (depth > 3) return null;
+  if (Array.isArray(v)) return v.slice(0, 40).map(x => cleanCo(x, depth + 1));
+  if (v && typeof v === 'object') { const o = {}; let n = 0; for (const k of Object.keys(v)) { if (++n > 24) break; if (!/^[a-zA-Z0-9_]{1,10}$/.test(k)) continue; o[k] = cleanCo(v[k], depth + 1); } return o; }
+  return null;
 }
 
 // ---------- rozmowy z postaciami (Workers AI) ----------
@@ -314,6 +325,10 @@ export default {
     }
     const cors = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type' };
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
+    if ((url.pathname === '/here' || url.pathname === '/where') && req.method === 'POST') {
+      const body = await req.text(); if (body.length > 2000) return new Response('za duże', { status: 413, headers: cors });
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do' + url.pathname, { method: 'POST', body, headers: { 'x-ip': req.headers.get('cf-connecting-ip') || '?' } });
+      return new Response(await r.text(), { status: r.status, headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } }); }
     if (url.pathname === '/npc' && req.method === 'POST') return npcTalk(req, env, cors);
     if (url.pathname === '/hit' && req.method === 'POST') {
       const body = await req.text(); if (body.length > 2000) return new Response('za duże', { status: 413, headers: cors });
@@ -365,7 +380,7 @@ export default {
     const m = url.pathname.match(/^\/room\/([a-z0-9]+)$/);
     if (!m || !ROOMS.test(m[1])) return new Response('Nie ma takiego pokoju', { status: 404 });
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('Oczekiwano WebSocket', { status: 426 });
-    return env.ROOM.get(env.ROOM.idFromName(m[1])).fetch(req);
+    { const r2 = new Request(req); r2.headers.set('x-room', m[1]); return env.ROOM.get(env.ROOM.idFromName(m[1])).fetch(r2); }
   }
 };
 
@@ -379,13 +394,14 @@ export class Room extends DurableObject {
   bcast(o, except) { const s = JSON.stringify(o); for (const w of this.socks()) if (w !== except) { try { w.send(s); } catch (e) {} } }
   async fetch(req) {
     if (new URL(req.url).pathname === '/count') return new Response(String(this.socks().length));
+    const rn = req.headers.get('x-room') || ''; this.priv = rn[0] === 'p'; this.cap = this.priv ? MAX_PRIV : MAX;
     const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
     const others = this.socks().filter(w => w !== server);
-    if (others.length >= MAX) { this.send(server, { t: 'full' }); server.close(4001, 'full'); return new Response(null, { status: 101, webSocket: client }); }
+    if (others.length >= this.cap) { this.send(server, { t: 'full' }); server.close(4001, 'full'); return new Response(null, { status: 101, webSocket: client }); }
     const id = crypto.randomUUID().slice(0, 8);
     server.serializeAttachment({ id, p: null, chat: 0, n: 0, win: 0 });
-    this.send(server, { t: 'hello', id, max: MAX, peers: others.map(w => w.deserializeAttachment()).filter(a => a.p).map(a => ({ peer: a.id, presence: a.p })) });
+    this.send(server, { t: 'hello', id, max: this.cap, priv: !!this.priv, peers: others.map(w => w.deserializeAttachment()).filter(a => a.p).map(a => ({ peer: a.id, presence: a.p })) });
     return new Response(null, { status: 101, webSocket: client });
   }
   async webSocketMessage(ws, raw) {
@@ -404,6 +420,13 @@ export class Room extends DurableObject {
       if (m.topic === 'emote') { if (now - (a.ev || 0) < 700) return; a.ev = now; ws.serializeAttachment(a); const e = Math.max(0, Math.min(7, (m.d && m.d.e) | 0)); const o = { t: 'e', peer: a.id, topic: 'emote', d: { e } }; this.bcast(o, ws); this.send(ws, { ...o, me: 1 }); return; }
       if (m.topic === 'duel') { if (now - (a.ev || 0) < 400) return; a.ev = now; ws.serializeAttachment(a); const d = m.d || {}; const to = String(d.to || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12); const act = ['ask', 'yes', 'no', 'win', 'quit'].includes(d.a) ? d.a : null; if (!to || !act) return;
         const tgt = this.socks().find(w => { const x = w.deserializeAttachment(); return x && x.id === to; }); if (tgt) this.send(tgt, { t: 'e', peer: a.id, topic: 'duel', d: { to, a: act, s: Math.max(0, Math.min(1e9, Math.floor(+d.s || 0))) } }); return; }
+      if (m.topic === 'co') { // wiadomości współpracy: zaproszenia, wspólna praca, wyścigi, handel (adresowane do gracza albo do całego pokoju)
+        const sec2 = Math.floor(now / 1000); if (a.cs !== sec2) { a.cs = sec2; a.cc = 0; } if (++a.cc > 25) { ws.serializeAttachment(a); return; }
+        const d = m.d || {}; const k = String(d.k || '').replace(/[^a-z0-9]/gi, '').slice(0, 8); if (!k) { ws.serializeAttachment(a); return; }
+        const to = String(d.to || '').replace(/[^a-z0-9*-]/gi, '').slice(0, 12); const body = cleanCo(d.d || {}); let js = ''; try { js = JSON.stringify(body); } catch (e) {} if (js.length > 900) { ws.serializeAttachment(a); return; }
+        ws.serializeAttachment(a); const o = JSON.stringify({ t: 'e', peer: a.id, topic: 'co', d: { k, d: body } });
+        if (to === '*') { if (['rc', 'cn'].includes(k)) for (const w of this.socks()) if (w !== ws) { try { w.send(o); } catch (e) {} } return; }
+        const tgt = this.socks().find(w => { const x = w.deserializeAttachment(); return x && x.id === to; }); if (tgt) { try { tgt.send(o); } catch (e) {} } return; }
       if (m.topic === 'klakson') { if (now - a.chat < 400) return; a.chat = now - 1100; ws.serializeAttachment(a); this.bcast({ t: 'e', peer: a.id, topic: 'klakson', d: {} }, ws); return; }
     }
     ws.serializeAttachment(a);
@@ -424,6 +447,10 @@ export class Stats extends DurableObject {
             CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);
             CREATE TABLE IF NOT EXISTS accounts(name TEXT PRIMARY KEY, salt TEXT, hash TEXT, tok TEXT, save TEXT, t INTEGER);
             CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kat TEXT, opis TEXT, kontakt TEXT, info TEXT);
+            CREATE TABLE IF NOT EXISTS online(fc TEXT PRIMARY KEY, room TEXT, nick TEXT, ts INTEGER);
+            CREATE TABLE IF NOT EXISTS homes(owner TEXT PRIMARY KEY, money INTEGER, cars TEXT, log TEXT, t INTEGER);
+            CREATE TABLE IF NOT EXISTS home_members(name TEXT PRIMARY KEY, owner TEXT);
+            CREATE TABLE IF NOT EXISTS home_inv(name TEXT, owner TEXT, PRIMARY KEY(name,owner));
             CREATE TABLE IF NOT EXISTS logins(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kind TEXT, name TEXT, pid TEXT, mob INTEGER);`);
     this.rrl = new Map(); this.nrl = new Map();
     this.rl = new Map(); this.cache = null;
@@ -456,11 +483,35 @@ export class Stats extends DurableObject {
     if (!row) return J({ error: 'Sesja wygasła - zaloguj się ponownie.' }, 401);
     if (url.pathname === '/acct/save') { const sv = typeof m.save === 'string' ? m.save : ''; if (sv.length > 80000) return J({ error: 'za duże' }, 413); q.exec('UPDATE accounts SET save=?, t=? WHERE name=?', sv, now, row.name); return J({ ok: 1 }); }
     if (url.pathname === '/acct/load') { const sv = q.exec('SELECT save FROM accounts WHERE name=?', row.name).toArray()[0]; return J({ ok: 1, save: (sv && sv.save) || '' }); }
+    if (url.pathname === '/acct/home') { // wspólny dom i garaż: skarbiec i miejsca na auta dla kilku kont
+      const me = row.name; const op = String(m.op || '');
+      const CARS = ['fiat', 'polonez', 'astra', 'golf', 'bmw'];
+      const memb = () => q.exec('SELECT owner FROM home_members WHERE name=?', me).toArray()[0];
+      const view = owner => { const h = q.exec('SELECT money,cars,log FROM homes WHERE owner=?', owner).toArray()[0]; if (!h) return null; return { owner, members: q.exec('SELECT name FROM home_members WHERE owner=?', owner).toArray().map(x => x.name), money: h.money, cars: JSON.parse(h.cars || '[]'), log: JSON.parse(h.log || '[]'), me }; };
+      const logAdd = (owner, txt) => { const h = q.exec('SELECT log FROM homes WHERE owner=?', owner).toArray()[0]; const l = JSON.parse((h && h.log) || '[]'); l.unshift({ t: now, x: txt }); q.exec('UPDATE homes SET log=?, t=? WHERE owner=?', JSON.stringify(l.slice(0, 12)), now, owner); };
+      let mem = memb();
+      if (op === 'create') { if (mem) return J({ error: 'Masz już wspólny dom.' }, 409); q.exec('INSERT INTO homes(owner,money,cars,log,t) VALUES(?,?,?,?,?)', me, 0, '[]', '[]', now); q.exec('INSERT INTO home_members(name,owner) VALUES(?,?)', me, me); mem = { owner: me }; logAdd(me, me + ' zakłada dom'); }
+      else if (op === 'invite') { if (!mem || mem.owner !== me) return J({ error: 'Tylko właściciel zaprasza.' }, 403); const who = String(m.who || '').trim().toLowerCase().replace(/[^a-z0-9ąćęłńóśźż_-]/g, '').slice(0, 20); if (!q.exec('SELECT name FROM accounts WHERE name=?', who).toArray()[0]) return J({ error: 'Nie ma takiego konta.' }, 404); if (q.exec('SELECT owner FROM home_members WHERE name=?', who).toArray()[0]) return J({ error: 'To konto ma już dom.' }, 409); if (q.exec('SELECT COUNT(*) AS n FROM home_members WHERE owner=?', me).toArray()[0].n >= 6) return J({ error: 'Dom jest pełny (6 osób).' }, 409); q.exec('INSERT OR REPLACE INTO home_inv(name,owner) VALUES(?,?)', who, me); }
+      else if (op === 'join') { const own = String(m.owner || '').toLowerCase(); if (mem) return J({ error: 'Masz już dom.' }, 409); if (!q.exec('SELECT 1 FROM home_inv WHERE name=? AND owner=?', me, own).toArray()[0]) return J({ error: 'Brak zaproszenia.' }, 404); q.exec('INSERT INTO home_members(name,owner) VALUES(?,?)', me, own); q.exec('DELETE FROM home_inv WHERE name=?', me); mem = { owner: own }; logAdd(own, me + ' dołącza'); }
+      else if (op === 'leave') { if (!mem) return J({ error: 'Nie masz domu.' }, 404); if (mem.owner === me) { if (q.exec('SELECT COUNT(*) AS n FROM home_members WHERE owner=?', me).toArray()[0].n > 1) return J({ error: 'Najpierw usuń pozostałych lokatorów.' }, 409); const h = q.exec('SELECT money,cars FROM homes WHERE owner=?', me).toArray()[0]; if (h && (h.money > 0 || JSON.parse(h.cars || '[]').length)) return J({ error: 'Wybierz skarbiec i garaż przed zamknięciem domu.' }, 409); q.exec('DELETE FROM homes WHERE owner=?', me); } q.exec('DELETE FROM home_members WHERE name=?', me); mem = null; }
+      else if (op === 'kick') { if (!mem || mem.owner !== me) return J({ error: 'Tylko właściciel.' }, 403); const who = String(m.who || '').toLowerCase(); if (who === me) return J({ error: '?' }, 400); q.exec('DELETE FROM home_members WHERE name=? AND owner=?', who, me); logAdd(me, who + ' usunięty'); }
+      else if (op === 'put' || op === 'take') { if (!mem) return J({ error: 'Nie masz domu.' }, 404); const n = Math.floor(+m.n || 0); if (n < 1 || n > 1e7) return J({ error: 'Zła kwota.' }, 400); const h = q.exec('SELECT money FROM homes WHERE owner=?', mem.owner).toArray()[0]; if (op === 'take' && h.money < n) return J({ error: 'W skarbcu nie ma tyle.' }, 409); q.exec('UPDATE homes SET money=money+? WHERE owner=?', op === 'put' ? n : -n, mem.owner); logAdd(mem.owner, me + (op === 'put' ? ' wpłaca ' : ' wypłaca ') + n + ' zł'); }
+      else if (op === 'putcar' || op === 'takecar') { if (!mem) return J({ error: 'Nie masz domu.' }, 404); const car = String(m.car || ''); if (!CARS.includes(car)) return J({ error: 'Zły model.' }, 400); const h = q.exec('SELECT cars FROM homes WHERE owner=?', mem.owner).toArray()[0]; const cars = JSON.parse(h.cars || '[]'); if (op === 'putcar') { if (cars.length >= 4) return J({ error: 'Garaż jest pełny (4 auta).' }, 409); cars.push(car); } else { const i = cars.indexOf(car); if (i < 0) return J({ error: 'Nie ma takiego auta w garażu.' }, 404); cars.splice(i, 1); } q.exec('UPDATE homes SET cars=? WHERE owner=?', JSON.stringify(cars), mem.owner); logAdd(mem.owner, me + (op === 'putcar' ? ' odstawia ' : ' zabiera ') + car); }
+      else if (op !== 'get') return J({ error: '?' }, 400);
+      const inv = q.exec('SELECT owner FROM home_inv WHERE name=?', me).toArray().map(x => x.owner);
+      return J({ ok: 1, home: mem ? view(mem.owner) : null, inv }); }
     if (url.pathname === '/acct/logout') { q.exec('UPDATE accounts SET tok=? WHERE name=?', '', row.name); return J({ ok: 1 }); }
     return J({ error: '?' }, 404);
   }
   async fetch(req) {
     const url = new URL(req.url); const q = this.ctx.storage.sql; const day = new Date(Date.now() + 3600e3).toISOString().slice(0, 10);
+    if (url.pathname === '/here' || url.pathname === '/where') {
+      const ip = req.headers.get('x-ip') || '?', now = Date.now(); this.hrl = this.hrl || new Map(); const r = this.hrl.get(ip) || { t: now, n: 0 }; if (now - r.t > 60e3) { r.t = now; r.n = 0; } if (++r.n > 40) return new Response(JSON.stringify({ error: 'limit' }), { status: 429 }); this.hrl.set(ip, r); if (this.hrl.size > 5000) this.hrl.clear();
+      let m; try { m = JSON.parse(await req.text()); } catch (e) { return new Response('{}', { status: 400 }); }
+      const fcOk = v => /^[a-z0-9]{6}$/.test(String(v || '')) ? String(v) : null;
+      if (url.pathname === '/here') { const fc = fcOk(m.fc), room = /^t[1-9]$/.test(m.room || '') ? m.room : null; if (!fc) return new Response('{}', { status: 400 }); if (!room) q.exec('DELETE FROM online WHERE fc=?', fc); else q.exec('INSERT INTO online(fc,room,nick,ts) VALUES(?,?,?,?) ON CONFLICT(fc) DO UPDATE SET room=excluded.room,nick=excluded.nick,ts=excluded.ts', fc, room, censor(clean(m.nick, 24)), now); if (Math.random() < .05) q.exec('DELETE FROM online WHERE ts<?', now - 600e3); return new Response('{"ok":1}'); }
+      const out = []; (Array.isArray(m.fcs) ? m.fcs.slice(0, 40) : []).forEach(f => { const fc = fcOk(f); if (!fc) return; const x = q.exec('SELECT room,nick,ts FROM online WHERE fc=?', fc).toArray()[0]; if (x && now - x.ts < 150e3) out.push({ fc, room: x.room, nick: x.nick }); });
+      return new Response(JSON.stringify({ on: out })); }
     if (url.pathname === '/npc') { // limity rozmów: 12 na minutę i 80 dziennie na adres IP, 900 dziennie na całą grę
       const ip = req.headers.get('x-ip') || '?', now = Date.now(); const r = this.nrl.get(ip) || { t: now, n: 0, d: day, dn: 0 }; if (now - r.t > 60e3) { r.t = now; r.n = 0; } if (r.d !== day) { r.d = day; r.dn = 0; }
       const tot = (q.exec('SELECT v FROM daily WHERE day=? AND k=?', day, 'npc').toArray()[0] || { v: 0 }).v;
