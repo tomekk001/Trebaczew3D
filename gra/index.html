@@ -3067,7 +3067,7 @@ async function boot(saved){
   // anonimowe statystyki (losowy identyfikator w przeglądarce - bez danych osobowych)
   const STAT_URL=MP_URL.replace(/^wss:/,'https:').replace(/^ws:/,'http:');
   let STAT_ID=''; try{ STAT_ID=localStorage.getItem('trebaczew-id')||''; if(!STAT_ID){ STAT_ID=((window.crypto&&crypto.randomUUID)?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)).replace(/[^a-z0-9-]/gi,''); localStorage.setItem('trebaczew-id',STAT_ID); } }catch(e){ STAT_ID='s'+Math.random().toString(36).slice(2,14); }
-  function statEvent(ev,d){ try{ if(!/^https?:$/.test(location.protocol))return; d=d||{}; if(ev==='mini') d={...d,n:cleanTxt(myNick||(typeof CHAR!=='undefined'&&CHAR.name)||'',18)}; fetch(STAT_URL+'/hit',{method:'POST',body:JSON.stringify({id:STAT_ID,ev,d}),keepalive:true}).catch(()=>{}); }catch(e){} }
+  function statEvent(ev,d){ try{ if(!/^https?:$/.test(location.protocol))return; d=d||{}; if(ev==='mini'||ev==='start') d={...d,n:cleanTxt(myNick||(typeof CHAR!=='undefined'&&CHAR.name)||'',18)}; fetch(STAT_URL+'/hit',{method:'POST',body:JSON.stringify({id:STAT_ID,ev,d}),keepalive:true}).catch(()=>{}); }catch(e){} }
   setInterval(()=>{ if(GAME.started&&!GAME.paused&&document.visibilityState==='visible') statEvent('beat',{min:2}); },120000);
   // połączenie z serwerem gry (Cloudflare) - ten sam interfejs co pokój Claude
   function wsRoom(base){ const peers=new Map(), subP=[], subE={}; let myId=null, ws=null, ok=false, ever=false, room=1, lastP=null, retry=0, ping=null, tries=0, warned=false;

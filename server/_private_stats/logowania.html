@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Logowania · Symulator życia w Trębaczewie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0b0d10;--panel:#121518;--ink:#f6f4ef;--muted:#b9c0c6;--dim:#7f878e;--accent:#f2c230;--line:rgba(255,255,255,.12);--ok:#7fd06b;--blue:#6aa9ff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Barlow,'Segoe UI',Arial,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:clamp(24px,5vh,56px) 16px 56px}
+.kick{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;font-size:16px}
+h1{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:clamp(40px,8vw,72px);line-height:.95;margin:6px 0 10px;letter-spacing:.01em}
+.lead{color:var(--muted);max-width:660px;line-height:1.5;margin:0 0 18px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.bar a,.bar button,.bar select,.bar input{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);padding:8px 12px;text-decoration:none;border-radius:3px}
+.bar button{cursor:pointer}
+.bar input{min-width:180px}
+.card{background:var(--panel);border:1px solid var(--line);padding:6px 14px 10px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--dim)}
+td.t{font-variant-numeric:tabular-nums;color:var(--muted)}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;background:rgba(255,255,255,.1)}
+.tag.konto{background:rgba(106,169,255,.2);color:var(--blue)}.tag.rejestracja{background:rgba(127,208,107,.2);color:var(--ok)}.tag.start{background:rgba(242,194,48,.18);color:var(--accent)}
+.dim{color:var(--dim)}
+.err{display:none;color:#ff9a8a;margin:10px 0}
+.day td{background:rgba(255,255,255,.04);font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.08em;color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <div class="kick">Panel administratora</div>
+  <h1>LOGOWANIA</h1>
+  <p class="lead">Kto i kiedy uruchomił grę lub zalogował się na konto. Godziny w czasie polskim. Strona jest dostępna tylko po zalogowaniu administratora i odświeża się sama. Pokazuje ostatnie 500 wpisów.</p>
+  <div class="bar">
+    <a href="/statystyki.html">← Statystyki</a>
+    <select id="fk"><option value="">Wszystkie zdarzenia</option><option value="konto">Logowania na konto</option><option value="rejestracja">Rejestracje</option><option value="start">Uruchomienia gry</option></select>
+    <input id="fq" type="search" placeholder="Szukaj użytkownika…" aria-label="Szukaj użytkownika">
+    <button id="rf">Odśwież</button>
+    <span class="dim" id="cnt"></span>
+  </div>
+  <div class="err" id="err">Nie udało się pobrać listy. Spróbuj odświeżyć stronę.</div>
+  <div class="card"><table><thead><tr><th>Godzina</th><th>Zdarzenie</th><th>Użytkownik</th><th>Urządzenie</th><th>ID gracza</th></tr></thead><tbody id="tb"></tbody></table></div>
+</main>
+<script>
+let ROWS=[]; const $=id=>document.getElementById(id);
+const KIND={konto:'Logowanie na konto',rejestracja:'Rejestracja konta',start:'Uruchomienie gry'};
+const fday=new Intl.DateTimeFormat('pl-PL',{timeZone:'Europe/Warsaw',weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const ftime=new Intl.DateTimeFormat('pl-PL',{timeZone:'Europe/Warsaw',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function render(){ const k=$('fk').value, q=$('fq').value.trim().toLowerCase(); const list=ROWS.filter(r=>(!k||r.kind===k)&&(!q||(r.name||'').toLowerCase().includes(q)));
+  $('cnt').textContent=list.length+' z '+ROWS.length+' wpisów'; let day='', h='';
+  list.forEach(r=>{ const d=new Date(r.t), dd=fday.format(d); if(dd!==day){ day=dd; h+=`<tr class="day"><td colspan="5">${esc(dd)}</td></tr>`; }
+    h+=`<tr><td class="t">${ftime.format(d)}</td><td><span class="tag ${esc(r.kind)}">${esc(KIND[r.kind]||r.kind)}</span></td><td>${r.name?esc(r.name):'<span class="dim">gracz bez nazwy</span>'}</td><td>${r.kind==='start'?(r.mob?'telefon':'komputer'):'<span class="dim">-</span>'}</td><td class="dim">${esc(r.pid)||'-'}</td></tr>`; });
+  $('tb').innerHTML=h||'<tr><td colspan="5" class="dim">Brak wpisów.</td></tr>'; }
+async function load(){ try{ const r=await fetch('/logins',{cache:'no-store'}); if(r.status===401){ location.href='/auth/login'; return; } if(!r.ok) throw 0; ROWS=await r.json(); $('err').style.display='none'; render(); }catch(e){ $('err').style.display='block'; } }
+$('fk').onchange=$('fq').oninput=render; $('rf').onclick=load; load(); setInterval(load,30000);
+</script>
+</body>
+</html>

@@ -292,7 +292,12 @@ export default {
       response.headers.append('set-cookie', `${STATS_SESSION_COOKIE}=${await statsSessionToken(env.STATS_SESSION_SECRET, expires)}; Path=/; Max-Age=${STATS_SESSION_SECONDS}; HttpOnly; Secure; SameSite=Lax`);
       return response;
     }
-    if (url.pathname === '/statystyki.html' && req.method === 'GET') {
+    if (url.pathname === '/logins' && req.method === 'GET') {
+      if (!await hasStatsSession(req, env)) return new Response('{"error":"unauthorized"}', { status: 401, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/logins');
+      return new Response(await r.text(), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'private, no-store' } });
+    }
+    if ((url.pathname === '/statystyki.html' || url.pathname === '/logowania.html') && req.method === 'GET') {
       if (!await hasStatsSession(req, env)) {
         return new Response(null, { status: 302, headers: { location: `${url.origin}/auth/login`, 'cache-control': 'no-store' } });
       }
@@ -418,10 +423,12 @@ export class Stats extends DurableObject {
             CREATE TABLE IF NOT EXISTS scores(g TEXT, nick TEXT, s INTEGER, t INTEGER);
             CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);
             CREATE TABLE IF NOT EXISTS accounts(name TEXT PRIMARY KEY, salt TEXT, hash TEXT, tok TEXT, save TEXT, t INTEGER);
-            CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kat TEXT, opis TEXT, kontakt TEXT, info TEXT);`);
+            CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kat TEXT, opis TEXT, kontakt TEXT, info TEXT);
+            CREATE TABLE IF NOT EXISTS logins(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kind TEXT, name TEXT, pid TEXT, mob INTEGER);`);
     this.rrl = new Map(); this.nrl = new Map();
     this.rl = new Map(); this.cache = null;
   }
+  logLogin(kind, name, pid, mob) { const q = this.ctx.storage.sql; q.exec('INSERT INTO logins(t,kind,name,pid,mob) VALUES(?,?,?,?,?)', Date.now(), kind, name || '', pid || '', mob ? 1 : 0); q.exec('DELETE FROM logins WHERE id NOT IN (SELECT id FROM logins ORDER BY id DESC LIMIT 2000)'); }
   add(day, k, v) { this.ctx.storage.sql.exec('INSERT INTO daily(day,k,v) VALUES(?,?,?) ON CONFLICT(day,k) DO UPDATE SET v=v+excluded.v', day, k, v); }
   async acct(req, url, q) {
     const J = (o, st = 200) => new Response(JSON.stringify(o), { status: st });
@@ -439,9 +446,10 @@ export class Stats extends DurableObject {
       if (url.pathname === '/acct/register') {
         if (row) return J({ error: 'Ta nazwa jest zajęta.' }, 409);
         if (q.exec('SELECT COUNT(*) AS n FROM accounts').toArray()[0].n >= 20000) return J({ error: 'Rejestracja chwilowo niedostępna.' }, 503);
-        const salt = newTok(), tok = newTok(); q.exec('INSERT INTO accounts(name,salt,hash,tok,save,t) VALUES(?,?,?,?,?,?)', name, salt, await kdf(pass, salt), tok, '', now); return J({ ok: 1, name, tok });
+        const salt = newTok(), tok = newTok(); q.exec('INSERT INTO accounts(name,salt,hash,tok,save,t) VALUES(?,?,?,?,?,?)', name, salt, await kdf(pass, salt), tok, '', now); this.logLogin('rejestracja', name, '', 0); return J({ ok: 1, name, tok });
       }
       if (!row || await kdf(pass, row.salt) !== row.hash) return J({ error: 'Zła nazwa lub hasło.' }, 401);
+      this.logLogin('konto', name, '', 0);
       const tok = newTok(); q.exec('UPDATE accounts SET tok=? WHERE name=?', tok, name); return J({ ok: 1, name, tok, save: row.save || '' });
     }
     const tok = String(m.tok || ''); const row = tok.length >= 32 ? q.exec('SELECT name FROM accounts WHERE tok=?', tok).toArray()[0] : null;
@@ -473,6 +481,7 @@ export class Stats extends DurableObject {
     }
     if (url.pathname === '/reports') { const del = +url.searchParams.get('del') || 0; if (del) q.exec('DELETE FROM reports WHERE id=?', del);
       return new Response(JSON.stringify(q.exec('SELECT id,t,kat,opis,kontakt,info FROM reports ORDER BY id DESC LIMIT 300').toArray())); }
+    if (url.pathname === '/logins') return new Response(JSON.stringify(q.exec('SELECT t,kind,name,pid,mob FROM logins ORDER BY id DESC LIMIT 500').toArray()));
     if (url.pathname === '/hit') {
       let m; try { m = JSON.parse(await req.text()); } catch (e) { return new Response('zły JSON', { status: 400 }); }
       const id = clean(m.id, 40).replace(/[^a-z0-9-]/gi, ''); if (id.length < 8 || !EVS.includes(m.ev)) return new Response('złe dane', { status: 400 });
@@ -480,7 +489,7 @@ export class Stats extends DurableObject {
       if (this.rl.size > 5000) this.rl.clear();
       const d = m.d || {};
       if (m.ev === 'start') {
-        this.add(day, 'starts', 1); this.add(day, d.mob ? 'mob' : 'desk', 1);
+        this.add(day, 'starts', 1); this.add(day, d.mob ? 'mob' : 'desk', 1); this.logLogin('start', censor(clean(d.n, 24)) || '', id.slice(0, 6), d.mob);
         const isNew = !q.exec('SELECT 1 FROM players WHERE id=?', id).toArray().length;
         if (isNew) { q.exec('INSERT INTO players(id,first,mob) VALUES(?,?,?)', id, day, d.mob ? 1 : 0); this.add(day, 'new', 1); }
       }
