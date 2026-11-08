@@ -242,3 +242,5 @@ python3 tools/park.py && python3 build.py
 ## Szybsze wczytywanie
 
 Na stronie modele wnętrz (kościół, apteka, Żabka, Lewiatan) i budynki z `budynki.py` leżą w osobnym pliku `models_in.js`, doczytywanym w tle. Do czasu wczytania te budynki stoją w prostszej wersji, a potem gra sama podmienia je na modele. Gra startuje z mniejszego `index.html` (około 2,6 MB zamiast 4,2 MB). Przy wejściu do budynku gra czeka na modele najwyżej kilka sekund. Wersja do artefaktu (`--fragment`) ma wszystko w jednym pliku.
+
+- `tools/osm_extras.py` wyciąga z `tools/raw/osm_area.json.gz` drzewa, szpalery, ścieżki piesze, ławki i boiska do `src/data_osm.js`; gra stawia je dokładnie w miejscach z OSM, dokłada chodniki i szpalery przy zabudowanych ulicach spoza centrum i buduje orlik w Sadowcu (boisko OSM najbliżej wsi Sadowiec-Wrzosy).

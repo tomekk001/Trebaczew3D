@@ -76,6 +76,9 @@ async function boot(saved){
   const CHURCH=BPOLY.find(b=>b.name.startsWith('Kościół')); let CHURCH_DOOR=null;
   [COURT,PITCH2,TRACK].forEach(a=>{ const hs=a.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:a.pts,bb:bbox(a.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); });
   const flatH=a=>FLAT.find(f=>f.p===a.pts).h;
+  // orlik w Sadowcu: boisko z OSM najbliżej wsi Sadowiec-Wrzosy (spłaszczamy pod nie teren)
+  let SAD_PITCH=null; if(typeof DATA_OSM!=='undefined'&&typeof DATA_X!=='undefined'){ const hp=DATA_X.P.find(q=>q[0]==='Sadowiec-Wrzosy'); let bd=600; if(hp) DATA_OSM.P.forEach(([sp,sf,f])=>{ if(sp!=='soccer'&&sp!=='basketball') return; const pts=[]; for(let i=0;i<f.length;i+=2) pts.push([f[i],f[i+1]]); const c=centroid(pts), dd=Math.hypot(c[0]-hp[2],c[1]-hp[3]); if(dd<bd){ bd=dd; SAD_PITCH={t:'lei:pitch',n:'Orlik Sadowiec',pts}; } });
+    if(SAD_PITCH){ const hs=SAD_PITCH.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:SAD_PITCH.pts,bb:bbox(SAD_PITCH.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); } }
 
   /* ---------- renderer + efekty ---------- */
   const canvas=document.getElementById('c');
@@ -187,14 +190,16 @@ async function boot(saved){
   const texPaverRed=tex(128,128,(x,w,h)=>{ x.fillStyle='#8d8a84'; x.fillRect(0,0,w,h); for(let r=0;r<16;r++)for(let c=0;c<8;c++){ const v=Math.floor(R(-12,12)); x.fillStyle=`rgb(${126+v},${72+v},${60+v})`; const o=(r%2)*8; x.fillRect(((c*16+o)%w)+1,r*8+1,14,6);} },true);
   const matPaverRed=po(new THREE.MeshLambertMaterial({map:texPaverRed,side:THREE.DoubleSide}),3);
   const SIDEWALK=new Set(['Szkolna','Zielona','Spacerowa','Zagrodowa','Sikorskiego','Kwiatowa','Północna','Zacisze','Stodulskiego','Traktorowa','Wiśniowa','Strażacka','Energetyczna','Cmentarna','Parkowa','Południowa']); SIDEWALK.delete('Zacisze');
-  const WALKS=[];
+  const WALKS=[]; let SAD_ORLIK=null;
+  // chodniki także na innych zabudowanych ulicach (Reja, Dojazdowa, Sadowiec itd.): tak jak w centrum, gdzie są ≥4 budynki przy jezdni
+  ROADS.forEach(r=>{ if(r.main||!r.ext||!r.n||['track','rail','path','foot','srv'].includes(r.t)||SIDEWALK.has(r.n)||!r.pts||r.pts.length<2) return; let cnt=0; const len=lineLen(r.pts), L=len[len.length-1]; for(let d=0;d<L;d+=18){ const q=sampleLine(r.pts,len,d); for(const b of BLD){ if(Math.abs(b.x-q.x)<26&&Math.abs(b.z-q.z)<26){ cnt++; } } } if(cnt>=8) r.sw=true; });
   const RSEG=new Map(); ROADS.forEach(r=>{ if(r.t==='track')return; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i],b=r.pts[i+1]; for(let gx=Math.floor(Math.min(a[0],b[0])/30)-1;gx<=Math.floor(Math.max(a[0],b[0])/30)+1;gx++)for(let gz=Math.floor(Math.min(a[1],b[1])/30)-1;gz<=Math.floor(Math.max(a[1],b[1])/30)+1;gz++){ const k=gx+','+gz; if(!RSEG.has(k))RSEG.set(k,[]); RSEG.get(k).push([r,a,b]); } } });
   const onOtherRoad=(x,z,self,m)=>(RSEG.get(Math.floor(x/30)+','+Math.floor(z/30))||[]).some(([r,a,b])=>r!==self&&segDist(x,z,a[0],a[1],b[0],b[1])<r.w/2+m);
   function splitFree(line,self,m){ const pts=resample(line,1.5), runs=[]; let cur=[]; pts.forEach(p=>{ if(onOtherRoad(p[0],p[1],self,m)){ if(cur.length>1)runs.push(cur); cur=[]; } else cur.push(p); }); if(cur.length>1)runs.push(cur); return runs.filter(r=>lineLen(r).pop()>2.5); }
   ROADS.forEach((r,ri)=>{ const y=r.main?0.1:r.t==='track'?0.03:0.06+ri*0.001;
     const m=new THREE.Mesh(ribbon(r.pts,r.w,y,r.main?14:r.t==='track'?8:10), r.main?matMain:r.t==='track'?matTrack:matLocal); m.receiveShadow=true; scene.add(m);
     if(!r.main&&r.t!=='track') r.pts.forEach(p=>JOINTS.push([p[0],H(p[0],p[1])+y-0.01,p[1],r.w/2,jointMat]));
-    if(r.main||SIDEWALK.has(r.n)){ const pts=r.main?r.pts.filter(p=>p[0]>-700&&p[0]<720):r.pts; if(pts.length<2)return;
+    if(r.main||SIDEWALK.has(r.n)||r.sw){ const pts=r.main?r.pts.filter(p=>p[0]>-700&&p[0]<720):r.pts; if(pts.length<2)return;
       [1,-1].forEach(s=>{ const cl=offsetLine(pts,s*(r.w/2+0.15)), sw=offsetLine(pts,s*(r.w/2+1.35));
         splitFree(cl,r,0.9).forEach(run=>scene.add(new THREE.Mesh(ribbon(run,0.3,0.17,2),matCurb)));
         splitFree(sw,r,1.15).forEach(run=>{ const p=new THREE.Mesh(ribbon(run,2.1,0.14,2.2),r.n==='Szkolna'?matPaverRed:matPaver); p.receiveShadow=true; scene.add(p); if(lineLen(run).pop()>12) WALKS.push({pts:resample(run,4),road:r}); }); }); }
@@ -1130,6 +1135,18 @@ async function boot(saved){
 
   await LP(54);
   /* ---------- drzewa ---------- */
+  // ---- dane z OSM (tools/osm_extras.py): prawdziwe drzewa, szpalery, ścieżki piesze, ławki; do tego szpalery przy ulicach z chodnikami ----
+  if(typeof DATA_OSM!=='undefined'){ const D=DATA_OSM;
+    for(let i=0;i<D.T.length;i+=3){ const x=D.T[i], z=D.T[i+1]; if(blocked(x,z,.8)||roadNearF(x,z,1.2)) continue; if(EXTRA_TREES.some(t=>Math.abs(t.x-x)<2&&Math.abs(t.z-z)<2)) continue; EXTRA_TREES.push({x,z,s:R(.85,1.35),con:D.T[i+2]===1,osm:true}); }
+    D.TR.forEach(f=>{ const pts=[]; for(let i=0;i<f.length;i+=2) pts.push([f[i],f[i+1]]); const len=lineLen(pts), L=len[len.length-1]; for(let d=0;d<=L;d+=6.5){ const q=sampleLine(pts,len,d); if(blocked(q.x,q.z,.8)||roadNearF(q.x,q.z,1.2)) continue; EXTRA_TREES.push({x:q.x,z:q.z,s:R(.8,1.2),con:false,osm:true}); } });
+    D.F.forEach(([paved,f])=>{ const pts=[]; for(let i=0;i<f.length;i+=2) pts.push([f[i],f[i+1]]); if(PARK&&inPoly(pts[0][0],pts[0][1],PARK.pts)) return; splitFree(pts,null,.3).forEach(run=>{ const m=new THREE.Mesh(ribbon(run,paved?1.9:1.2,0.13,2.2),paved?matPaver:matTrack); m.receiveShadow=true; scene.add(m); }); });
+    // szpalery drzew przy chodnikach na ulicach spoza centrum
+    ROADS.forEach(r=>{ if(!r.sw) return; const len=lineLen(r.pts), L=len[len.length-1]; let k=0; for(let d=6;d<L-4;d+=R(9,13)){ const q=sampleLine(r.pts,len,d); k++; const sd=k%2?1:-1, o=r.w/2+3.9; const x=q.x-q.tz*o*sd, z=q.z+q.tx*o*sd; if(blocked(x,z,1.4)||roadNearF(x,z,3)) continue; if(EXTRA_TREES.some(t=>Math.abs(t.x-x)<3&&Math.abs(t.z-z)<3)) continue; EXTRA_TREES.push({x,z,s:R(.75,1.1),con:false,col:pick(['#4c6e3a','#5a7d3a','#6a8a3a'])}); } });
+    // orlik w Sadowcu: boisko z OSM najbliżej wsi Sadowiec-Wrzosy, z ogrodzeniem, bramką od strony drogi i koszami
+    { if(SAD_PITCH){ const area=SAD_PITCH; const m=mar(area.pts); const cs=Math.cos(m.an), sn=Math.sin(m.an); let rq=null,rd=1e9; ROADS.forEach(r=>{ if(['track','rail','path','foot'].includes(r.t)||!r.L) return; for(let d=0;d<r.L;d+=3){ const q=sampleLine(r.pts,r.len,d); const dd=Math.hypot(q.x-m.cx,q.z-m.cz); if(dd<rd){ rd=dd; rq=[q.x,q.z]; } } });
+        const q0=rq||[m.cx,m.cz+30], dx=q0[0]-m.cx, dz=q0[1]-m.cz, lx=dx*cs+dz*sn, lz=-dx*sn+dz*cs, sd=Math.abs(lx)/(m.w/2)>Math.abs(lz)/(m.d/2)?(lx>0?'x+':'x-'):(lz>0?'z+':'z-'), Lg=sd[0]==='x'?m.d:m.w, u=clamp(sd[0]==='x'?lz:lx,-Lg/2+1.8,Lg/2-1.8);
+        SAD_ORLIK=buildCourt(area,'tartan',{fence:4.2,hoops:true,benches:true,solid:true,gates:[{side:sd,u}]}); SAD_ORLIK.area=area; } }
+  }
   const trees=[...parkTrees,...EXTRA_TREES];
   for(let i=0;i<9000&&trees.length<3400;i++){ const b=pick(BLD); const a=R(0,6.28), d=R(7,26); const x=b.x+Math.cos(a)*d, z=b.z+Math.sin(a)*d; if(blocked(x,z,1.5))continue; if(roadNear(x,z,3.8))continue; if(inPoly(x,z,COURT.pts)||inPoly(x,z,PITCH2.pts)||inPoly(x,z,TRACK.pts)||inPoly(x,z,PARK.pts)||LOTS.some(l=>inPoly(x,z,l))||inPoly(x,z,PLAC.pts))continue; trees.push({x,z,s:R(.6,1.3),con:rnd()<.33}); }
   RAILS.slice(0,2).forEach(pts=>{ const len=lineLen(pts); const L=len[len.length-1]; for(let d=0;d<L;d+=R(6,10)){ const s=sampleLine(pts,len,d); if(s.x<X0||s.x>X1||s.z<Z0||s.z>Z1)continue; [1,-1].forEach(sd=>{ if(rnd()<.7){ const o=R(10,16)*sd; trees.push({x:s.x-s.tz*o,z:s.z+s.tx*o,s:R(.9,1.5),con:rnd()<.3}); } }); } });
