@@ -492,7 +492,17 @@ async function boot(saved){
   const HG=HGRID, HB=205; const hv=new Float32Array(HG.nx*HG.nz); for(let i=0;i<hv.length;i++) hv[i]=parseInt(HG.s.substr(i*2,2),36)/10+HG.base-HB;
   function hRaw(x,z){ let fx=clamp((x-HG.x0)/HG.step,0,HG.nx-1.0001), fz=clamp((z-HG.z0)/HG.step,0,HG.nz-1.0001); const ix=fx|0, iz=fz|0, tx=fx-ix, tz=fz-iz, n=HG.nx; const a=hv[iz*n+ix], b=hv[iz*n+ix+1], c=hv[(iz+1)*n+ix], d=hv[(iz+1)*n+ix+1]; return a*(1-tx)*(1-tz)+b*tx*(1-tz)+c*(1-tx)*tz+d*tx*tz; }
   const FLAT=[];
-  function H(x,z){ for(const f of FLAT){ if(x>f.bb[0]-f.fe&&x<f.bb[2]+f.fe&&z>f.bb[1]-f.fe&&z<f.bb[3]+f.fe){ if(inPoly(x,z,f.p))return f.h; } } return hRaw(x,z); }
+  function H0(x,z){ for(const f of FLAT){ if(x>f.bb[0]-f.fe&&x<f.bb[2]+f.fe&&z>f.bb[1]-f.fe&&z<f.bb[3]+f.fe){ if(inPoly(x,z,f.p))return f.h; } } return hRaw(x,z); }
+  // głęboki wykop kolejowy na północ od Trębaczewa: tory (Magistrala Węglowa) schodzą coraz głębiej w ziemię, a ulica Wynalazek przechodzi nad nimi wiaduktem
+  let CUTL=null, BRG=null; const CUT_D=6.8;
+  const cutProfile=z=>{ const sm=t=>{ t=Math.max(0,Math.min(1,t)); return t*t*(3-2*t); }; return CUT_D*sm((280-z)/290)*(1-sm((-760-z)/340)); };
+  function cutAt(x,z){ if(z>290||z<-1110||x>-480||x<-960) return 0; if(!CUTL){ CUTL=RAILS.find(r=>r.length>=20&&Math.hypot(r[0][0]+194,r[0][1]+2246)<40)||[]; } const L=CUTL; if(L.length<2) return 0; const dp=cutProfile(z); if(dp<=0.01) return 0; let best=1e9;
+    for(let i=0;i<L.length-1;i++){ const a=L[i], b=L[i+1]; if(Math.max(a[1],b[1])<z-30||Math.min(a[1],b[1])>z+30) continue; const dx=b[0]-a[0], dz=b[1]-a[1], l2=dx*dx+dz*dz||1; let t=((x-a[0])*dx+(z-a[1])*dz)/l2; t=t<0?0:t>1?1:t; const d=Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t); if(d<best) best=d; }
+    if(best>24) return 0; const k=best<=8?1:(1+Math.cos((best-8)/16*Math.PI))/2; return dp*k; }
+  function HC(x,z){ return H0(x,z)-cutAt(x,z); }
+  function inDeck(x,z){ if(!BRG){ if(typeof ROADS==='undefined') return false; let bd=1e9, br=null; ROADS.forEach(r=>{ if(r.n!=='Wynalazek') return; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i], b=r.pts[i+1], dx=b[0]-a[0], dz=b[1]-a[1], l2=dx*dx+dz*dz||1; let t=((-707-a[0])*dx+(-65-a[1])*dz)/l2; t=t<0?0:t>1?1:t; const qx=a[0]+dx*t, qz=a[1]+dz*t, d=Math.hypot(qx+707,qz+65); if(d<bd){ bd=d; const l=Math.sqrt(l2); br={x:qx,z:qz,dx:dx/l,dz:dz/l}; } } }); BRG=br||{x:0,z:0,dx:1,dz:0,none:true}; }
+    if(BRG.none) return false; const ux=x-BRG.x, uz=z-BRG.z, u=ux*BRG.dx+uz*BRG.dz, v=-ux*BRG.dz+uz*BRG.dx; return Math.abs(u)<70&&Math.abs(v)<3.8; }
+  function H(x,z){ const c=cutAt(x,z); if(c<=0) return H0(x,z); return inDeck(x,z)?H0(x,z):H0(x,z)-c; }
 
   /* ---------- dane OSM ---------- */
   const RENAME={'Jarosława Zdzisława Stodulskiego':'Stodulskiego','Generała Władysława Sikorskiego':'Sikorskiego'};
@@ -628,7 +638,7 @@ async function boot(saved){
   { const TX0=Math.min(-2100,X0-900),TX1=Math.max(1900,X1+900),TZ0=Math.min(-1850,Z0-900),TZ1=Math.max(1750,Z1+900), S=GW>3000?12:10; const nx=(TX1-TX0)/S, nz=(TZ1-TZ0)/S;
     const geo=new THREE.PlaneGeometry(TX1-TX0,TZ1-TZ0,nx,nz); geo.rotateX(-Math.PI/2); geo.translate((TX0+TX1)/2,0,(TZ0+TZ1)/2);
     const pos=geo.attributes.position, uv=geo.attributes.uv;
-    for(let i=0;i<pos.count;i++){ const x=pos.getX(i), z=pos.getZ(i); pos.setY(i,H(x,z)); uv.setXY(i,clamp((x-X0)/GW,0,1),clamp(1-(z-Z0)/GH,0,1)); }
+    for(let i=0;i<pos.count;i++){ const x=pos.getX(i), z=pos.getZ(i); pos.setY(i,HC(x,z)); uv.setXY(i,clamp((x-X0)/GW,0,1),clamp(1-(z-Z0)/GH,0,1)); }
     geo.computeVertexNormals();
     GROUND=new THREE.Mesh(geo, withDetail(new THREE.MeshLambertMaterial({map:groundTex}),0.35,0.8)); GROUND.receiveShadow=true; scene.add(GROUND); }
 
@@ -642,8 +652,8 @@ async function boot(saved){
   const texPath=tex(64,64,(x,w,h)=>{ x.fillStyle='#55575a'; x.fillRect(0,0,w,h); noise(x,w,h,900,50,120,.45); },true);
   function offsetLine(pts,o){ return pts.map((p,i)=>{ const a=pts[Math.max(0,i-1)], b=pts[Math.min(pts.length-1,i+1)]; let tx=b[0]-a[0],tz=b[1]-a[1]; const l=Math.hypot(tx,tz)||1; tx/=l;tz/=l; let s=1; if(i>0&&i<pts.length-1){ const sx=p[0]-a[0],sz=p[1]-a[1],sl=Math.hypot(sx,sz)||1; s=1/Math.max(.55,(-sz/sl)*(-tz)+(sx/sl)*tx); } return [p[0]-tz*o*s,p[1]+tx*o*s]; }); }
   // wstęga dopasowana do terenu (yo = wysokość nad gruntem)
-  function ribbon(pts,w,yo,rep){ pts=resample(pts,5); const pos=[],uv=[],idx=[]; let dist=0; const n=pts.length; const L=offsetLine(pts,w/2), Rr=offsetLine(pts,-w/2);
-    for(let i=0;i<n;i++){ if(i>0) dist+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); const hc=H(pts[i][0],pts[i][1]); const hl=Math.max(H(L[i][0],L[i][1]),hc-0.6), hr=Math.max(H(Rr[i][0],Rr[i][1]),hc-0.6);
+  function ribbon(pts,w,yo,rep,hf){ const HF=hf||H; pts=resample(pts,5); const pos=[],uv=[],idx=[]; let dist=0; const n=pts.length; const L=offsetLine(pts,w/2), Rr=offsetLine(pts,-w/2);
+    for(let i=0;i<n;i++){ if(i>0) dist+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); const hc=HF(pts[i][0],pts[i][1]); const hl=Math.max(HF(L[i][0],L[i][1]),hc-0.6), hr=Math.max(HF(Rr[i][0],Rr[i][1]),hc-0.6);
       pos.push(L[i][0],hl+yo,L[i][1], Rr[i][0],hr+yo,Rr[i][1]); uv.push(0,dist/rep,1,dist/rep); if(i>0){const k=i*2; idx.push(k-2,k,k-1, k-1,k,k+1);} }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); geo.setIndex(idx); geo.computeVertexNormals(); return geo; }
   const po=(m,f)=>{ m.polygonOffset=true; m.polygonOffsetFactor=-f; m.polygonOffsetUnits=-f*2; return m; };
@@ -658,11 +668,19 @@ async function boot(saved){
   const WALKS=[]; let SAD_ORLIK=null;
   // chodniki także na innych zabudowanych ulicach (Reja, Dojazdowa, Sadowiec itd.): tak jak w centrum, gdzie są ≥4 budynki przy jezdni
   ROADS.forEach(r=>{ if(r.main||!r.ext||!r.n||['track','rail','path','foot','srv'].includes(r.t)||SIDEWALK.has(r.n)||!r.pts||r.pts.length<2) return; let cnt=0; const len=lineLen(r.pts), L=len[len.length-1]; for(let d=0;d<L;d+=18){ const q=sampleLine(r.pts,len,d); for(const b of BLD){ if(Math.abs(b.x-q.x)<26&&Math.abs(b.z-q.z)<26){ cnt++; } } } if(cnt>=8) r.sw=true; });
+  // wiadukt ulicy Wynalazek nad głębokim wykopem kolejowym: płyta, balustrady i filary
+  { inDeck(0,0); if(BRG&&!BRG.none){ const cm=new THREE.MeshLambertMaterial({color:0x9a9a96}), cm2=new THREE.MeshLambertMaterial({color:0x7f7f7b});
+    const P=u=>[BRG.x+BRG.dx*u,BRG.z+BRG.dz*u], ang=-Math.atan2(BRG.dz,BRG.dx);
+    const deckPts=[]; for(let u=-70;u<=70;u+=5) deckPts.push(P(u));
+    const slab=new THREE.Mesh(ribbon(deckPts,9.2,-0.55,6,H0),cm2); scene.add(slab);
+    for(let u=-70;u<70;u+=5){ const a=P(u), b=P(u+5), mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2; if(cutAt(mx,mz)<0.4) continue;
+      [1,-1].forEach(sd=>{ const w=new THREE.Mesh(new THREE.BoxGeometry(5.1,0.95,0.35),cm); const px=mx-BRG.dz*sd*4.3, pz=mz+BRG.dx*sd*4.3; w.position.set(px,H0(mx,mz)+0.5,pz); w.rotation.y=ang; scene.add(w); });
+      const gh=cutAt(mx,mz); if(gh>2.5){ for(let k=-1;k<=1;k+=2){ const pil=new THREE.Mesh(new THREE.BoxGeometry(1.1,gh+0.8,1.1),cm); pil.position.set(mx-BRG.dz*k*3.2,H0(mx,mz)-0.6-(gh)/2+0.1,mz+BRG.dx*k*3.2); if(Math.abs(Math.round(u/5))%2===0) scene.add(pil); } } } } }
   const RSEG=new Map(); ROADS.forEach(r=>{ if(r.t==='track')return; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i],b=r.pts[i+1]; for(let gx=Math.floor(Math.min(a[0],b[0])/30)-1;gx<=Math.floor(Math.max(a[0],b[0])/30)+1;gx++)for(let gz=Math.floor(Math.min(a[1],b[1])/30)-1;gz<=Math.floor(Math.max(a[1],b[1])/30)+1;gz++){ const k=gx+','+gz; if(!RSEG.has(k))RSEG.set(k,[]); RSEG.get(k).push([r,a,b]); } } });
   const onOtherRoad=(x,z,self,m)=>(RSEG.get(Math.floor(x/30)+','+Math.floor(z/30))||[]).some(([r,a,b])=>r!==self&&segDist(x,z,a[0],a[1],b[0],b[1])<r.w/2+m);
   function splitFree(line,self,m){ const pts=resample(line,1.5), runs=[]; let cur=[]; pts.forEach(p=>{ if(onOtherRoad(p[0],p[1],self,m)){ if(cur.length>1)runs.push(cur); cur=[]; } else cur.push(p); }); if(cur.length>1)runs.push(cur); return runs.filter(r=>lineLen(r).pop()>2.5); }
   ROADS.forEach((r,ri)=>{ const y=r.main?0.1:r.t==='track'?0.03:0.06+ri*0.001;
-    const m=new THREE.Mesh(ribbon(r.pts,r.w,y,r.main?14:r.t==='track'?8:10), r.main?matMain:r.t==='track'?matTrack:matLocal); m.receiveShadow=true; scene.add(m);
+    const m=new THREE.Mesh(ribbon(r.pts,r.w,y,r.main?14:r.t==='track'?8:10,r.n==='Wynalazek'?H0:undefined), r.main?matMain:r.t==='track'?matTrack:matLocal); m.receiveShadow=true; scene.add(m);
     if(!r.main&&r.t!=='track') r.pts.forEach(p=>JOINTS.push([p[0],H(p[0],p[1])+y-0.01,p[1],r.w/2,jointMat]));
     if(r.main||SIDEWALK.has(r.n)||r.sw){ const pts=r.main?r.pts.filter(p=>p[0]>-700&&p[0]<720):r.pts; if(pts.length<2)return;
       [1,-1].forEach(s=>{ const cl=offsetLine(pts,s*(r.w/2+0.15)), sw=offsetLine(pts,s*(r.w/2+1.35));
@@ -673,11 +691,11 @@ async function boot(saved){
   const railMat=new THREE.MeshLambertMaterial({color:0x6d6e70,side:THREE.DoubleSide}), ballMat=po(new THREE.MeshLambertMaterial({color:0x8a7f72,side:THREE.DoubleSide}),1);
   const sleeperGeo=new THREE.BoxGeometry(2.4,0.16,0.24), sleeperMat=new THREE.MeshLambertMaterial({color:0x5b4a3c});
   const dum=new THREE.Object3D(), col=new THREE.Color();
-  RAILS.forEach(pts=>{ const len=lineLen(pts); scene.add(new THREE.Mesh(ribbon(pts,4.2,0.14,10),ballMat));
-    [-0.75,0.75].forEach(o=>scene.add(new THREE.Mesh(ribbon(offsetLine(pts,o),0.14,0.34,10),railMat)));
+  RAILS.forEach(pts=>{ const len=lineLen(pts); scene.add(new THREE.Mesh(ribbon(pts,4.2,0.14,10,HC),ballMat));
+    [-0.75,0.75].forEach(o=>scene.add(new THREE.Mesh(ribbon(offsetLine(pts,o),0.14,0.34,10,HC),railMat)));
     const L=len[len.length-1]; const n=Math.floor(Math.min(L,2600)/0.9); const im=new THREE.InstancedMesh(sleeperGeo,sleeperMat,n);
-    for(let i=0;i<n;i++){ const s=sampleLine(pts,len,i*0.9); dum.position.set(s.x,H(s.x,s.z)+0.22,s.z); dum.rotation.set(0,Math.atan2(-s.tz,s.tx)+Math.PI/2,0); dum.scale.set(1,1,1); dum.updateMatrix(); im.setMatrixAt(i,dum.matrix);} scene.add(im);
-    for(let d=0;d<L;d+=55){ const s=sampleLine(pts,len,d); const x=s.x-s.tz*3.6, z=s.z+s.tx*3.6; const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,8,6).translate(0,4,0),railMat); pole.position.set(x,H(x,z),z); scene.add(pole); } });
+    for(let i=0;i<n;i++){ const s=sampleLine(pts,len,i*0.9); dum.position.set(s.x,HC(s.x,s.z)+0.22,s.z); dum.rotation.set(0,Math.atan2(-s.tz,s.tx)+Math.PI/2,0); dum.scale.set(1,1,1); dum.updateMatrix(); im.setMatrixAt(i,dum.matrix);} scene.add(im);
+    for(let d=0;d<L;d+=55){ const s=sampleLine(pts,len,d); const x=s.x-s.tz*3.6, z=s.z+s.tx*3.6; const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,8,6).translate(0,4,0),railMat); pole.position.set(x,HC(x,z),z); scene.add(pole); } });
 
   { const byMat=new Map(); JOINTS.forEach(J=>{ if(!byMat.has(J[4])) byMat.set(J[4],[]); byMat.get(J[4]).push(J); });
     byMat.forEach((list,mat)=>{ const im=new THREE.InstancedMesh(new THREE.CircleGeometry(1,18).rotateX(-Math.PI/2),mat,list.length); list.forEach((J,i)=>{ dum.position.set(J[0],J[1],J[2]); dum.rotation.set(0,0,0); dum.scale.set(J[3],1,J[3]); dum.updateMatrix(); im.setMatrixAt(i,dum.matrix); }); im.receiveShadow=true; scene.add(im); }); }
@@ -1053,11 +1071,11 @@ async function boot(saved){
       x.beginPath(); x.moveTo(w/2,Y0+4); x.lineTo(w/2,Y0+Hh-4); x.stroke(); x.beginPath(); x.arc(w/2,h/2,26,0,7); x.stroke();
       [X0+4,X0+W-4].forEach((gx,i)=>{ x.beginPath(); x.arc(gx,h/2,62,i?Math.PI/2:-Math.PI/2,i?Math.PI*1.5:Math.PI/2); x.stroke(); x.setLineDash([8,7]); x.beginPath(); x.arc(gx,h/2,84,i?Math.PI/2:-Math.PI/2,i?Math.PI*1.5:Math.PI/2); x.stroke(); x.setLineDash([]); });
       x.strokeStyle='#f2d34a'; x.lineWidth=2; [X0+4,X0+W-4].forEach((gx,i)=>{ x.strokeRect(i?gx-52:gx,h/2-18,52,36); }); return; }
-    if(kind==='tartan'){ x.fillStyle='#b5503e'; x.fillRect(0,0,w,h); noise(x,w,h,9000,120,190,.12); }
+    if(kind==='tartan'||kind==='tartang'){ x.fillStyle=kind==='tartan'?'#b5503e':'#2f8f43'; x.fillRect(0,0,w,h); noise(x,w,h,9000,120,190,.12); }
     else { x.fillStyle='#4f8a3c'; x.fillRect(0,0,w,h); for(let i=0;i<w;i+=40){x.fillStyle=i%80?'#4a8338':'#548f40';x.fillRect(i,0,40,h);} }
     x.strokeStyle='#f4f1ea'; x.lineWidth=3; const m=14; x.strokeRect(m,m,w-2*m,h-2*m); x.beginPath(); x.moveTo(w/2,m); x.lineTo(w/2,h-m); x.stroke(); x.beginPath(); x.arc(w/2,h/2,34,0,7); x.stroke();
     [m,w-m].forEach((gx,i)=>{ x.beginPath(); x.arc(gx,h/2,70,i?Math.PI/2:-Math.PI/2,i?Math.PI*1.5:Math.PI/2); x.stroke(); x.setLineDash([10,8]); x.beginPath(); x.arc(gx,h/2,100,i?Math.PI/2:-Math.PI/2,i?Math.PI*1.5:Math.PI/2); x.stroke(); x.setLineDash([]); });
-    if(kind==='tartan'){ x.strokeStyle='#e9c94a'; x.lineWidth=2.5; [m,w-m].forEach((gx,i)=>{ const s=i?-1:1; x.beginPath(); x.arc(gx+s*16,h/2,90,-Math.PI/2,Math.PI/2,s<0); x.stroke(); x.strokeRect(i?gx-62:gx,h/2-22,62,44); }); } }); }
+    if(kind==='tartan'||kind==='tartang'){ x.strokeStyle=kind==='tartan'?'#e9c94a':'#f2f2ea'; x.lineWidth=2.5; [m,w-m].forEach((gx,i)=>{ const s=i?-1:1; x.beginPath(); x.arc(gx+s*16,h/2,90,-Math.PI/2,Math.PI/2,s<0); x.stroke(); x.strokeRect(i?gx-62:gx,h/2-22,62,44); }); } }); }
   const fenceT=tex(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='rgba(70,78,82,.95)'; x.lineWidth=2; for(let i=-w;i<w*2;i+=16){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } x.lineWidth=5; x.strokeRect(0,0,w,h); },true);
   const ORLIK_GAPS=[];
   function buildCourt(a,kind,opts){ const m=mar(a.pts); const grp=new THREE.Group(); grp.position.set(m.cx,flatH(a),m.cz); grp.rotation.y=-m.an;
@@ -1610,7 +1628,7 @@ async function boot(saved){
     // orlik w Sadowcu: boisko z OSM najbliżej wsi Sadowiec-Wrzosy, z ogrodzeniem, bramką od strony drogi i koszami
     { if(SAD_PITCH){ const area=SAD_PITCH; const m=mar(area.pts); const cs=Math.cos(m.an), sn=Math.sin(m.an); let rq=null,rd=1e9; ROADS.forEach(r=>{ if(['track','rail','path','foot'].includes(r.t)||!r.L) return; for(let d=0;d<r.L;d+=3){ const q=sampleLine(r.pts,r.len,d); const dd=Math.hypot(q.x-m.cx,q.z-m.cz); if(dd<rd){ rd=dd; rq=[q.x,q.z]; } } });
         const q0=rq||[m.cx,m.cz+30], dx=q0[0]-m.cx, dz=q0[1]-m.cz, lx=dx*cs+dz*sn, lz=-dx*sn+dz*cs, sd=Math.abs(lx)/(m.w/2)>Math.abs(lz)/(m.d/2)?(lx>0?'x+':'x-'):(lz>0?'z+':'z-'), Lg=sd[0]==='x'?m.d:m.w, u=clamp(sd[0]==='x'?lz:lx,-Lg/2+1.8,Lg/2-1.8);
-        SAD_ORLIK=buildCourt(area,'tartan',{fence:4.2,hoops:true,benches:true,solid:true,gates:[{side:sd,u}]}); SAD_ORLIK.area=area; } }
+        SAD_ORLIK=buildCourt(area,'tartang',{fence:4.2,hoops:true,benches:true,solid:true,gates:[{side:sd,u}]}); SAD_ORLIK.area=area; } }
   }
   const trees=[...parkTrees,...EXTRA_TREES];
   for(let i=0;i<9000&&trees.length<3400;i++){ const b=pick(BLD); const a=R(0,6.28), d=R(7,26); const x=b.x+Math.cos(a)*d, z=b.z+Math.sin(a)*d; if(blocked(x,z,1.5))continue; if(roadNear(x,z,3.8))continue; if(inPoly(x,z,COURT.pts)||inPoly(x,z,PITCH2.pts)||inPoly(x,z,TRACK.pts)||inPoly(x,z,PARK.pts)||LOTS.some(l=>inPoly(x,z,l))||inPoly(x,z,PLAC.pts))continue; trees.push({x,z,s:R(.6,1.3),con:rnd()<.33}); }
@@ -2346,9 +2364,10 @@ async function boot(saved){
     const rw=[],wg=new THREE.CylinderGeometry(.75,.75,.45,16).rotateX(Math.PI/2), fw=new THREE.CylinderGeometry(.42,.42,.3,14).rotateX(Math.PI/2);
     [[-.8,.8,wg,.75],[-.8,-.8,wg,.75],[1.1,.65,fw,.42],[1.1,-.65,fw,.42]].forEach(([x,z,gg,r])=>{ const w=new THREE.Mesh(gg,tm); w.position.set(x,r,z); g.add(w); rw.push(w); const hub=new THREE.Mesh(new THREE.CylinderGeometry(r*.45,r*.45,.47,10).rotateX(Math.PI/2),yl); hub.position.copy(w.position); g.add(hub); });
     bx(g,.08,.8,.08,1.0,1.2,.35,tm); g.traverse(o=>{if(o.isMesh)o.castShadow=true;}); g.userData.wheels=rw; return g; }
-  function makeBus(){ const g=new THREE.Group(); const wh=new THREE.MeshPhongMaterial({color:0xf2f0ea,shininess:60}), or=new THREE.MeshLambertMaterial({color:0xd8661f}), gl=new THREE.MeshPhongMaterial({color:0x1b2630,shininess:120});
+  function makeBus(){ const g=new THREE.Group(); const wh=new THREE.MeshPhongMaterial({color:0x1f5fb4,shininess:70}), or=new THREE.MeshLambertMaterial({color:0xf4f6f8}), gl=new THREE.MeshPhongMaterial({color:0x1b2630,shininess:120});
     bx(g,11,2.6,2.5,0,.45,0,wh); bx(g,11.02,.35,2.52,0,1.0,0,or); [1.27,-1.27].forEach(z=>pl(g,9.6,1.0,-.4,2.25,z,gl,z>0?0:Math.PI)); pl(g,2.3,1.3,5.51,2.1,0,gl,Math.PI/2);
-    const pks=tex(256,64,(x)=>{ x.fillStyle='#111'; x.fillRect(0,0,256,64); x.fillStyle='#f4c430'; x.font='700 34px Barlow, Arial'; x.fillText('PKS  Działoszyn',10,44); }); pl(g,2.0,.35,5.52,3.0,0,new THREE.MeshBasicMaterial({map:pks}),Math.PI/2);
+    const pks=tex(256,64,(x)=>{ x.fillStyle='#111'; x.fillRect(0,0,256,64); x.fillStyle='#f4c430'; x.font='700 34px Barlow, Arial'; x.fillText('GEPARD',60,44); }); pl(g,2.0,.35,5.52,3.0,0,new THREE.MeshBasicMaterial({map:pks}),Math.PI/2);
+    const gep=tex(256,40,(x)=>{ x.fillStyle='#f4f6f8'; x.fillRect(0,0,256,40); x.fillStyle='#1f5fb4'; x.font='800 32px Barlow, Arial'; x.textAlign='center'; x.fillText('GEPARD',128,32); }); [1.275,-1.275].forEach(z=>pl(g,3.4,.34,-3.0,1.0,z,new THREE.MeshBasicMaterial({map:gep}),z>0?0:Math.PI));
     const ws=[]; [[3.6,1.1],[3.6,-1.1],[-3.4,1.1],[-3.4,-1.1]].forEach(([x,z])=>{ const w=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.3,14).rotateX(Math.PI/2),new THREE.MeshLambertMaterial({color:0x151515})); w.position.set(x,.5,z); g.add(w); ws.push(w); });
     g.traverse(o=>{if(o.isMesh)o.castShadow=true;}); g.userData.wheels=ws; return g; }
   function addParked(g,x,z,h,kind,name,maxV,acc){ if(blocked(x,z,1.2))return null; const c={g,x,z,h,v:0,steer:0,kind,name,maxV,acc}; seatCar(g,x,z,h); scene.add(g); parked.push(c); return c; }
@@ -2911,7 +2930,7 @@ async function boot(saved){
       if(BUS.g.visible&&!st.car&&!st.inside&&Math.hypot(BUS.x-st.x,BUS.z-st.z)<4){ { const dx=st.x-BUS.x,dz=st.z-BUS.z,l=Math.hypot(dx,dz)||1; st.vx=dx/l*8; st.vz=dz/l*8; st.hp=Math.max(0,st.hp-dt*40); } } }
     // pociąg towarowy (wolniejszy, w przeciwnej fazie)
     { const FL=freightLen[freightLen.length-1], S=TRAIN_SCHED.fr; S.span=FL+FR_OFF[FR_OFF.length-1]+20; S.P=Math.max(S.span/S.v+240,480); const h0=(((tAll+150)%S.P))*S.v;
-      FREIGHT.forEach((w,i)=>{ const d=FL-(h0-FR_OFF[i]); if(d<0||d>FL){ w.visible=false; return; } w.visible=true; const s=sampleLine(freightPath,freightLen,d); w.position.set(s.x,H(s.x,s.z)+.22,s.z); w.rotation.y=-Math.atan2(s.tz,s.tx); });
+      FREIGHT.forEach((w,i)=>{ const d=FL-(h0-FR_OFF[i]); if(d<0||d>FL){ w.visible=false; return; } w.visible=true; const s=sampleLine(freightPath,freightLen,d); w.position.set(s.x,HC(s.x,s.z)+.22,s.z); w.rotation.y=-Math.atan2(s.tz,s.tx); });
       trainHorn(FREIGHT[0],S); }
     // policja
     if(st.car&&!['bike'].includes(st.car.kind)){ cars.forEach(t=>{ if(Math.hypot(t.x-st.car.x,t.z-st.car.z)<3.8&&tAll-trafficHitT>4){ trafficHitT=tAll; if(rnd()<.5) setWanted(Math.max(st.wanted,1)); } }); }
@@ -4619,7 +4638,7 @@ async function boot(saved){
       if(!st.car&&Math.hypot(c.x-st.x,c.z-st.z)<2.2&&tAll-(st.hitT||-9)>1.5){ st.hitT=tAll; st.hp=Math.max(0,st.hp-30); shake=.8; const dx=st.x-c.x,dz=st.z-c.z,l=Math.hypot(dx,dz)||1; st.vx=dx/l*9; st.vz=dz/l*9; } });
     const TL=trainLen[trainLen.length-1], SP=TRAIN_SCHED.pas; SP.span=TL+6*22+10; SP.P=Math.max(SP.span/SP.v+150,300); const h0=(tAll%SP.P)*SP.v;
     trainHorn(train[0],SP);
-    train.forEach((t,i)=>{ const d=h0-i*22; if(d<0||d>TL){t.visible=false;return;} t.visible=true; const s=sampleLine(trainPath,trainLen,d); t.position.set(s.x,H(s.x,s.z)+0.22,s.z); t.rotation.y=-Math.atan2(s.tz,s.tx); });
+    train.forEach((t,i)=>{ const d=h0-i*22; if(d<0||d>TL){t.visible=false;return;} t.visible=true; const s=sampleLine(trainPath,trainLen,d); t.position.set(s.x,HC(s.x,s.z)+0.22,s.z); t.rotation.y=-Math.atan2(s.tz,s.tx); });
     peds.forEach(p=>{ if(p.down>0){ p.down-=dt; if(p.down<=0){ p.g.rotation.x=0; } return; }
       const L=p.w.len[p.w.len.length-1]; p.d+=p.dir*p.v*dt; if(p.d>L){p.d=L;p.dir=-1;} if(p.d<0){p.d=0;p.dir=1;} const s=sampleLine(p.w.pts,p.w.len,p.d);
       p.g.position.set(s.x,H(s.x,s.z)+0.16,s.z); p.g.rotation.y=Math.atan2(s.tx*p.dir,s.tz*p.dir); p.walk+=dt*p.v*3; animPerson(p.g,p.walk,1);
