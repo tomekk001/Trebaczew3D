@@ -3525,6 +3525,14 @@ async function boot(saved){
     if(a==='act'){ const act=CO.actions[+b.dataset.i]; if(act){ CO.menu=null; socToggle(false); act.fn(p); } } });
   addEventListener('keydown',e=>{ if(CO.open&&e.key==='Escape'){ e.stopPropagation(); socToggle(false); } },true);
   { const bs=document.getElementById('mp'); if(bs){ const b=document.createElement('button'); b.className='btn'; b.id='bSoc'; b.textContent='Znajomi i pokoje'; b.style.cssText='margin-top:6px;width:100%'; b.addEventListener('click',()=>socToggle()); bs.appendChild(b); } }
+  /* ---------- wspólna praca w cementowni (2 osoby): gracze wymieniają wiadomości 'job' ---------- */
+  CO.h.job=(d,from)=>{ if(!MG.on||!MG.opt||MG.opt.peer!==from||!MG.g||!MG.g.net) return; MG.g.net(String(d.m||'').slice(0,6),d); };
+  CO.jobWait=null;
+  const JOBS={cysterna:{t:'Załadunek cystern we dwoje',sub:'Ty obsługujesz wagę - zatwierdzasz ładunek, gdy waga pokaże 24 t'},palety:{t:'Brygada paletyzacji',sub:'Trafiajcie w rytm razem - obaj naciskacie w tej samej chwili'}};
+  CO.invH.job=(d,from,nm)=>{ const k=String(d.kind||''); const J=JOBS[k]; if(!J) return; coAsk({kick:'Wspólna praca',title:nm+' zaprasza do pracy: '+J.t,sub:J.sub,yes:'Dołącz',no:'Nie teraz',ttl:35,onYes:()=>{ if(MG.on){ toast('Skończ najpierw bieżącą minigrę',2); return; } coSend(from,'jobok',{kind:k}); openMini(k+'2',{peer:from,host:false,title:J.t+' - Cementownia Warta',sub:J.sub}); },onNo:t=>{ if(!t) coSend(from,'jobno',{kind:k}); }}); };
+  CO.h.jobok=(d,from)=>{ const w=CO.jobWait; if(!w||w.peer!==from||tAll-w.t>45||d.kind!==w.kind) return; CO.jobWait=null; if(MG.on){ coSend(from,'jobno',{kind:w.kind}); return; } const J=JOBS[w.kind]; openMini(w.kind+'2',{peer:from,host:true,title:J.t+' - Cementownia Warta',sub:w.kind==='cysterna'?'Ty ładujesz cysternę - partner obsługuje wagę':J.sub}); };
+  CO.h.jobno=(d,from)=>{ if(CO.jobWait&&CO.jobWait.peer===from){ CO.jobWait=null; toast(peerName(from)+' nie może teraz pracować',2); } };
+  CO.actions.push({l:'wspólna praca (cementownia)',fn:peer=>{ const s=typeof nearMini==='function'?nearMini():null; const k=s&&s.id; if(!JOBS[k]){ toast('Stań przy stanowisku: załadunek cystern albo paletyzacja worków',3); return; } CO.jobWait={peer,kind:k,t:tAll}; coSend(peer,'inv',{w:'job',kind:k}); toast('✉ Zaproszenie do pracy wysłane: '+esc2(peerName(peer)),2); }});
   const MP_ENABLED=false; if(MP_ENABLED) mpInit();
 
   /* ---------- zwierzęta: psy na podwórkach, koty, kury, krowy na pastwiskach, sarny przy lesie ---------- */
@@ -5118,6 +5126,66 @@ async function boot(saved){
       c.fillStyle='rgba(18,21,24,.9)'; rrect(c,W/2-170,52,340,40,8); c.fill(); txt(c,`seria ${G.round}/${G.need} · ${G.score} pkt`,W/2,72,19,'#fff');
       if(G.msgT>0) bigTxt(c,G.msg,W/2,H*.3,Math.min(48,W/14),G.msg==='DOBRZE'?'#47b04b':'#e5484d');
       txt(c,G.phase==='show'?'Zapamiętaj kolejność pobierania próbek…':G.phase==='in'?(IS_TOUCH?'Powtórz kolejność - stukaj naczynia':'Powtórz kolejność: klikaj naczynia lub klawisze 1-4'):'',W/2,H*.2,Math.min(22,W/36),'#1b1e21'); }; return G; }
+  /* wspólna cysterna: gospodarz (zapraszający) ładuje - dozuje strumień, partner stoi na wadze i zatwierdza ładunek (jego wynik liczy gospodarz) */
+  function makeCysterna2(opt){ const host=!!opt.host; const G={t:0,rxT:0,go:false,round:0,fill:0,hold:false,phase:0,pt:0,res:'',msg:'',msgT:0,score:0,flow:1,sendT:0,rdyT:0,kaT:0,seq:0,gcode:0}; const TG=24, MAXF=30, tol=[2.2,1.6,1.1], NM=['','IDEALNIE','W NORMIE','ZA DUŻO','ZA MAŁO'];
+    const send=(m,d)=>coSend(opt.peer,'job',Object.assign({m},d||{}));
+    const sendSt=()=>send('st',{f:Math.round(G.fill*100)/100,ph:G.phase,h:G.hold?1:0,r:G.round,s:G.score,q:G.res,g:G.gcode});
+    function fin(){ if(G.phase!==1) return; G.phase=2; G.pt=0; G.hold=false; const d=Math.abs(G.fill-TG); const ok=G.fill<=MAXF&&d<=tol[G.round]; G.score+=ok?Math.max(0,Math.round(60-d*25)):0; G.res+=ok?'1':'0'; const ty=ok?(d<.4?1:2):(G.fill>TG?3:4); G.gcode=(++G.seq)*10+ty; G.msg=NM[ty]; G.msgT=1.4; ok?mgSnd.ok():mgSnd.bad(); sendSt(); }
+    G.net=(m,d)=>{ G.rxT=G.t;
+      if(host){ if(m==='rdy'&&!G.go){ G.go=true; send('go'); } else if(m==='stop'&&G.phase===1) fin(); }
+      else if(m==='go') G.go=true;
+      else if(m==='st'){ G.fill=+d.f||0; G.phase=d.ph|0; G.hold=!!d.h; G.round=d.r|0; G.score=d.s|0; G.res=String(d.q||''); const g=d.g|0; if(g>G.gcode){ G.gcode=g; G.msg=NM[g%10]||''; G.msgT=1.4; (g%10<3)?mgSnd.ok():mgSnd.bad(); } }
+      else if(m==='fin'){ G.win=!!d.w; G.score=d.s|0; G.res=String(d.q||G.res); G.over=1.2; } };
+    G.up=()=>{ if(host) G.hold=false; }; G.keyUp=k=>{ if(k===' ') G.up(); };
+    G.down=()=>{ if(!G.go||G.over!==undefined) return; if(host){ if(G.phase===0) G.phase=1; if(G.phase===1) G.hold=true; } else if(G.phase===1) send('stop'); }; G.key=k=>{ if(k===' ') G.down(); };
+    G.update=dt=>{ G.t+=dt; if(G.msgT>0) G.msgT-=dt;
+      if(!G.go){ if(!host){ G.rdyT-=dt; if(G.rdyT<=0){ G.rdyT=1; send('rdy'); } } if(G.t>25&&G.over===undefined){ G.abort=true; G.win=false; G.over=.1; } return; }
+      if(G.over!==undefined){ G.over-=dt; if(G.over<=0) mgEnd(G.result()); return; }
+      G.kaT-=dt; if(G.kaT<=0){ G.kaT=2; if(!host) send('ka'); }
+      if(G.t-G.rxT>12){ G.abort=true; G.win=false; G.over=.2; if(host) send('fin',{w:0,s:G.score,q:G.res}); return; }
+      if(!host) return;
+      if(G.phase===1){ G.flow=.75+.55*Math.abs(Math.sin(G.t*1.7+G.round))+.2*Math.sin(G.t*4.3); if(G.hold) G.fill+=dt*G.flow*5.2; if(G.fill>=MAXF+2){ G.fill=MAXF+2; fin(); } }
+      if(G.phase===2){ G.pt+=dt; if(G.pt>1.8){ G.round++; if(G.round>=3){ G.win=G.res.split('').filter(c=>c==='1').length>=2; G.over=1.2; send('fin',{w:G.win?1:0,s:G.score,q:G.res}); return; } G.phase=0; G.fill=0; G.hold=false; sendSt(); } }
+      G.sendT-=dt; if(G.sendT<=0){ G.sendT=.125; sendSt(); } };
+    G.result=()=>{ const n=G.res.split('').filter(c=>c==='1').length; if(G.abort) return {win:false,score:G.score,stars:0,text:'Partner opuścił zmianę - praca przerwana.'}; return {win:!!G.win,score:G.score,stars:G.win?(n===3?3:2):0,text:G.win?`Wspólnie załadowaliście poprawnie ${n} z 3 cystern. Wypłata dla obojga!`:`Tylko ${n} z 3 cystern z poprawnym tonażem.`}; };
+    G.draw=(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#aab8c6'); gr.addColorStop(1,'#5d6368'); c.fillStyle=gr; c.fillRect(0,0,W,H); c.fillStyle='#4a4e52'; c.fillRect(0,H*.72,W,H*.28);
+      const gx=W*.5, gy=H*.55, gw=Math.min(300,W*.7); c.fillStyle='#d9dde0'; rrect(c,gx-gw/2,gy-70,gw,100,40); c.fill(); c.fillStyle='#c8302a'; c.fillRect(gx-gw/2+30,gy-20,gw-60,10); txt(c,'WARTA CEMENT',gx,gy-42,22,'#1f4fa3'); c.fillStyle='#222'; c.beginPath(); c.arc(gx-gw*.32,gy+32,22,0,7); c.arc(gx+gw*.32,gy+32,22,0,7); c.fill();
+      const bx=W/2-30, by=H*.24, bw=60, bh=H*.27; c.fillStyle='rgba(0,0,0,.5)'; rrect(c,bx,by,bw,bh,10); c.fill(); const yf=v=>by+bh-bh*Math.min(1,v/32); c.fillStyle='#7fb4e8'; c.fillRect(bx+6,yf(G.fill),bw-12,by+bh-yf(G.fill));
+      if(!host){ const tt=tol[Math.min(2,G.round)]; c.fillStyle='rgba(127,208,107,.35)'; c.fillRect(bx,yf(TG+tt),bw,yf(TG-tt)-yf(TG+tt)); c.strokeStyle='#f2c230'; c.lineWidth=3; c.beginPath(); c.moveTo(bx-10,yf(TG)); c.lineTo(bx+bw+10,yf(TG)); c.stroke(); txt(c,`${TG} t`,bx+bw+36,yf(TG),16,'#f2c230'); c.fillStyle='rgba(18,21,24,.9)'; rrect(c,W/2-70,H*.52,140,34,8); c.fill(); txt(c,`${G.fill.toFixed(1)} t`,W/2,H*.52+17,22,'#7fd06b'); }
+      else { txt(c,G.hold?'strumień leci':'strumień zamknięty',bx+bw/2,by-14,15,'#1b1e21'); }
+      c.fillStyle='rgba(18,21,24,.9)'; rrect(c,W/2-190,52,380,40,8); c.fill(); txt(c,`cysterna ${Math.min(3,G.round+1)}/3 · ${G.score} pkt · ${host?'ŁADOWACZ':'WAGA'}`,W/2,72,19,'#fff'); G.res.split('').forEach((r,i)=>txt(c,r==='1'?'✔':'✘',W/2-40+i*40,H*.93-30,26,r==='1'?'#7fd06b':'#e5484d'));
+      if(G.msgT>0) bigTxt(c,G.msg,W/2,H*.5,Math.min(54,W/13),G.msg==='ZA DUŻO'||G.msg==='ZA MAŁO'?'#e5484d':'#f2c230');
+      const tip=!G.go?'Czekam na partnera…':host?(IS_TOUCH?'Przytrzymaj palec - cement leci. Puść, żeby dozować; partner zatwierdza wagę':'PRZYTRZYMAJ SPACJĘ - cement leci. Puść, by dozować; partner na wadze zatwierdzi ładunek'):(IS_TOUCH?'Stuknij, gdy waga pokaże 24 t - zatwierdzasz ładunek':'Naciśnij SPACJĘ, gdy waga pokaże 24 t - zatwierdzasz ładunek (jest opóźnienie łącza!)'); txt(c,tip,W/2,H-24,Math.min(18,W/44),'#1b1e21'); }; return G; }
+  /* wspólna brygada paletyzacji: worki jadą do strefy w tym samym rytmie, obaj muszą nacisnąć we właściwym momencie (ocena jest względem własnego zegara każdego gracza) */
+  function makePalety2(opt){ const host=!!opt.host; const G={t:0,rxT:0,go:false,bags:[],nb:0,score:0,sync:0,miss:0,msg:'',msgT:0,rdyT:0,kaT:0,hist:'',t0:0,last:''}; const NB=16, TR=1.5, INT=1.05, WIN=.3;
+    const send=(m,d)=>coSend(opt.peer,'job',Object.assign({m},d||{}));
+    G.net=(m,d)=>{ G.rxT=G.t;
+      if(m==='rdy'&&host&&!G.go){ G.go=true; G.t0=G.t+1.2; send('go'); }
+      else if(m==='go') G.go=true;
+      else if(m==='b'&&!host){ G.bags.push({k:d.k|0,a:G.t+TR-.0,pd:undefined,j:false}); }
+      else if(m==='p'&&host){ const b=G.bags.find(x=>x.k===(d.k|0)); if(b) b.gd=+d.d/1000; }
+      else if(m==='r'&&!host){ G.sync=d.y|0; G.miss=d.x|0; G.score=d.s|0; G.hist=String(d.h||''); const c=d.c|0; G.msg=c===2?'W RYTMIE':c===1?'TYLKO JEDEN':'PUDŁO'; G.msgT=.9; c===2?mgSnd.ok():mgSnd.bad(); }
+      else if(m==='fin'&&!host){ G.win=!!d.w; G.score=d.s|0; G.sync=d.y|0; G.over=1.2; } };
+    function press(){ if(!G.go||G.over!==undefined) return; let b=null,bd=.55; G.bags.forEach(x=>{ if(x.pd!==undefined||x.j) return; const dd=Math.abs(G.t-x.a); if(dd<bd){ bd=dd; b=x; } }); if(!b){ G.msg='ZA WCZEŚNIE'; G.msgT=.5; mgSnd.bad(); return; } b.pd=G.t-b.a; if(Math.abs(b.pd)<=WIN){ mgSnd.tick(); } else { mgSnd.bad(); } if(!host) send('p',{k:b.k,d:Math.round(b.pd*1000)}); }
+    G.down=press; G.key=k=>{ if(k===' ') press(); };
+    G.update=dt=>{ G.t+=dt; if(G.msgT>0) G.msgT-=dt;
+      if(!G.go){ if(!host){ G.rdyT-=dt; if(G.rdyT<=0){ G.rdyT=1; send('rdy'); } } if(G.t>25&&G.over===undefined){ G.abort=true; G.win=false; G.over=.1; } return; }
+      if(G.over!==undefined){ G.over-=dt; if(G.over<=0) mgEnd(G.result()); return; }
+      G.kaT-=dt; if(G.kaT<=0){ G.kaT=2; if(!host) send('ka'); }
+      if(G.t-G.rxT>12){ G.abort=true; G.win=false; G.over=.2; if(host) send('fin',{w:0,s:G.score,y:G.sync}); return; }
+      if(!host) { G.bags=G.bags.filter(b=>G.t<b.a+1.2); return; }
+      if(G.nb<NB&&G.t>=G.t0+G.nb*INT){ const k=G.nb++; G.bags.push({k,a:G.t0+k*INT+TR,pd:undefined,gd:undefined,j:false}); send('b',{k}); }
+      G.bags.forEach(b=>{ if(!b.j&&G.t>b.a+1.25){ b.j=true; const h=b.pd!==undefined&&Math.abs(b.pd)<=WIN, g=b.gd!==undefined&&Math.abs(b.gd)<=WIN; const c=(h?1:0)+(g?1:0); if(c===2){ G.sync++; G.score+=30; } else G.miss++; G.hist+=c; G.msg=c===2?'W RYTMIE':c===1?'TYLKO JEDEN':'PUDŁO'; G.msgT=.9; c===2?mgSnd.ok():mgSnd.bad(); send('r',{c,y:G.sync,x:G.miss,s:G.score,h:G.hist}); G.judged=(G.judged|0)+1; } });
+      G.bags=G.bags.filter(b=>!b.j||G.t<b.a+1.4);
+      if((G.judged|0)>=NB){ G.win=G.sync>=10; G.over=1.2; send('fin',{w:G.win?1:0,s:G.score,y:G.sync}); } };
+    G.result=()=>{ if(G.abort) return {win:false,score:G.score,stars:0,text:'Partner opuścił zmianę - praca przerwana.'}; return {win:!!G.win,score:G.score,stars:G.win?(G.sync>=14?3:G.sync>=12?2:1):0,text:G.win?`W rytmie ${G.sync} z ${NB} worków. Wspólna wypłata!`:`W rytmie tylko ${G.sync} z ${NB} worków (potrzeba 10).`}; };
+    G.draw=(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#c9d3da'); gr.addColorStop(1,'#7c868c'); c.fillStyle=gr; c.fillRect(0,0,W,H);
+      const by=H*.6, zx=W*.62, zw=Math.min(90,W*.14); c.fillStyle='#3a3f44'; c.fillRect(0,by,W,26); c.fillStyle='rgba(127,208,107,.35)'; c.fillRect(zx-zw/2,by-60,zw,100); c.strokeStyle='#7fd06b'; c.lineWidth=3; c.strokeRect(zx-zw/2,by-60,zw,100);
+      const sp=(zx-30)/TR; G.bags.forEach(b=>{ const x=zx-(b.a-G.t)*sp; if(x<-40||x>W+40) return; const col=b.pd===undefined?'#e9e0cc':Math.abs(b.pd)<=WIN?'#7fd06b':'#e5484d'; c.fillStyle=col; rrect(c,x-26,by-34,52,32,6); c.fill(); c.strokeStyle='#8a7f66'; c.lineWidth=2; c.stroke(); txt(c,'WARTA',x,by-18,10,'#1f4fa3'); });
+      c.fillStyle='rgba(18,21,24,.9)'; rrect(c,W/2-190,52,380,40,8); c.fill(); txt(c,`w rytmie ${G.sync} · pudła ${G.miss} · ${G.score} pkt`,W/2,72,19,'#fff');
+      G.hist.split('').forEach((h,i)=>txt(c,h==='2'?'✔':h==='1'?'½':'✘',W/2-8*NB*1.6+i*26+20,H*.82,22,h==='2'?'#7fd06b':h==='1'?'#f2c230':'#e5484d'));
+      if(G.msgT>0) bigTxt(c,G.msg,W/2,H*.32,Math.min(46,W/14),G.msg==='W RYTMIE'?'#47b04b':'#e5484d');
+      txt(c,!G.go?'Czekam na partnera…':(IS_TOUCH?'Stuknij, gdy worek jest w zielonej strefie - razem z partnerem':'SPACJA lub klik, gdy worek jest w zielonej strefie - razem z partnerem'),W/2,H-24,Math.min(18,W/44),'#1b1e21'); }; return G; }
   const MINIS={
     paczkomat:{t:'Paczkomat',make:makePaczkomat,help:o=>mgHelp(o.mode==='odbierz'?['Zapamiętaj 6-cyfrowy kod z SMS-a i wpisz go na klawiaturze.','Kliknij skrytkę, która się otworzy - szybko, zanim się zamknie!','Masz 3 życia. Im szybciej, tym więcej punktów.']:['Dobierz gabaryt skrytki do wysokości paczki (A do 8 cm, B do 19 cm, C do 41 cm).','Zapamiętaj kod nadania i wpisz go na klawiaturze.','Kliknij otwartą skrytkę, zanim się zamknie. 3 paczki, 3 życia.']),reward:o=>o.mode==='odbierz'?30:60},
     flanki:{t:'Flanki w parku',make:makeFlanki,help:()=>mgHelp(['Rzucasz piłką w puszkę na środku: najpierw kąt, potem siła. Uważaj na wiatr!',IS_TOUCH?'Gdy trafisz - STUKAJ jak najszybciej, żeby wypić swoją puszkę, zanim rywal ją postawi.':'Gdy trafisz - WCISKAJ SPACJĘ jak najszybciej, żeby wypić swoją puszkę, zanim rywal ją postawi.','Gdy trafią rywale - klikaj szybko, żeby pobiec i postawić puszkę.','Wygrywa ekipa, która pierwsza opróżni 2 puszki.']),reward:()=>80},
@@ -5125,6 +5193,8 @@ async function boot(saved){
     zonglerka:{t:'Żonglerka - LZS Trębaczew',make:makeZonglerka,help:()=>mgHelp(['Utrzymaj piłkę w powietrzu przez 60 sekund.',IS_TOUCH?'Przytrzymaj palec - rośnie siła; puść, gdy piłka spada na nogę. Przesuwaj palcem, żeby iść pod piłkę.':'Przytrzymaj SPACJĘ - rośnie siła; puść, gdy piłka spada na nogę. A/D lub ←/→ - ruch pod piłkę.','Im dłużej trzymasz, tym mocniej kopiesz. Celuj w zieloną strefę - idealne podbicia dają gwiazdki.','Piłka nie może dotknąć murawy!']),reward:()=>150},
     palety:{t:'Paletyzacja worków',make:makePalety,help:()=>mgHelp(['Worki cementu jadą taśmą w stronę palety.',IS_TOUCH?'Stuknij, gdy worek jest w zielonej strefie - robot odłoży go na paletę.':'Naciśnij SPACJĘ (albo kliknij), gdy worek jest w zielonej strefie - robot odłoży go na paletę.','Ułóż 20 worków. Cztery pudła lub zjechane worki kończą zmianę.']),reward:()=>120},
     bhp:{t:'Kontrola BHP',make:makeBhp,help:()=>mgHelp(['Jesteś inspektorem BHP na terenie zakładu.','Klikaj pracowników BEZ białego kasku. Pracownik w kasku jest w porządku - pomyłka kosztuje punkty.','Zgłoś 8 wykroczeń w 45 sekund, popełniając najwyżej 3 pomyłki.']),reward:()=>100},
+    cysterna2:{t:'Załadunek cystern we dwoje',make:makeCysterna2,help:o=>mgHelp(o.host?['Jesteś ŁADOWACZEM: przytrzymaj SPACJĘ (lub palec) - cement leci do cysterny. Puść, by przerwać strumień.','Nie widzisz wagi - partner stoi na wadze i zatwierdza ładunek przy 24 t.','Łącze ma opóźnienie: dozuj strumień, żeby partner zdążył. Poprawnie 2 z 3 cystern.']:['Jesteś na WADZE: widzisz dokładny tonaż. Naciśnij SPACJĘ (lub stuknij), gdy waga pokaże 24 t - zatwierdzasz ładunek.','Ładowacz (partner) dozuje strumień. Łącze ma opóźnienie - zatwierdzaj ciut wcześniej.','Poprawnie 2 z 3 cystern. Wypłata dla obojga.']),reward:()=>220},
+    palety2:{t:'Brygada paletyzacji',make:makePalety2,help:()=>mgHelp(['Worki jadą taśmą do zielonej strefy - u was obu w tym samym rytmie.',IS_TOUCH?'Stuknij dokładnie wtedy, gdy worek jest w strefie. Obaj musicie trafić.':'Naciśnij SPACJĘ (lub kliknij) dokładnie, gdy worek jest w strefie. Obaj musicie trafić.','16 worków - potrzeba 10 trafionych przez oboje naraz. Wypłata dla obojga.']),reward:()=>240},
     cysterna:{t:'Załadunek cystern',make:makeCysterna,help:()=>mgHelp([IS_TOUCH?'Przytrzymaj palec - cement leci do cysterny. Puść, gdy wskaźnik jest na 24 tonach.':'Przytrzymaj SPACJĘ - cement leci do cysterny. Puść, gdy wskaźnik jest na 24 tonach.','Przepływ się waha - wyczuj rytm. Tolerancja maleje z każdą cysterną.','Załaduj poprawnie co najmniej 2 z 3 cystern.']),reward:()=>140},
     laboratorium:{t:'Laboratorium - próbki',make:makeLab,help:()=>mgHelp(['Laborant pobiera próbki z czterech punktów linii produkcyjnej.','Zapamiętaj kolejność podświetlanych naczyń i powtórz ją (klik lub klawisze 1-4).','Z każdą serią kolejność jest dłuższa. Wygrasz po 7 seriach.']),reward:()=>110},
     karne:{t:'Rzuty karne',make:makeKarne,help:o=>mgHelp(['Strzelasz: zatrzymaj celownik w poziomie, potem w pionie. Rogi są trudne do obrony, ale łatwo trafić obok.','Bronisz: po strzale rywala kliknij miejsce w bramce, gdzie się rzucisz (albo strzałki).','Seria 5 karnych, potem do pierwszego błędu.'+(o.mode==='lzs'?' Na stadionie LZS bramkarz gości jest lepszy!':'')]),reward:o=>o.mode==='lzs'?200:120},
