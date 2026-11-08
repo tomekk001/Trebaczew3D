@@ -74,7 +74,7 @@ Panel „Znajomi i pokoje” (przycisk w panelu graczy) zawiera:
 - **Pokoje prywatne** z kodem (5-8 znaków, do 8 osób), link `?room=KOD`, zaproszenia do pokoju, listę znajomych (kod znajomego jest stały dla przeglądarki, lista trzymana lokalnie; status online pobiera serwer przez `/where`).
 - **Wspólny melex** (kierowca + 1 pasażer) oraz **autobus Gepard**: pozycja wynika z zegara ściennego (`busAt`), więc wszyscy gracze widzą ten sam rozkład. Wsiadasz przy przystanku klawiszem E za 4 zł.
 - **Wspólna praca w cementowni** (`cysterna2`, `palety2`): zaproszenie z menu „Zaproś…” przy stanowisku, wiadomości `job` przez serwer.
-- **Misje kooperacyjne** (`cm`): żniwa na dwa ciągniki, paczki na dwie ekipy.
+- **Misje kooperacyjne** (`cm`): żniwa na dwa ciągniki, paczki na dwie ekipy, pożar (wóz OSP + kierowanie ruchem).
 - **Wyścigi z lobby** (`rc`): 3 trasy po drodze głównej, wpisowe 0/20/50/100 zł, pula dla zwycięzcy, radiowozy jako przeszkoda (+1,5 s kary).
 - **Handel** (`tr`): dwufazowe zatwierdzenie z haszami ofert. Pieniądze, jedzenie i auta.
 - **Wspólny dom i garaż**: `/acct/home` na serwerze (skarbiec, 4 auta, do 6 lokatorów).
