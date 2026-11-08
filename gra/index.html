@@ -1877,7 +1877,7 @@ async function boot(saved){
   function seatCar(g,x,z,h,yo){ const fx=Math.cos(h),fz=Math.sin(h); const hf=H(x+fx*1.6,z+fz*1.6), hb=H(x-fx*1.6,z-fz*1.6), hl=H(x+fz*.9,z-fx*.9), hr=H(x-fz*.9,z+fx*.9);
     g.position.set(x,(hf+hb+hl+hr)/4+(yo||0),z); g.rotation.set(0,0,0); g.rotateY(-h); g.rotateZ(Math.atan2(hf-hb,3.2)); g.rotateX(Math.atan2(hl-hr,1.8)); return (hf-hb)/3.2; }
   const cars=[];
-  for(let i=0;i<(DK.L>3000?8:4);i++){ const gC=makeCar(CARCOL[i%CARCOL.length],i%4===3?'van':''); scene.add(gC); cars.push({g:gC,d:R(0,DK.L),dir:i%2?1:-1,v:R(13,19),x:0,z:0}); }
+  const TRAFFIC_N=0; for(let i=0;i<TRAFFIC_N;i++){ const gC=makeCar(CARCOL[i%CARCOL.length],i%4===3?'van':''); scene.add(gC); cars.push({g:gC,d:R(0,DK.L),dir:i%2?1:-1,v:R(13,19),x:0,z:0}); }
   const parked=[];
   const DIMS={bus:[12,2.6],tractor:[4.2,2.2],moto:[2.1,.8],bike:[1.8,.6],fire:[7.4,2.5],van:[5,1.95],cop:[4.4,1.9]};
   const dimsOf=c=>c&&(c.L?[c.L,c.W]:DIMS[c.kind]||[4.4,1.9]);
@@ -2314,7 +2314,8 @@ async function boot(saved){
     const b=document.createElement('button'); b.innerHTML='<i style="background:#1f5fb4"></i>'; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); $('poiList').append(b); }
 
   // wsiąść można tylko do kilku aut: Passat spod Lewiatana, BMW Seby, własne auto i jedno zapasowe przy starcie; reszta to dekoracja
-  { let spare=null, sd=1e9; parked.forEach(c=>{ if(c===PASSAT) return; c.deco=true; if(c.kind==='car'){ const d=Math.hypot(c.x-SPAWN.x,c.z-SPAWN.z); if(d<sd&&d>12){ sd=d; spare=c; } } }); if(spare){ spare.deco=false; spare.name='Fiat Seicento'; } }
+  { let spare=null, sd=1e9; parked.forEach(c=>{ if(c===PASSAT) return; c.deco=true; if(c.kind==='car'&&!roadNearF(c.x,c.z,3.4)){ const d=Math.hypot(c.x-SPAWN.x,c.z-SPAWN.z); if(d<sd&&d>12){ sd=d; spare=c; } } }); if(spare){ spare.deco=false; spare.name='Fiat Seicento'; }
+    for(let i=parked.length-1;i>=0;i--){ const c=parked[i]; if(c.deco){ scene.remove(c.g); parked.splice(i,1); } } }  // w świecie zostają tylko 3 auta: Passat, Seicento i BMW Seby
   /* ---------- pojazdy: rower, motocykl, ciągnik, autobus PKS, pociąg towarowy ---------- */
   function makeMoto(){ const g=new THREE.Group(); const tm=new THREE.MeshLambertMaterial({color:0x111111}), bm=new THREE.MeshPhongMaterial({color:0xb3262b,shininess:80});
     [-.7,.7].forEach(x=>{ const w=new THREE.Mesh(new THREE.TorusGeometry(.32,.09,8,18),tm); w.position.set(x,.36,0); g.add(w); }); const bd=new THREE.Mesh(new THREE.BoxGeometry(1.1,.35,.35),bm); bd.position.set(0,.72,0); g.add(bd);
@@ -3734,7 +3735,7 @@ async function boot(saved){
   const dkPt=f=>{ const s=sampleLine(DK.pts,DK.len,DK.L*f); return [s.x,s.z]; };
   const C=(id,n,lvl,xp,reward,start,desc,steps,o)=>Object.assign({id,n,lvl,xp,reward,start,desc,steps,main:true},o||{});
   const CAMPAIGN=[
-    C('m1','Pierwsza jazda',1,80,500,()=>INFO?INFO.front.slice():sideOf(B_LEW,10,4),'Szary Passat czeka na parkingu przy Lewiatanie. Wsiądź (F) i zatankuj go na Orlenie w Działoszynie (ul. Piłsudskiego).',()=>[{p:[PASSAT.x,PASSAT.z],t:'Wsiądź do szarego Passata na parkingu Lewiatana (F)',car:'passat',r:5},{p:ORLEN?ORLEN.pump:dkPt(.15),t:'Zatankuj Passata na Orlenie (stój przy dystrybutorze)',wait:6,r:7,car:'passat'}]),
+    C('m1','Pierwsza jazda',1,80,500,()=>INFO?INFO.front.slice():sideOf(B_LEW,10,4),'Auto czeka zaparkowane przy Lewiatanie. Wsiądź (F) i zatankuj je na Orlenie w Działoszynie (ul. Piłsudskiego).',()=>[{p:[PASSAT.x,PASSAT.z],t:'Wsiądź do auta zaparkowanego przy Lewiatanie (F)',car:'passat',r:5},{p:ORLEN?ORLEN.pump:dkPt(.15),t:'Zatankuj auto na Orlenie (stój przy dystrybutorze)',wait:6,r:7,car:'passat'}]),
     C('m2','Znicz dla dziadka',1,90,300,()=>sideOf(B_LEW,10,-4),'Kup znicz w Lewiatanie i zapal go na grobie dziadka na cmentarzu.',()=>[{p:fr(B_LEW,2),t:'Kup znicz w Lewiatanie',buy:'Lewiatan',item:'Znicz'},{p:centroid(CEM.pts),t:'Zapal znicz na grobie',wait:4,r:12}]),
     C('m3','Wizyta u lekarza',2,120,350,()=>APT_DOORS?[DOC_P[0]+APT_DOORS.n[0]*10,DOC_P[1]+APT_DOORS.n[1]*10]:[DOC_P[0]+6,DOC_P[1]+4],'Kaszel nie przechodzi. Idź do ośrodka zdrowia i odczekaj swoje w poczekalni.',()=>[{p:DOC_P,t:'Poczekaj na wizytę',wait:10,r:6,heal:1}]),
     C('m4','Mecz na orliku',2,140,500,()=>ORLIK_DOOR(),'Chłopaki z orlika grają do trzech goli. Wejdź przez furtkę i pokaż, kto tu rządzi!',()=>[{p:[orlik.m.cx,orlik.m.cz],t:'Wejdź na orlik i wygraj mecz',mini:'pilka',mo:{title:'Mecz na orliku'},r:14,onfoot:1}]),
@@ -3812,7 +3813,7 @@ async function boot(saved){
   function endMission(ok){ const m=ACTIVE.m; try{ missionHook(ACTIVE,ok); }catch(e){} if(!ok&&m.id==='s12'&&AZOR.on){ AZOR.on=false; if(AZOR.g){ if(AZOR.g.parent) AZOR.g.parent.remove(AZOR.g); } AZOR.g=null; NQ.azor=''; nqSave(); } cpMark.visible=false; cpMark.scale.set(1,1,1); smoke.visible=false; ACTIVE=null;
     if(ok){ statEvent('mission',{main:m.main?1:0}); if(m.main) DONE.add(m.id); else SIDE_T[m.id]=Date.now(); const rw=m.main?m.reward:sideReward(m); if(!m.main) sideDone(m); if(rw) addMoney(rw); if(m.xp) addXP(m.xp); toast(`<b>MISJA ZALICZONA</b><br>${m.n}${rw?` · +${fmt(rw)}`:''}${m.xp?` · +${m.xp} XP`:''}`,4.5); if(AU.ctx&&AU.on)sfx.win(); saveGame(); }
     else toast('<b>MISJA NIEUDANA</b><br>Spróbuj jeszcze raz',3.5); refreshMarks(); }
-  function stepOK(s){ if(s.car&&!st.car){ return 'Wsiądź do pojazdu'; } if(s.car==='passat'&&st.car!==PASSAT) return 'Potrzebny szary Passat z parkingu Lewiatana'; if(s.car==='fire'&&!(st.car&&st.car.kind==='fire')) return 'Potrzebny wóz strażacki z OSP'; if(s.car==='tractor'&&!(st.car&&st.car.kind==='tractor')) return 'Potrzebny ciągnik'; if(s.car==='bmw'&&st.car!==SEBA_CAR) return 'Wsiądź do BMW Seby'; if(s.onfoot&&st.car) return 'Wysiądź z pojazdu'; return ''; }
+  function stepOK(s){ if(s.car&&!st.car){ return 'Wsiądź do pojazdu'; } if(s.car==='passat'&&st.car!==PASSAT) return 'Potrzebne auto z parkingu przy Lewiatanie'; if(s.car==='fire'&&!(st.car&&st.car.kind==='fire')) return 'Potrzebny wóz strażacki z OSP'; if(s.car==='tractor'&&!(st.car&&st.car.kind==='tractor')) return 'Potrzebny ciągnik'; if(s.car==='bmw'&&st.car!==SEBA_CAR) return 'Wsiądź do BMW Seby'; if(s.onfoot&&st.car) return 'Wysiądź z pojazdu'; return ''; }
   function missionUpdate(dt){ sideRefresh(dt); MISSIONS.forEach((m,i)=>{ if(m.mk.visible) m.mk.children[0].material.opacity=.25+Math.sin(tAll*3+i)*.08; });
     if(smoke.visible) smoke.children.forEach(s=>{ const k=(s.userData.o+tAll*.12)%1; s.position.set(Math.sin(k*9)*1.5,2+k*18,Math.cos(k*7)*1.5); s.scale.setScalar(1+k*4); });
     if(!ACTIVE){ missionEl.hidden=true; if(!abortEl.hidden) abortEl.hidden=true; return; } if(abortEl.hidden) abortEl.hidden=false; const A=ACTIVE, s=A.steps[A.i]; if(A.m.time){ A.t-=dt; if(A.t<=0){ endMission(false); return; } }
