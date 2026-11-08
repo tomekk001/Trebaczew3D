@@ -20,7 +20,7 @@ const hex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : null;
 const VEH = ['car', 'van', 'moto', 'tractor', 'bus', 'bike', 'fire'];
 function cleanPresence(p) {
   p = p || {};
-  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)) || null, rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null };
+  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)) || null, in: String(p.in || '').replace(/[^0-9,.-]/g, '').slice(0, 24) || null, g: num(p.g, 0, 12), rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null };
 }
 
 // ---------- rozmowy z postaciami (Workers AI) ----------
