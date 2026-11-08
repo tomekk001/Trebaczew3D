@@ -6,52 +6,83 @@
 <title>Symulator życia w Trębaczewie – gra 3D w przeglądarce</title>
 <meta name="description" content="Darmowa gra 3D w przeglądarce, osadzona w prawdziwym Trębaczewie: misje, auta, postacie, tryb wieloosobowy i ranking graczy.">
 <meta property="og:title" content="Symulator życia w Trębaczewie"><meta property="og:image" content="https://trebaczew.io/og.jpg"><meta property="og:type" content="website">
-<link rel="icon" href="src/favicon.png">
+<link rel="icon" href="src/icon-192.png">
+<link rel="preload" as="image" href="img/hero.jpg">
 <style>
-:root{--bg:#10151a;--card:#182028;--ink:#e8e4da;--mut:#97a3ad;--acc:#f2b705;--line:#2a3540;--grn:#46b36b}
-@media (prefers-color-scheme:light){:root{--bg:#f5f2ea;--card:#fff;--ink:#1d252c;--mut:#5b6872;--acc:#b07d00;--line:#ddd6c4;--grn:#2a8a4d}}
+:root{--bg:#0d1217;--bg2:#121a21;--card:#17212a;--ink:#ece8de;--mut:#9aa8b3;--acc:#f2b705;--acc2:#ff8a3d;--line:#273441;--grn:#46b36b}
+@media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--bg2:#efe9da;--card:#fff;--ink:#1b242b;--mut:#5a6772;--acc:#c48a00;--acc2:#d9631a;--line:#ddd5c1;--grn:#2a8a4d}}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--acc)}
-header.hero{padding:56px 16px 40px;text-align:center;background:linear-gradient(180deg,#0b3d2a 0,var(--bg) 100%);color:#fff}
-.hero small{letter-spacing:.2em;text-transform:uppercase;opacity:.8}
-.hero h1{margin:6px 0 10px;font-size:clamp(34px,7vw,64px);line-height:1.05;letter-spacing:.02em}
-.hero p{max-width:40em;margin:0 auto 22px;opacity:.9}
-.btn{display:inline-block;padding:12px 26px;border-radius:8px;background:var(--acc);color:#111;font-weight:700;text-decoration:none}
-nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap}
-nav a{display:inline-block;padding:12px 14px;color:var(--mut);text-decoration:none;font-size:14px}nav a:hover{color:var(--ink)}
-main{max-width:920px;margin:0 auto;padding:8px 16px 60px}
-section{padding-top:34px;scroll-margin-top:44px}
-h2{font-size:28px;margin:0 0 10px;border-left:4px solid var(--acc);padding-left:12px}
+.top{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;align-items:center;gap:6px;padding:10px 18px;transition:background .25s,box-shadow .25s;color:#fff}
+.top.solid{background:rgba(13,18,23,.92);backdrop-filter:blur(8px);box-shadow:0 1px 0 var(--line)}
+@media (prefers-color-scheme:light){.top.solid{background:rgba(246,243,234,.93);color:var(--ink)}}
+.logo{font-weight:800;letter-spacing:.04em;margin-right:auto;font-size:18px;display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:0;color:inherit;font-family:inherit}
+.logo i{width:12px;height:12px;border-radius:3px;background:var(--acc);display:inline-block}
+.links{display:flex;gap:2px;align-items:center}
+.links button{background:none;border:0;color:inherit;font:inherit;font-size:14px;padding:8px 10px;border-radius:8px;cursor:pointer;opacity:.82}
+.links button:hover,.links button.on{opacity:1;background:rgba(255,255,255,.12)}
+.links button.on{box-shadow:inset 0 -2px var(--acc)}
+.play{background:var(--acc);color:#141414;font-weight:800;text-decoration:none;padding:9px 18px;border-radius:999px;font-size:14px;margin-left:8px}
+.burger{display:none;background:none;border:1px solid rgba(255,255,255,.4);color:inherit;border-radius:8px;width:40px;height:38px;font-size:20px;cursor:pointer}
+@media (max-width:880px){.burger{display:block}.links{position:fixed;inset:58px 0 auto 0;background:var(--bg);color:var(--ink);flex-direction:column;align-items:stretch;padding:10px 16px 18px;border-bottom:1px solid var(--line);display:none;max-height:calc(100vh - 58px);overflow:auto}.links.open{display:flex}.links button{text-align:left;padding:12px}}
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:flex-end;color:#fff;background:#0b3d2a url(img/hero.jpg) center/cover no-repeat}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,14,18,.55) 0,rgba(8,14,18,.08) 28%,rgba(8,14,18,.5) 68%,rgba(8,14,18,.88) 100%)}
+.hero .in{position:relative;width:100%;max-width:1040px;margin:0 auto;padding:0 20px 56px}
+.hero small{letter-spacing:.22em;text-transform:uppercase;opacity:.9;text-shadow:0 1px 8px #000}
+.hero h1{margin:8px 0 12px;font-size:clamp(38px,8vw,88px);line-height:1;letter-spacing:.01em;text-shadow:0 3px 24px rgba(0,0,0,.6)}
+.hero p{max-width:36em;font-size:clamp(16px,2.2vw,20px);margin:0 0 24px;text-shadow:0 1px 10px #000}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;padding:13px 28px;border-radius:999px;background:var(--acc);color:#141414;font-weight:800;text-decoration:none;border:0;font:inherit;font-weight:800;cursor:pointer;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}.btn.big{padding:16px 38px;font-size:19px;box-shadow:0 8px 30px rgba(242,183,5,.35)}
+.btn.alt{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);backdrop-filter:blur(4px)}
+.stats{max-width:1040px;margin:-34px auto 0;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;position:relative}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px;text-align:center}
+.stats b{display:block;font-size:30px;color:var(--acc);line-height:1.1}.stats span{color:var(--mut);font-size:14px}
+.why{max-width:1040px;margin:44px auto 0;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.why div{background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid var(--line);border-radius:16px;padding:20px}
+.why em{font-style:normal;font-size:30px;display:block;margin-bottom:6px}.why b{font-size:18px}.why p{margin:6px 0 0;color:var(--mut)}
+main{max-width:1040px;margin:0 auto;padding:8px 20px 40px}
+section{padding-top:56px;scroll-margin-top:70px}
+h2{font-size:clamp(26px,4vw,36px);margin:0 0 14px;letter-spacing:.01em}
+h2::after{content:"";display:block;width:54px;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--acc),var(--acc2));margin-top:8px}
 h3{margin:22px 0 6px;font-size:18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
 .card b{display:block;margin-bottom:2px}
 .mut{color:var(--mut)}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:15px}th{color:var(--mut);font-weight:600}
-kbd{background:var(--line);border-radius:4px;padding:1px 7px;font:13px monospace}
-#rk td:first-child{width:3em;color:var(--mut)}#rk tr:nth-child(-n+3) td:first-child{color:var(--acc);font-weight:700}
-footer{border-top:1px solid var(--line);padding:22px 16px;text-align:center;color:var(--mut);font-size:13px}
-
-.log{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.gal figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.gal img{display:block;width:100%;height:auto}.gal figcaption{padding:8px 12px;font-size:14px;color:var(--mut)}
-nav button{display:inline-block;padding:12px 14px;color:var(--mut);background:none;border:0;font:inherit;font-size:14px;cursor:pointer}nav button:hover,nav button.on{color:var(--ink)}nav button.on{box-shadow:inset 0 -2px var(--acc)}
-.cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.btn.alt{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}
-.btn.big{padding:15px 34px;font-size:18px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--mut);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+kbd{background:var(--bg2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:.9em}
+.gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.gal figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.gal img{display:block;width:100%;height:auto;transition:transform .5s}.gal figure:hover img{transform:scale(1.04)}.gal figure{overflow:hidden}
+.gal figcaption{padding:10px 14px;font-size:14px;color:var(--mut)}
+.band{margin:60px auto 0;max-width:1040px;padding:0 20px}
+.band div{border-radius:22px;padding:44px 24px;text-align:center;background:linear-gradient(135deg,#0b3d2a,#14604a 55%,#c48a00);color:#fff}
+.band h2{border:0;margin:0 0 8px}.band h2::after{margin:8px auto 0}.band p{max-width:34em;margin:0 auto 20px;opacity:.92}
+footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px solid var(--line);color:var(--mut);font-size:14px;text-align:center}
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}.rv.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-<header class="hero">
+<div class="top" id="top"><button class="logo" type="button" data-go="start"><i></i>TRĘBACZEW</button><nav class="links" id="nav"></nav><a class="play" href="gra/">Zagraj ▶</a><button class="burger" id="burger" type="button" aria-label="Menu">☰</button></div>
+<header class="hero" id="start"><div class="in">
   <small>gm. Działoszyn · pow. pajęczański</small>
   <h1>Symulator życia<br>w Trębaczewie</h1>
-  <p>Gra 3D w przeglądarce, osadzona w prawdziwej wsi: z realnymi ulicami, budynkami i ukształtowaniem terenu. Bez instalacji, na komputerze i telefonie.</p>
-  <div class="cta"><a class="btn big" href="gra/">▶ Zagraj teraz</a></div>
-</header>
-<nav id="nav"></nav>
+  <p>Gra 3D w przeglądarce, osadzona w prawdziwej wsi: realne ulice, budynki i ukształtowanie terenu. Bez instalacji, na komputerze i telefonie.</p>
+  <div class="cta"><a class="btn big" href="gra/">▶ Zagraj teraz</a><button class="btn alt" type="button" data-go="galeria">Zobacz galerię</button></div>
+</div></header>
+<div class="stats rv"><div><b>20+</b><span>misji fabularnych</span></div><div><b>3D</b><span>prawdziwa mapa wsi</span></div><div><b>0 zł</b><span>bez instalacji</span></div><div><b>online</b><span>tryb wieloosobowy</span></div></div>
+<div class="why">
+  <div class="rv"><em>🏘️</em><b>Prawdziwy Trębaczew</b><p>Ulice, kościół, szkoła, Żabka, Lewiatan i orliki odtworzone z map i zdjęć.</p></div>
+  <div class="rv"><em>🚗</em><b>Jazda i misje</b><p>Zatankuj auto, kup własne w komisie, wykonuj zlecenia mieszkańców.</p></div>
+  <div class="rv"><em>🧑‍🤝‍🧑</em><b>Zagraj ze znajomymi</b><p>Wspólna mapa, pojedynki i globalny ranking poziomów.</p></div>
+  <div class="rv"><em>📱</em><b>Działa wszędzie</b><p>Przeglądarka, telefon, tablet. Zapis pozycji i opcjonalne konto.</p></div>
+</div>
 <main>
+
 
 
 <section id="gra" data-s="O grze"><h2>O grze</h2>
@@ -142,16 +173,21 @@ nav button{display:inline-block;padding:12px 14px;color:var(--mut);background:no
 <p>Gra nie zbiera danych osobowych. Statystyki są anonimowe i zagregowane. Hasła kont są przechowywane wyłącznie w postaci skrótów. Mapa korzysta z danych OpenStreetMap i GUGiK. Błąd zgłosisz przyciskiem „Zgłoś błąd” w menu.</p></section>
 
 
+
 </main>
-<footer>Symulator życia w Trębaczewie · gra fanowska, postaci i wydarzenia są fikcyjne · dane: © OpenStreetMap, © GUGiK<br><a href="gra/">Zagraj</a> · <a href="ranking/">Ranking</a> · <a href="zglos.html">Zgłoś błąd</a></footer>
+<div class="band rv"><div><h2>Gotowy na spacer po Trębaczewie?</h2><p>Wchodzisz od razu, bez konta i bez instalacji.</p><a class="btn big" href="gra/">▶ Zagraj teraz</a></div></div>
+<footer>Symulator życia w Trębaczewie · gra fanowska, postaci i wydarzenia są fikcyjne · dane: © OpenStreetMap, © GUGiK<br><a href="gra/">Zagraj</a> · <a href="zglos.html">Zgłoś błąd</a></footer>
 <script>
 (function(){
-  var secs=[].slice.call(document.querySelectorAll('main section[data-s]')),nav=document.getElementById('nav');
-  nav.innerHTML=secs.map(function(s){return '<button type="button" data-go="'+s.id+'">'+s.getAttribute('data-s')+'</button>';}).join('')+'<button type="button" onclick="location.href=\'gra/\'" style="color:var(--acc);font-weight:700">Zagraj ▶</button>';
-  function go(id){var e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'start'});}
+  var secs=[].slice.call(document.querySelectorAll('main section[data-s]')),nav=document.getElementById('nav'),top=document.getElementById('top'),bg=document.getElementById('burger');
+  nav.innerHTML=secs.map(function(s){return '<button type="button" data-go="'+s.id+'">'+s.getAttribute('data-s')+'</button>';}).join('');
+  function go(id){var e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'start'});nav.classList.remove('open');}
   document.addEventListener('click',function(ev){var b=ev.target.closest('[data-go]');if(b)go(b.getAttribute('data-go'));});
-  function spy(){var cur=null;secs.forEach(function(s){if(s.getBoundingClientRect().top<120)cur=s.id;});[].forEach.call(nav.querySelectorAll('button[data-go]'),function(b){b.classList.toggle('on',b.getAttribute('data-go')===cur);});}
+  bg.addEventListener('click',function(){nav.classList.toggle('open');});
+  function spy(){top.classList.toggle('solid',scrollY>40);var cur=null;secs.forEach(function(s){if(s.getBoundingClientRect().top<140)cur=s.id;});[].forEach.call(nav.querySelectorAll('button'),function(b){b.classList.toggle('on',b.getAttribute('data-go')===cur);});}
   addEventListener('scroll',spy,{passive:true});spy();
+  var rv=document.querySelectorAll('.rv,main section');[].forEach.call(rv,function(e){e.classList.add('rv');});
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('on');io.unobserve(x.target);}});},{threshold:.08});[].forEach.call(document.querySelectorAll('.rv'),function(e){io.observe(e);});}else{[].forEach.call(document.querySelectorAll('.rv'),function(e){e.classList.add('on');});}
   var API='https://trebaczew-mp.kontakt-3e3.workers.dev/ranking', t=document.getElementById('rk');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   fetch(API).then(function(r){return r.json();}).then(function(j){
@@ -160,6 +196,7 @@ nav button{display:inline-block;padding:12px 14px;color:var(--mut);background:no
     j.forEach(function(p,i){h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.l+'</td><td>'+p.xp+'</td></tr>';});
     t.innerHTML=h;
   }).catch(function(){t.rows[1].cells[0].textContent='Nie udało się pobrać rankingu.';});
+
 })();
 </script>
 </body>
