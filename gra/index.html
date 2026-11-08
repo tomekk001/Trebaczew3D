@@ -1972,7 +1972,7 @@ async function boot(saved){
   const box=(c,x,z,h)=>{ const [L,W]=dimsOf(c); return {x:x??c.x,z:z??c.z,h:h??c.h,L,W}; };
   function park(x,z,h,van,spec){ const fx=Math.cos(h),fz=Math.sin(h); for(const k of [-1.7,0,1.7]){ if(blocked(x+fx*k,z+fz*k,1.0))return false; } if(ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+1.2))return false;
     const L=van?5:spec?4.67:4.4, me={x,z,h,L,W:1.95}; if(parked.some(p=>Math.abs(p.x-x)<14&&Math.abs(p.z-z)<14&&obb(me,box(p),.4)))return false;
-    const c={g:spec?spec.g:makeCar(pick(CARCOL),van?'van':''),x,z,h,v:0,steer:0,L,W:1.95,kind:van?'van':'car'}; if(spec&&spec.name)c.name=spec.name; seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); if(spec){ PASSAT=c; c.cap=62; c.ftype='pb95'; c.fuel=8; c.lowWarn=false; } return true; }
+    const c={g:spec?spec.g:makeCar(pick(CARCOL),van?'van':''),x,z,h,v:0,steer:0,L,W:1.95,kind:van?'van':'car'}; if(spec&&spec.name)c.name=spec.name; c.k0=Math.round(x)+','+Math.round(z); seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); if(spec){ PASSAT=c; c.cap=62; c.ftype='pb95'; c.fuel=8; c.lowWarn=false; } return true; }
   let PASSAT=null;
   /* szary VW Passat B5 FL 2.0 benzyna, sedan, tablica EPJ 03338 */
   function makePassat(){ const g=makeCar(0x6f7378,'passat'); const cv=document.createElement('canvas'); cv.width=256; cv.height=64; const x=cv.getContext('2d'); x.fillStyle='#f4f4f0'; x.fillRect(0,0,256,64); x.fillStyle='#1f4fa3'; x.fillRect(0,0,26,64); x.fillStyle='#fff'; x.font='700 14px Arial'; x.textAlign='center'; x.fillText('PL',13,56); x.fillStyle='#111'; x.font='700 44px "Barlow Condensed", Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('EPJ 03338',143,34); x.strokeStyle='#111'; x.lineWidth=3; x.strokeRect(1.5,1.5,253,61);
@@ -2078,8 +2078,8 @@ async function boot(saved){
   const ROOF={car:1.45,van:2.05,moto:1.05,bike:.95,tractor:2.5,fire:3.1,bus:3.1};
   function roofH(c){ return ROOF[c.kind]||1.45; }
   function roofBox(c){ const d=typeof dimsOf==='function'?dimsOf(c):[4.4,1.9]; return [d[0]/2,d[1]/2]; }
-  function roofAt(x,z){ let h=0; for(const c of parked){ if(c===st.car||Math.abs(c.x-x)>4||Math.abs(c.z-z)>4)continue; const lx=(x-c.x)*Math.cos(c.h)+(z-c.z)*Math.sin(c.h), lz=-(x-c.x)*Math.sin(c.h)+(z-c.z)*Math.cos(c.h); const [L2,W2]=roofBox(c); if(Math.abs(lx)<L2-.1&&Math.abs(lz)<W2-.1) h=Math.max(h,roofH(c)); } return h; }
-  function nearestParked(){ let b=null,bd=4.2; parked.forEach(c=>{ if(c.deco) return; const d=Math.hypot(c.x-st.x,c.z-st.z); if(d<bd){bd=d;b=c;} }); return b; }
+  function roofAt(x,z){ let h=0; for(const c of parked){ if(c===st.car||c.ghost||Math.abs(c.x-x)>4||Math.abs(c.z-z)>4)continue; const lx=(x-c.x)*Math.cos(c.h)+(z-c.z)*Math.sin(c.h), lz=-(x-c.x)*Math.sin(c.h)+(z-c.z)*Math.cos(c.h); const [L2,W2]=roofBox(c); if(Math.abs(lx)<L2-.1&&Math.abs(lz)<W2-.1) h=Math.max(h,roofH(c)); } return h; }
+  function nearestParked(){ let b=null,bd=4.2; parked.forEach(c=>{ if(c.deco||c.ghost) return; const d=Math.hypot(c.x-st.x,c.z-st.z); if(d<bd){bd=d;b=c;} }); return b; }
   function enterExit(){ if(MP.ride){ leaveRide(); return; } if(st.car){ exitCar(false); return; } const c=nearestParked(); if(!c){ tryRide(); return; } st.car=c; c.v=0; fuelInit(c); canisterCheck(); player.visible=false; vehEl.hidden=false; vehEl.textContent=c.name||pick(['Fiat Seicento','Opel Astra','Skoda Fabia','VW Golf','Daewoo Lanos','Fiat 126p','Ford Mondeo']); onCarEnter(); }
   function exitCar(force){ const c=st.car; if(!c)return; const lx=c.x+Math.sin(c.h)*1.9, lz=c.z-Math.cos(c.h)*1.9; const rx=c.x-Math.sin(c.h)*1.9, rz=c.z+Math.cos(c.h)*1.9;
     if(!blocked(lx,lz,.4)){st.x=lx;st.z=lz;} else if(!blocked(rx,rz,.4)){st.x=rx;st.z=rz;} else if(!force) return; else {st.x=lx;st.z=lz;}
@@ -2421,7 +2421,7 @@ async function boot(saved){
     const gep=tex(256,40,(x)=>{ x.fillStyle='#f4f6f8'; x.fillRect(0,0,256,40); x.fillStyle='#1f5fb4'; x.font='800 32px Barlow, Arial'; x.textAlign='center'; x.fillText('GEPARD',128,32); }); [1.275,-1.275].forEach(z=>pl(g,3.4,.34,-3.0,1.0,z,new THREE.MeshBasicMaterial({map:gep}),z>0?0:Math.PI));
     const ws=[]; [[3.6,1.1],[3.6,-1.1],[-3.4,1.1],[-3.4,-1.1]].forEach(([x,z])=>{ const w=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.3,14).rotateX(Math.PI/2),new THREE.MeshLambertMaterial({color:0x151515})); w.position.set(x,.5,z); g.add(w); ws.push(w); });
     g.traverse(o=>{if(o.isMesh)o.castShadow=true;}); g.userData.wheels=ws; return g; }
-  function addParked(g,x,z,h,kind,name,maxV,acc){ if(blocked(x,z,1.2))return null; const c={g,x,z,h,v:0,steer:0,kind,name,maxV,acc}; seatCar(g,x,z,h); scene.add(g); parked.push(c); return c; }
+  function addParked(g,x,z,h,kind,name,maxV,acc){ if(blocked(x,z,1.2))return null; const c={g,x,z,h,v:0,steer:0,kind,name,maxV,acc,k0:Math.round(x)+','+Math.round(z)}; seatCar(g,x,z,h); scene.add(g); parked.push(c); return c; }
   // rowery przy Lewiatanie i na wsi, motocykl przy Żabce, ciągnik przy gospodarstwie
   if(B_LEW.front){ const f=B_LEW.front; [[-6,4],[-7.2,4]].forEach(([u,v])=>{ const x=f.x-f.nz*u+f.nx*v, z=f.z+f.nx*u+f.nz*v; const b=bikeM(); b.userData.wheels=[]; addParked(b,x,z,Math.atan2(f.nz,f.nx),'bike','Rower',9,4.5); }); }
   if(B_ZAB.front){ const f=B_ZAB.front; addParked(makeMoto(),f.x+f.nx*6+f.nz*5,f.z+f.nz*6-f.nx*5,Math.atan2(-f.nx,f.nz),'moto','Motocykl Romet',40,13); }
@@ -3039,12 +3039,14 @@ async function boot(saved){
     const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t; }
   function sprite(tex,w,h){ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,transparent:true})); s.scale.set(w,h,1); s.renderOrder=10; return s; }
   function vehModel(kind,color){ if(kind==='moto')return makeMoto(); if(kind==='tractor')return makeTractor(); if(kind==='bus')return makeBus(); if(kind==='bike'){ const b=bikeM(); b.userData.wheels=[]; return b; } if(kind==='fire')return makeFireTruck(); const g=makeCar(new THREE.Color(color||'#888888'),kind==='van'?'van':''); return g; }
+  function releaseGhost(r){ const c=r.gc; if(!c) return; c.ghost=false; c.g.visible=true; c.x=r.x; c.z=r.z; c.h=r.h; seatCar(c.g,c.x,c.z,c.h); r.gc=null; }
   function ensureRemote(p){ let r=MP.remote.get(p.peer); if(!r){ const col=typeof p.presence.col==='string'&&/^#[0-9a-f]{6}$/i.test(p.presence.col)?p.presence.col:'#888888';
       const body=makePerson(new THREE.Color(col).getHex(),0x2c3e66,0x2a1d14,{female:false,style:'jacket',hairStyle:'short',skin:0xe6bb98,exact:true}); scene.add(body); const tag=sprite(tagTex('…',col),3.2,.6); scene.add(tag);
       r={peer:p.peer,by:p.by,col,body,tag,veh:null,vk:null,x:+p.presence.x||0,z:+p.presence.z||0,h:+p.presence.h||0,tx:0,tz:0,th:0,walk:0,name:'',bubble:null,bubT:0,spd:0}; MP.remote.set(p.peer,r); }
     const pr=p.presence; if(Number.isFinite(+pr.x)&&Number.isFinite(+pr.z)){ r.in=typeof pr.in==='string'?pr.in.replace(/[^0-9,.-]/g,'').slice(0,24):''; r.gy=+pr.g||0; if(r.in){ r.tx=+pr.x; r.tz=+pr.z; } else { r.tx=clamp(+pr.x,X0,X1); r.tz=clamp(+pr.z,Z0,Z1); } r.th=+pr.h||0; r.spd=+pr.s||0; }
     if(!r.seen){ r.x=r.tx; r.z=r.tz; r.h=r.th; r.seen=true; }
     { const rd=typeof pr.rd==='string'&&pr.rd?pr.rd.slice(0,12):''; const me=MP.room&&MP.room.me?MP.room.me():null; if(rd!==(r.rd||'')){ const nm=(r.name||'Gracz').replace(/[<>&]/g,''); if(me&&rd===me) toast(`🚗 ${nm} wsiada do Twojego auta`,2); else if(me&&r.rd===me) toast(`🚪 ${nm} wysiada z Twojego auta`,2); r.rd=rd; } }
+    { const pk=typeof pr.pk==='string'?pr.pk.replace(/[^0-9,-]/g,'').slice(0,20):''; if(pk!==(r.pk||'')){ releaseGhost(r); r.pk=pk; if(pk){ const c=parked.find(q=>q.k0===pk&&q!==st.car); if(c){ c.ghost=true; c.g.visible=false; r.gc=c; } } } }
     const vk=['car','van','moto','tractor','bus','bike','fire'].includes(pr.v)?pr.v:null; const vc=typeof pr.vc==='string'&&/^#[0-9a-f]{6}$/i.test(pr.vc)?pr.vc:'#888888';
     if(vk!==r.vk||vc!==r.vc){ if(r.veh){ scene.remove(r.veh); r.veh=null; } r.vk=vk; r.vc=vc; if(vk){ r.veh=vehModel(vk,vc); scene.add(r.veh); } }
     return r; }
@@ -3060,7 +3062,7 @@ async function boot(saved){
   const meR={body:player,bubble:null,bubT:0};
   function inKey(){ return st.inside&&CUR?Math.round(CUR.x)+','+Math.round(CUR.z):''; }
   function myPresence(){ const c=st.car; const kind=c?(c.kind||'car'):null; let vc=null; if(c&&(!c.kind||c.kind==='van')){ const m=c.g.children[0]&&c.g.children[0].material; if(m&&m.color) vc='#'+m.color.getHexString(); }
-    return {x:+(c?c.x:st.x).toFixed(2),z:+(c?c.z:st.z).toFixed(2),h:+(c?c.h:st.face).toFixed(3),v:kind,vc,s:+(c?Math.abs(c.v):Math.hypot(st.vx||0,st.vz||0)).toFixed(1),col:MYCOL,nick:myNick||null,rd:MP.ride||null,in:inKey()||null,g:+(((st.inside&&st.gy)||0)).toFixed(1)}; }
+    return {x:+(c?c.x:st.x).toFixed(2),z:+(c?c.z:st.z).toFixed(2),h:+(c?c.h:st.face).toFixed(3),v:kind,vc,s:+(c?Math.abs(c.v):Math.hypot(st.vx||0,st.vz||0)).toFixed(1),col:MYCOL,nick:myNick||null,rd:MP.ride||null,pk:(st.car&&st.car.k0)||null,in:inKey()||null,g:+(((st.inside&&st.gy)||0)).toFixed(1)}; }
   const MP_URL='wss://trebaczew-mp.kontakt-3e3.workers.dev';
   // anonimowe statystyki (losowy identyfikator w przeglądarce - bez danych osobowych)
   const STAT_URL=MP_URL.replace(/^wss:/,'https:').replace(/^ws:/,'http:');
@@ -3090,7 +3092,7 @@ async function boot(saved){
       if(!myNick&&CHAR.name) myNick=cleanTxt(CHAR.name,24);
       if(!myNick&&MP.user){ try{ const me=await MP.user.me(); if(me&&me.name) myNick=cleanTxt(me.name.split(' ')[0],24); }catch(e){} }
       MP.on=true; mpEl.hidden=false; { const bp=document.getElementById('bPeople'); bp.hidden=false; bp.onclick=()=>document.body.classList.toggle('mpOpen');  if(IS_TOUCH) document.getElementById('bChat').textContent='Czat'; } nickIn.value=myNick; renderList();
-      room.onPeers(ch=>{ ch.left.forEach(p=>{ const r=MP.remote.get(p.peer); if(!r)return; [r.body,r.tag,r.veh,r.bubble].forEach(o=>o&&scene.remove(o)); MP.remote.delete(p.peer); if(r.name) toast(`👋 ${r.name.replace(/[<>&]/g,'')} wychodzi z gry`,2); });
+      room.onPeers(ch=>{ ch.left.forEach(p=>{ const r=MP.remote.get(p.peer); if(!r)return; releaseGhost(r); [r.body,r.tag,r.veh,r.bubble].forEach(o=>o&&scene.remove(o)); MP.remote.delete(p.peer); if(r.name) toast(`👋 ${r.name.replace(/[<>&]/g,'')} wychodzi z gry`,2); });
         let names=false; [...ch.joined,...ch.updated].forEach(p=>{ if(p.sameTab||p.kind!=='viewer')return; if(!p.presence||p.presence.x===undefined)return; const isNew=!MP.remote.has(p.peer); ensureRemote(p); if(isNew){ names=true; } else { const r=MP.remote.get(p.peer); const nk=cleanTxt(p.presence.nick,24); if(nk&&nk!==r.name) names=true; } });
         if(names) mpNames(); else renderList(); },()=>{});
       room.on('chat',msg=>{ const d=msg.data||{}; const text=cleanTxt(d.t,140); if(!text)return; if(msg.sameTab){ addChat(myNick||'Ty',MYCOL,text); bubble(meR,text); return; } const r=MP.remote.get(msg.peer); addChat(r?r.name||'Gracz':'Gracz',r?r.col:'#ccc',text); if(r) bubble(r,text); if(AU.ctx&&AU.on&&sfx.cash) {} },()=>{});
