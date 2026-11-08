@@ -67,6 +67,20 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `gra/inde
 
 Na telefonie: wirtualny joystick i przyciski na ekranie (akcja, auto, radio, bieg, skok, misje, menu). Na urządzeniach dotykowych gra domyślnie startuje z niską jakością grafiki.
 
+## Multiplayer: społeczność
+
+Panel „Znajomi i pokoje” (przycisk w panelu graczy) zawiera:
+
+- **Pokoje prywatne** z kodem (5-8 znaków, do 8 osób), link `?room=KOD`, zaproszenia do pokoju, listę znajomych (kod znajomego jest stały dla przeglądarki, lista trzymana lokalnie; status online pobiera serwer przez `/where`).
+- **Wspólny melex** (kierowca + 1 pasażer) oraz **autobus Gepard**: pozycja wynika z zegara ściennego (`busAt`), więc wszyscy gracze widzą ten sam rozkład. Wsiadasz przy przystanku klawiszem E za 4 zł.
+- **Wspólna praca w cementowni** (`cysterna2`, `palety2`): zaproszenie z menu „Zaproś…” przy stanowisku, wiadomości `job` przez serwer.
+- **Misje kooperacyjne** (`cm`): żniwa na dwa ciągniki, paczki na dwie ekipy.
+- **Wyścigi z lobby** (`rc`): 3 trasy po drodze głównej, wpisowe 0/20/50/100 zł, pula dla zwycięzcy, radiowozy jako przeszkoda (+1,5 s kary).
+- **Handel** (`tr`): dwufazowe zatwierdzenie z haszami ofert. Pieniądze, jedzenie i auta.
+- **Wspólny dom i garaż**: `/acct/home` na serwerze (skarbiec, 4 auta, do 6 lokatorów).
+
+Wiadomości `co` są przekazywane przez pokój (limit 25 na sekundę, ładunek do 900 znaków). Ograniczenie: pieniądze i przedmioty są w zapisie gry po stronie przeglądarki, więc handel i nagrody nie są chronione przed oszustwem zmodyfikowanym klientem. Pełna walidacja wymagałaby przeniesienia ekonomii na serwer.
+
 ## Zgłoszenia błędów
 
 Przycisk „Zgłoś błąd” w menu otwiera stronę `zglos.html` z formularzem. Formularz wysyła zgłoszenie na e-mail przez Web3Forms, a adres e-mail nie pojawia się na stronie ani w kodzie. Aby formularz działał, trzeba raz wygenerować klucz na https://web3forms.com i wpisać go w `zglos.html` w stałej `ACCESS_KEY`.
