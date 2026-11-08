@@ -481,7 +481,14 @@ export class Stats extends DurableObject {
     }
     if (url.pathname === '/reports') { const del = +url.searchParams.get('del') || 0; if (del) q.exec('DELETE FROM reports WHERE id=?', del);
       return new Response(JSON.stringify(q.exec('SELECT id,t,kat,opis,kontakt,info FROM reports ORDER BY id DESC LIMIT 300').toArray())); }
-    if (url.pathname === '/logins') return new Response(JSON.stringify(q.exec('SELECT t,kind,name,pid,mob FROM logins ORDER BY id DESC LIMIT 500').toArray()));
+    if (url.pathname === '/logins') {
+      const rows = q.exec('SELECT t,kind,name,pid,mob FROM logins ORDER BY id DESC LIMIT 500').toArray();
+      const since = new Date(Date.now() + 3600e3 - 29 * 86400e3).toISOString().slice(0, 10);
+      const uniq = {}; for (const r of q.exec('SELECT day, COUNT(*) AS n FROM seen WHERE day>=? GROUP BY day', since).toArray()) uniq[r.day] = r.n;
+      const st = {}; for (const r of q.exec("SELECT day, v FROM daily WHERE day>=? AND k='starts'", since).toArray()) st[r.day] = r.v;
+      const dni = []; for (let i = 0; i < 30; i++) { const d = new Date(Date.now() + 3600e3 - i * 86400e3).toISOString().slice(0, 10); dni.push({ d, urzadzenia: uniq[d] || 0, starty: st[d] || 0 }); }
+      return new Response(JSON.stringify({ rows, dni }));
+    }
     if (url.pathname === '/hit') {
       let m; try { m = JSON.parse(await req.text()); } catch (e) { return new Response('zły JSON', { status: 400 }); }
       const id = clean(m.id, 40).replace(/[^a-z0-9-]/gi, ''); if (id.length < 8 || !EVS.includes(m.ev)) return new Response('złe dane', { status: 400 });

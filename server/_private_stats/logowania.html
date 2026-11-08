@@ -26,6 +26,7 @@ td.t{font-variant-numeric:tabular-nums;color:var(--muted)}
 .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;background:rgba(255,255,255,.1)}
 .tag.konto{background:rgba(106,169,255,.2);color:var(--blue)}.tag.rejestracja{background:rgba(127,208,107,.2);color:var(--ok)}.tag.start{background:rgba(242,194,48,.18);color:var(--accent)}
 .dim{color:var(--dim)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}.tile{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--ok);padding:14px 16px 12px}.tile .v{font-family:Anton,Impact,sans-serif;font-size:42px;line-height:1.05}.tile .l{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px;color:var(--muted);margin-top:4px}.tile .s{font-size:13px;color:var(--dim);margin-top:2px}
 .err{display:none;color:#ff9a8a;margin:10px 0}
 .day td{background:rgba(255,255,255,.04);font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.08em;color:var(--accent)}
 </style>
@@ -34,7 +35,12 @@ td.t{font-variant-numeric:tabular-nums;color:var(--muted)}
 <main>
   <div class="kick">Panel administratora</div>
   <h1>LOGOWANIA</h1>
-  <p class="lead">Kto i kiedy uruchomił grę lub zalogował się na konto. Godziny w czasie polskim. Strona jest dostępna tylko po zalogowaniu administratora i odświeża się sama. Pokazuje ostatnie 500 wpisów.</p>
+  <p class="lead">Kto i kiedy uruchomił grę lub zalogował się na konto. Godziny w czasie polskim. Strona jest dostępna tylko po zalogowaniu administratora i odświeża się sama. Pokazuje ostatnie 500 wpisów. Liczba graczy dziennie to różne urządzenia: wielokrotne wejścia z jednego urządzenia w ciągu dnia liczą się jako jedno.</p>
+  <div class="tiles">
+    <div class="tile"><div class="v" id="uToday">-</div><div class="l">Dziś: różne urządzenia</div><div class="s" id="uStarts">uruchomień: -</div></div>
+    <div class="tile"><div class="v" id="uYest">-</div><div class="l">Wczoraj</div><div class="s" id="uWeek">ostatnie 7 dni: -</div></div>
+  </div>
+  <div class="card" style="margin:0 0 14px"><table><thead><tr><th>Dzień</th><th>Różne urządzenia</th><th>Uruchomień gry</th></tr></thead><tbody id="days"></tbody></table></div>
   <div class="bar">
     <a href="/statystyki.html">← Statystyki</a>
     <select id="fk"><option value="">Wszystkie zdarzenia</option><option value="konto">Logowania na konto</option><option value="rejestracja">Rejestracje</option><option value="start">Uruchomienia gry</option></select>
@@ -46,7 +52,7 @@ td.t{font-variant-numeric:tabular-nums;color:var(--muted)}
   <div class="card"><table><thead><tr><th>Godzina</th><th>Zdarzenie</th><th>Użytkownik</th><th>Urządzenie</th><th>ID gracza</th></tr></thead><tbody id="tb"></tbody></table></div>
 </main>
 <script>
-let ROWS=[]; const $=id=>document.getElementById(id);
+let ROWS=[], DNI=[]; const $=id=>document.getElementById(id);
 const KIND={konto:'Logowanie na konto',rejestracja:'Rejestracja konta',start:'Uruchomienie gry'};
 const fday=new Intl.DateTimeFormat('pl-PL',{timeZone:'Europe/Warsaw',weekday:'long',day:'numeric',month:'long',year:'numeric'});
 const ftime=new Intl.DateTimeFormat('pl-PL',{timeZone:'Europe/Warsaw',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
@@ -56,7 +62,9 @@ function render(){ const k=$('fk').value, q=$('fq').value.trim().toLowerCase(); 
   list.forEach(r=>{ const d=new Date(r.t), dd=fday.format(d); if(dd!==day){ day=dd; h+=`<tr class="day"><td colspan="5">${esc(dd)}</td></tr>`; }
     h+=`<tr><td class="t">${ftime.format(d)}</td><td><span class="tag ${esc(r.kind)}">${esc(KIND[r.kind]||r.kind)}</span></td><td>${r.name?esc(r.name):'<span class="dim">gracz bez nazwy</span>'}</td><td>${r.kind==='start'?(r.mob?'telefon':'komputer'):'<span class="dim">-</span>'}</td><td class="dim">${esc(r.pid)||'-'}</td></tr>`; });
   $('tb').innerHTML=h||'<tr><td colspan="5" class="dim">Brak wpisów.</td></tr>'; }
-async function load(){ try{ const r=await fetch('/logins',{cache:'no-store'}); if(r.status===401){ location.href='/auth/login'; return; } if(!r.ok) throw 0; ROWS=await r.json(); $('err').style.display='none'; render(); }catch(e){ $('err').style.display='block'; } }
+function days(){ if(!DNI.length) return; const n=new Intl.NumberFormat('pl-PL'); $('uToday').textContent=n.format(DNI[0].urzadzenia); $('uStarts').textContent='uruchomień: '+n.format(DNI[0].starty); $('uYest').textContent=n.format((DNI[1]||{}).urzadzenia||0); $('uWeek').textContent='ostatnie 7 dni (suma dzienna): '+n.format(DNI.slice(0,7).reduce((a,d)=>a+d.urzadzenia,0));
+  $('days').innerHTML=DNI.map(d=>`<tr><td class="t">${esc(d.d)}</td><td><b>${d.urzadzenia}</b></td><td class="dim">${d.starty}</td></tr>`).join(''); }
+async function load(){ try{ const r=await fetch('/logins',{cache:'no-store'}); if(r.status===401){ location.href='/auth/login'; return; } if(!r.ok) throw 0; const j=await r.json(); ROWS=Array.isArray(j)?j:j.rows; DNI=j.dni||[]; $('err').style.display='none'; render(); days(); }catch(e){ $('err').style.display='block'; } }
 $('fk').onchange=$('fq').oninput=render; $('rf').onclick=load; load(); setInterval(load,30000);
 </script>
 </body>
