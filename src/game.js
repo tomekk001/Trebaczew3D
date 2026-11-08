@@ -105,6 +105,10 @@ async function boot(saved){
     const L=(a,b)=>[Ox+ex*a+mx*b, Oz+ez*a+mz*b]; const rect=(a,b,c,d)=>[L(a,c),L(b,c),L(b,d),L(a,d)];
     const F={Ox,Oz,mx,mz,th,ex,ez,L,rect,RD,front:rect(-33,16,-12,29),side:rect(16,17,-12,29),yard:rect(-34,16,-125,-12)};
     const pad=rect(-36,60,-74,30); F.h=hRaw(Ox,Oz); FLAT.push({p:pad,bb:bbox(pad),fe:0,h:F.h}); return F; })();
+  // Cementownia Warta (Grądy): teren zakładu odtworzony przybliżeniem z lotniczego zdjęcia (bez publicznych danych NMT na tym obszarze, wysokości dopełnione trendem)
+  const CEMF=(()=>{ const x0=60,x1=1330,z0=2600,z1=3030, pad=[[x0,z0],[x1,z0],[x1,z1],[x0,z1]]; const h=hRaw((x0+x1)/2,(z0+z1)/2); FLAT.push({p:pad,bb:bbox(pad),fe:0,h});
+    for(let k=0;k<5;k++){ const zz=2905+k*5.5; RAILS.push([[190,zz],[420,zz+2],[700,zz+3],[1000,zz-2],[1290,zz-12]]); }
+    return {x0,x1,z0,z1,pad,h,O:[717,2760]}; })();
   /* ---------- renderer + efekty ---------- */
   const canvas=document.getElementById('c');
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -318,7 +322,7 @@ async function boot(saved){
   function bx(g,w,h,d,x,y,z,mat,noShadow){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x,y+h/2,z); if(!noShadow){m.castShadow=true;} m.receiveShadow=true; g.add(m); return m; }
   function pl(g,w,h,x,y,z,mat,ry){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat); m.position.set(x,y,z); if(ry)m.rotation.y=ry; g.add(m); return m; }
   function tri(g,w,h,x,y,z,mat,ry){ const sh=new THREE.Shape([new THREE.Vector2(-w/2,0),new THREE.Vector2(w/2,0),new THREE.Vector2(0,h)]); const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),mat); m.position.set(x,y,z); if(ry)m.rotation.y=ry; m.receiveShadow=true; g.add(m); return m; }
-  const EXTRA_TREES=[], LOTS=[], STAIRS=[], LATER=[]; if(MJF) LOTS.push(MJF.front,MJF.side,MJF.yard); if(LPGF) LOTS.push(LPGF.lot); // LATER: zamiany na modele odłożone do chwili, gdy swapIn jest gotowe // STAIRS: funkcje (x,z)->wysokość podłoża ponad terenem (taras i schody kościoła)
+  const EXTRA_TREES=[], LOTS=[], STAIRS=[], LATER=[]; if(MJF) LOTS.push(MJF.front,MJF.side,MJF.yard); if(LPGF) LOTS.push(LPGF.lot); if(CEMF) LOTS.push(CEMF.pad); // LATER: zamiany na modele odłożone do chwili, gdy swapIn jest gotowe // STAIRS: funkcje (x,z)->wysokość podłoża ponad terenem (taras i schody kościoła)
   const stairAt=(x,z)=>{ let h=0; for(const f of STAIRS){ const v=f(x,z); if(v>h)h=v; } return h; };
   const hipGeo=new THREE.ConeGeometry(Math.SQRT1_2,1,4,1).rotateY(Math.PI/4).translate(0,.5,0);
   const gabGeo=(()=>{ const v=[-.5,0,.5,.5,0,.5,.5,1,0, -.5,0,.5,.5,1,0,-.5,1,0, .5,0,-.5,-.5,0,-.5,-.5,1,0, .5,0,-.5,-.5,1,0,.5,1,0, .5,0,.5,.5,0,-.5,.5,1,0, -.5,0,-.5,-.5,0,.5,-.5,1,0];
@@ -1574,7 +1578,7 @@ async function boot(saved){
     headMat.emissive.set(st.night?0xffc070:0x000000); brandLights.forEach(m=>m.emissive.set(st.night?0x777777:0x000000)); PARK.globeMat.emissive.set(st.night?0xfff0c0:0x000000); playerLight.intensity=st.night?.9:0; winMat.emissive.set(st.night?0x553a12:0x000000); headM.emissive.set(st.night?0xfff2c0:0x000000); tailM.emissive.set(st.night?0x880000:0x220000);
     wins.forEach((w,i)=>winIM.setColorAt(i,col.set(st.night?(winLit[i]?'#ffcf7a':'#1a222c'):'#4a5866'))); winIM.instanceColor.needsUpdate=true;
     polyWinIMs.forEach(im=>{ for(let i=0;i<im.count;i++) im.setColorAt(i,col.set(st.night?(i%3?'#ffd98a':'#1a222c'):'#4a5866')); im.instanceColor.needsUpdate=true; });
-    bNight.textContent=st.night?'Pora dnia: noc':'Pora dnia: dzień'; }
+    bNight.textContent=st.night?'Pora dnia: wieczór':'Pora dnia: dzień'; }
   function toggleNight(){ st.night=!st.night; applyNight(); }
   bNight.addEventListener('click',()=>toggleNight()); applyNight();
   document.getElementById('hideHelp').addEventListener('click',()=>{ document.getElementById('helpBox').hidden=true; });
@@ -1978,7 +1982,7 @@ async function boot(saved){
   const pMat=new THREE.PointsMaterial({color:0xaabbcc,size:.12,map:flakeTex,transparent:true,opacity:.6,depthWrite:false}); const PARTS=new THREE.Points(pGeo,pMat); PARTS.frustumCulled=false; scene.add(PARTS);
   const cA=new THREE.Color(), cB=new THREE.Color();
   function lerpHex(a,b,t){ cA.set(a); cB.set(b); return cA.lerp(cB,t); }
-  function envUpdate(dt){ ENV.time=(ENV.time+dt*ENV.speed+24)%24; const a=(ENV.time-6)/12*Math.PI; const se=Math.sin(a); const k=clamp((se+0.08)/0.33,0,1); const dusk=se>-0.12?clamp(1-Math.abs(se)/0.32,0,1):0;
+  function envUpdate(dt){ ENV.time=(ENV.time+dt*ENV.speed+24)%24; if(ENV.time>18.2||ENV.time<6) ENV.time=6; /* tylko dzień i wieczór - bez nocy */ const a=(ENV.time-6)/12*Math.PI; const se=Math.sin(a); const k=clamp((se+0.08)/0.33,0,1); const dusk=se>-0.12?clamp(1-Math.abs(se)/0.32,0,1):0;
     if(se>-0.05) SUNDIR.set(Math.cos(a)*0.75,Math.max(0.06,se*0.8),0.55).normalize(); else SUNDIR.set(-0.4,0.6,-0.5).normalize(); skyU.sunDir.value.copy(SUNDIR);
     const w=ENV.weather; if(!ENV.W){ ENV.W=[0,0,0,0]; ENV.W[w]=1; } for(let i=0;i<4;i++) ENV.W[i]+=((i===w?1:0)-ENV.W[i])*Math.min(1,dt/7); const Wt=ENV.W, wet=1-Wt[0]; const wl=Wt[0]+Wt[1]*.62+Wt[2]*.75+Wt[3]*.85;
     skyU.hor.value.copy(lerpHex(NIGHT.hor,DAY.hor,k)).lerp(cB.set(0xff8a4a),dusk*.55).lerp(cB.set(0x9aa3aa),(Wt[1]+Wt[2])*.6+Wt[3]*.5); skyU.zen.value.copy(lerpHex(NIGHT.zen,DAY.zen,k)).lerp(cB.set(0x7d868d),wet*.55*k); skyU.night.value=1-k;
@@ -1996,7 +2000,7 @@ async function boot(saved){
     // rutyna mieszkańców: w nocy na ulicach mniej ludzi
     const frac=(ENV.time<5.5||ENV.time>22.5)?.15:(ENV.time<7||ENV.time>20.5)?.5:1; peds.forEach((p,i)=>{ p.g.visible=hash(i)<frac; });
     BUS.g.visible=ENV.time>5&&ENV.time<23; }
-  toggleNight=function(){ ENV.time=(ENV.time>=6.5&&ENV.time<19)?21.5:11; toast(ENV.time>12?'Przewinięto do wieczora':'Przewinięto do południa',2); };
+  toggleNight=function(){ ENV.time=(ENV.time>=6&&ENV.time<16.5)?17.6:11; toast(ENV.time>12?'Przewinięto do wieczora':'Przewinięto do południa',2); };
 
   /* ---------- dźwięk: otoczenie, silnik, radio ---------- */
   const AU={ctx:null,on:false,master:null,noise:null,rain:null,eng:null,engG:null,siren:null,sirG:null,radioG:null,station:0,next:0,step:0,amb:2};
@@ -3374,6 +3378,7 @@ async function boot(saved){
     C('m16','Transport z Minerału',8,600,10000,()=>MIN_P,'Zakład Kredowy „Minerał” potrzebuje kierowcy. Odbierz towar i zawieź go na plac TIR-ów przy Szkolnej.',()=>[{p:MIN_P,t:'Załaduj towar w Minerale',wait:5,r:8,car:1},{p:TIR_P,t:'Dowieź towar na plac TIR-ów',car:1}],{time:300}),
     C('m17','Pociąg o czasie',8,650,8000,()=>fr(B_LEW,8),'Pociąg z Działoszyna odjeżdża za chwilę. Zdąż na peron!',()=>[{p:STATION_P,t:'Zdąż na peron w Działoszynie',r:10}],{time:150}),
     C('m18','Żniwa',9,750,14000,()=>{ const t=parked.find(c=>c.kind==='tractor'); return t?[t.x+5,t.z+5]:[-300,300]; },'Pomóż przy żniwach: weź ciągnik i objedź cztery pola.',function(){ return fieldPts().map((p,i)=>({p,t:`Pole ${i+1} z 4`,car:'tractor'})); },{time:420}),
+    C('m21','Praca w cementowni',9,700,12000,()=>CEMENT?CEMENT.gate:[40,2822],'Cementownia Warta w Grądach szuka pracowników. Dojedź do zakładu, zgłoś się w biurze i odbierz biały kask.',()=>[{p:CEMENT.gate,t:'Dojedź do cementowni (ul. Przemysłowa)',car:1,r:16},{p:CEMENT.office,t:'Zgłoś się w biurze kadr',wait:6,r:8},{p:CEMENT.hall,t:'Odbierz kask i idź na halę',wait:8,r:12}],{time:600}),
     C('m19','Wielki wyścig gminny',9,900,25000,()=>ORLIK_RD,'Ostatni sprawdzian: Sadowiec - Wydrzynów - Działoszyn i powrót pod orlik.',()=>[{p:SAD,t:'Sadowiec-Wrzosy',car:1},{p:WYD,t:'Wydrzynów',car:1},{p:STATION_P,t:'Dworzec Działoszyn',car:1},{p:ORLIK_RD,t:'Meta przy orliku',car:1}],{time:420}),
     C('m20','Własny kąt',10,0,0,()=>FOR_SALE?FOR_SALE.p:[0,0],'Dom na sprzedaż w Trębaczewie. Zbierz 450 000 zł i kup go - to koniec gry.',()=>[{p:FOR_SALE?FOR_SALE.p:[0,0],t:'Kup dom (450 000 zł)',pay:450000,r:5,win:1}])];
   const SIDE=[
@@ -3530,6 +3535,49 @@ async function boot(saved){
     const car=makeCar(0x8a8f78,'car'); const q=L(3,12); seatCar(car,q[0],q[1],Math.atan2(mz,mx)+.4); scene.add(car); addSolid({x:q[0],z:q[1],hw:2.2,hd:1,c:Math.cos(Math.atan2(mz,mx)),s:Math.sin(Math.atan2(mz,mx)),r:2.5});
     { const wl=L(0,12); POIS.push({n:'Stacja LPG i sklep ŚRUBY',x:wl[0],z:wl[1],p:wl,c:'#1f5fa8',ic:'L',sp:labelSprite('Stacja LPG','#1f5fa8')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(wl[0],H(wl[0],wl[1])+9,wl[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
     return {L,th}; })();
+  // Cementownia Warta: ciąg technologiczny i biuro z Blendera + ogrodzenie, drogi, parking, tiry i pracownicy w białych kaskach
+  let CEMENT=null; CEMENT=(()=>{ const F=CEMF; if(!F) return null; const hg=F.h; const ph=(x,z)=>hg;
+    const grp=new THREE.Group(); grp.position.set(F.O[0],hg,F.O[1]); scene.add(grp); const mz=modelMesh('cement_zaklad'); if(mz){ mz.position.y=0; grp.add(mz); }
+    const so=(x,z,hw,hd,rot)=>addSolid({x,z,hw,hd,c:Math.cos(-(rot||0)),s:Math.sin(-(rot||0)),r:Math.hypot(hw,hd)+.4});
+    const PX=(u,v)=>[F.O[0]+(u-700)*1.15,F.O[1]+(v-222)*1.15];
+    // kolizje głównych obiektów (w układzie zdjęcia)
+    [[480,228,640,268],[820,135,915,290],[915,170,1040,260],[1040,195,1180,245],[960,60,1120,105],[1135,55,1215,100],[820,290,1010,330],[450,290,560,350],[398,148,442,192],[515,172,560,205]].forEach(([u0,v0,u1,v1])=>{ const a=PX(u0,v0), b=PX(u1,v1); so((a[0]+b[0])/2,(a[1]+b[1])/2,Math.abs(b[0]-a[0])/2,Math.abs(b[1]-a[1])/2,0); });
+    { const a=PX(1075,150); so(a[0],a[1],14,12,0); } [[672,170],[710,170]].forEach(([u,v])=>{ const a=PX(u,v); so(a[0],a[1],13.5,13.5,0); }); { const a=PX(877,292); so(a[0],a[1],21,21,0); }
+    // podłoże: beton i kostka
+    const conc=po(new THREE.MeshLambertMaterial({color:0x8d8b86,map:detailTex,side:THREE.DoubleSide}),3);
+    const rc=(u0,v0,u1,v1)=>{ const a=PX(u0,v0), b=PX(u1,v1); return [[a[0],a[1]],[b[0],a[1]],[b[0],b[1]],[a[0],b[1]]]; };
+    drape(rc(150,115,1250,440),conc,.12,5.5);
+    // droga główna zakładu (asfalt) od ronda przy wjeździe przez cały teren
+    const road=[[40,2790],[180,2806],[330,2832],[560,2846],[800,2864],[1050,2806],[1250,2748]]; scene.add(new THREE.Mesh(ribbon(road,9,.16,4,ph),asphaltM));
+    const road2=[[330,2832],[360,2760],[380,2700]]; scene.add(new THREE.Mesh(ribbon(road2,7,.16,4,ph),asphaltM));
+    const road3=[[800,2864],[790,2790],[730,2745]]; scene.add(new THREE.Mesh(ribbon(road3,7,.16,4,ph),asphaltM));
+    // rondo przy wjeździe (jak przy biurze): pierścień asfaltu i wyspa z zielenią
+    { const ring=[],isl=[]; for(let i=0;i<24;i++){ const a=i/24*Math.PI*2; ring.push([40+Math.cos(a)*15,2790+Math.sin(a)*15]); isl.push([40+Math.cos(a)*6,2790+Math.sin(a)*6]); } drape(ring,asphaltM,.17,4,true); drape(isl,po(new THREE.MeshLambertMaterial({color:0x5c8a3e,side:THREE.DoubleSide}),1),.2,3,true); }
+    // biuro (czteropiętrowe, fioletowo-białe) obok ronda, front do ronda i parkingu
+    const bo=modelMesh('cement_biuro'); const OF=[262,2808], ofr=Math.atan2(-.15,-1); if(bo){ const g=new THREE.Group(); g.position.set(OF[0],hg,OF[1]); g.rotation.y=ofr; g.add(bo); scene.add(g); }
+    { const ca=Math.cos(-ofr), sa=Math.sin(-ofr); so(OF[0],OF[1],28,6.6,ofr); }
+    drape(rc(120,205,300,262),asphaltM,.15,4); // parking przed biurem
+    const lotParked=[['golf',-8],['astra',-4]]; const hdg=Math.atan2(-1,.15);
+    // ogrodzenie wokół zakładu (siatka) z kolizjami
+    { const fm=new THREE.MeshLambertMaterial({color:0x6a7058}); const fence=(x0,z0,x1,z1)=>{ const len=Math.hypot(x1-x0,z1-z0), n=Math.max(1,Math.round(len/12)), ang=Math.atan2(x1-x0,z1-z0);
+        for(let i=0;i<n;i++){ const t=(i+.5)/n, cx=x0+(x1-x0)*t, cz=z0+(z1-z0)*t; const w=new THREE.Mesh(new THREE.BoxGeometry(.06,2.2,len/n+.05),fm); w.position.set(cx,hg+1.1,cz); w.rotation.y=ang; scene.add(w); addSolid({x:cx,z:cz,hw:.3,hd:len/n/2,c:Math.cos(-ang),s:Math.sin(-ang),r:len/n/2+.6}); } };
+      const A=F.x0+10,B2=F.x1-10,Z0=F.z0+10,Z1=F.z1-10; fence(A,Z0,B2,Z0); fence(B2,Z0,B2,Z1); fence(B2,Z1,A,Z1); fence(A,Z1,A,Z0+110); fence(A,Z0+70,A,Z0); }
+    // zielone panele fotowoltaiki (po lewej, jak na zdjęciu lotniczym)
+    { const pm=new THREE.MeshLambertMaterial({color:0x2f5a42}); [[580,170,640,192],[385,238,428,300]].forEach(([u0,v0,u1,v1])=>{ const a=PX(u0,v0), b=PX(u1,v1); const m=new THREE.Mesh(new THREE.BoxGeometry(Math.abs(b[0]-a[0]),.5,Math.abs(b[1]-a[1])),pm); m.position.set((a[0]+b[0])/2,hg+.4,(a[1]+b[1])/2); scene.add(m); }); }
+    // stos kontenerów/palet oraz tiry na parkingu dla ciężarówek
+    ['tir_a','tir_b','tir_c','tir_b'].forEach((k,i)=>{ const m=modelMesh(k); if(!m) return; const x=F.x0+38+i*14, z=2720; const g=new THREE.Group(); g.position.set(x,hg,z); g.rotation.y=Math.PI/2; m.position.x=3; g.add(m); scene.add(g); so(x,z,1.35,10.5,0); });
+    // pracownicy w białych kaskach i odblaskowych kamizelkach
+    const helm=new THREE.MeshLambertMaterial({color:0xf6f6f1}); const walks=[]; const mkWalk=pts=>{ const len=[0]; for(let i=1;i<pts.length;i++) len.push(len[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])); return {pts,len}; };
+    const paths=[ [[100,2800],[300,2850],[560,2860],[800,2880],[1040,2830]], [[340,2840],[360,2770],[390,2710]], [[800,2860],[780,2800],[740,2760],[700,2740]], [[520,2880],[760,2900],[980,2880]], [[900,2840],[1000,2780],[1100,2760],[1200,2740]], [[150,2790],[240,2800],[280,2790]] ];
+    paths.forEach(pt=>walks.push(mkWalk(pt.map(q=>[q[0],q[1]]))));
+    const vest=[0xf08a1c,0xf0c020,0x3a6fa8,0xe8e4dc];
+    for(let i=0;i<18;i++){ const w=walks[i%walks.length]; const L=w.len[w.len.length-1]; const p=makePerson(pick(vest),pick([0x2c3e66,0x2a2a2c,0x3a4e7a]),pick([0x2a1d14,0x4a2e1a,0x6b4426,0x111111]),{female:false,style:'jacket',hairStyle:'short'});
+      const hm=new THREE.Mesh(new THREE.SphereGeometry(.125,12,8,0,Math.PI*2,0,Math.PI/2),helm); hm.position.y=1.62; p.add(hm); const br=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.02,12),helm); br.position.y=1.62; p.add(br);
+      scene.add(p); const pd={g:p,w,d:R(0,L),dir:rnd()<.5?1:-1,v:R(.9,1.4),walk:R(0,6),down:0}; peds.push(pd); }
+    // punkty: brama (rondo), biuro kadr, hala
+    const gate=[40,2822], office=[OF[0]+2,OF[1]+14], hall=PX(900,330);
+    { const wl=gate; POIS.push({n:'Cementownia Warta',x:wl[0],z:wl[1],p:wl,c:'#6a75b8',ic:'C',sp:labelSprite('Cementownia Warta','#6a75b8')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(wl[0],H(wl[0],wl[1])+12,wl[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
+    return {gate,office,hall}; })();
   const KOMIS=(()=>{ const F=MJF; if(!F) return null; const {L,th,mx,mz}=F; const hMean=F.h;
     const grp=new THREE.Group(); grp.position.set(F.Ox,hMean,F.Oz); grp.rotation.y=th; scene.add(grp);
     const sol=(lx,lz,hw,hd,r)=>{ const c=L(lx,lz); addSolid({x:c[0],z:c[1],hw,hd,c:Math.cos(-th),s:Math.sin(-th),r:r||Math.hypot(hw,hd)+.3}); };

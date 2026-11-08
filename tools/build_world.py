@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "tools" / "raw"; SRC = ROOT / "src"
 LAT0, LON0 = 51.1301965, 18.9215954
 KX = 111320 * math.cos(math.radians(LAT0)); KZ = 110574
-WX0, WX1, WZ0, WZ1 = -3100, 2560, -860, 2000          # granice świata
+WX0, WX1, WZ0, WZ1 = -3100, 2560, -860, 3400          # granice świata
 OLD = (-1150, 950, -850, 1050)                          # stary obszar (dane ręcznie dopracowane)
 ORTO_MPP = 2.5
 loc = lambda lat, lon: ((lon - LON0) * KX, -(lat - LAT0) * KZ)
@@ -57,6 +57,21 @@ def main():
     head, body = (RAW / "nmt.txt").read_text().split("\n", 1)
     hp = dict(kv.split("=") for kv in head.split()); vals = [float(v) for v in body.strip().split(",")]
     base = 175
+    # NMT sięga tylko do z=2020: dalej na południe (Cementownia, dolina Warty) wysokości dopełniamy trendem z ostatnich wierszy (bez danych publicznych w tym pliku)
+    nx0, nz0 = int(hp["nx"]), int(hp["nz"]); step0 = int(hp["step"]); nzn = int((WZ1 + 40 - int(hp["z0"])) // step0) + 1
+    import statistics
+    grid = [vals[r*nx0:(r+1)*nx0] for r in range(nz0)]
+    for r in range(nz0, nzn):
+        k = r - nz0 + 1; row = []
+        for c in range(nx0):
+            c0, c1 = max(0, c-3), min(nx0, c+4)
+            slope = statistics.mean((grid[nz0-1][cc] - grid[nz0-13][cc]) / 12 for cc in range(c0, c1))
+            slope = max(-.25, min(.05, slope)) * max(0.0, 1 - k/70)
+            prev = grid[r-1][c]; row.append(max(176.0, prev + slope))
+        # lekkie wygładzenie poziome
+        row = [statistics.mean(row[max(0, c-2):c+3]) for c in range(nx0)]
+        grid.append(row)
+    vals = [v for row in grid for v in row]; hp["nz"] = str(nzn)
     s = "".join(_b36(max(0, min(1295, round((v-base)*10)))) for v in vals)
     (SRC / "data_h.js").write_text(f'const HGRID={{x0:{hp["x0"]},z0:{hp["z0"]},step:{hp["step"]},nx:{hp["nx"]},nz:{hp["nz"]},base:{base},s:"{s}"}};\n')
 

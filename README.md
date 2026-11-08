@@ -106,7 +106,7 @@ python3 build.py
 
 ## Obszar i aktualizacja danych
 
-Świat obejmuje ok. 5,7 × 2,9 km: Trębaczew, Sadowiec-Wrzosy, Posmykowiznę, Wydrzynów, północną część Działoszyna z dworcem, zakłady przy Przemysłowej, lasy i kopalnię wapienia.
+Świat obejmuje ok. 5,7 × 4,3 km: Trębaczew, Sadowiec-Wrzosy, Posmykowiznę, Wydrzynów, północną część Działoszyna z dworcem, zakłady przy Przemysłowej, lasy i kopalnię wapienia. Na południu: Cementownia Warta (orientacyjne odwzorowanie, pracownicy w białych kaskach, misja „Praca w cementowni”). Pora dnia: tylko dzień i wieczór.
 
 Źródła surowych danych (zapisane w `tools/raw/`):
 1. OSM: `https://api.openstreetmap.org/api/0.6/map.json?bbox=18.8780,51.1118,18.9575,51.1381` → `osm_area.json.gz`
