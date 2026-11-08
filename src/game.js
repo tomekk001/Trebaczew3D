@@ -1198,7 +1198,7 @@ async function boot(saved){
   function labelSprite(text,color){ const c=document.createElement('canvas'),x=c.getContext('2d'); x.font='600 44px "Barlow Condensed", Arial'; const tw=x.measureText(text).width; c.width=Math.ceil(tw+90); c.height=72;
     x.font='600 44px "Barlow Condensed", Arial'; rr(x,2,2,c.width-4,c.height-4,6); x.fillStyle='rgba(8,10,12,.82)'; x.fill();
     x.fillStyle=color; x.fillRect(2,2,10,c.height-4); x.fillStyle='#fff'; x.textBaseline='middle'; x.fillText(text,30,38);
-    const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter; const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,fog:false})); const h=2.6; sp.scale.set(h*c.width/c.height,h,1); return sp; }
+    const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter; const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,fog:false})); const h=1.55; sp.scale.set(h*c.width/c.height,h,1); return sp; }
   function plateSprite(text){ const c=document.createElement('canvas'),x=c.getContext('2d'); x.font='600 40px "Barlow Condensed", Arial'; const tw=x.measureText(text).width; c.width=Math.ceil(tw+50); c.height=64;
     x.fillStyle='#1f4fa3'; x.fillRect(0,0,c.width,c.height); x.strokeStyle='#fff'; x.lineWidth=4; x.strokeRect(6,6,c.width-12,c.height-12); x.font='600 40px "Barlow Condensed", Arial'; x.fillStyle='#fff'; x.textBaseline='middle'; x.fillText(text,25,34);
     const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter; const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t})); const h=0.9; sp.scale.set(h*c.width/c.height,h,1); return sp; }
