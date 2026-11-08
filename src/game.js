@@ -3427,7 +3427,7 @@ async function boot(saved){
       NPC_PICKS.push({id:'stasia_pick',p,label:'zostaw siatkę z zakupami przy furtce Pani Stasi',on:()=>NQ.stasia==='zadanie'&&hasIt('siatka'),act:()=>{ takeIt('siatka'); NQ.stasia='koniec'; nqSave(); addMoney(120); addXP(35); toast('Siatka zostawiona przy furtce – Pani Stasia na pewno się ucieszy!<br>+120 zł · +35 XP',4); }});
       const m=new THREE.Mesh(BEAC[0].geometry,beaconM); m.position.set(p[0],H(p[0],p[1]),p[1]); m.visible=false; scene.add(m); BEAC.push(m); } } }
   // komis samochodowy przy DK42: plac, auta na sprzedaż, kontener-biuro, pylon
-  const KOMIS=(()=>{ let best=null; const MJ=BLD.find(b=>/MAJMAL/i.test(b.name||''))||{x:920,z:-320}; const nr=nearestRoad(MJ.x,MJ.z,r=>r.t!=='track'); const RD=(nr.r&&nr.d<80)?nr.r:DK;
+  const KOMIS=(()=>{ let best=null; const MJ=BLD.find(b=>b.name==='Myjnia')||{x:920,z:-320}; const nr=nearestRoad(MJ.x,MJ.z,r=>r.t!=='track'); const RD=(nr.r&&nr.d<80)?nr.r:DK;
     const tryAt=(s,wide)=>{ [1,-1].forEach(sg=>{ const nx=-s.tz*sg, nz=s.tx*sg; for(let o=RD.w/2+(wide?7:8.5);o<=RD.w/2+(wide?30:14);o+=2.5){ const cx=s.x+nx*o, cz=s.z+nz*o; let ok=true;
       for(let u=-9;u<=9&&ok;u+=2) for(let v=-7;v<=7&&ok;v+=2){ const x=cx+s.tx*u+nx*v, z=cz+s.tz*u+nz*v; if(blocked(x,z,.6)||roadNearF(x,z,.5)) ok=false; else if(RES_PC.some(pc=>x>pc.bb[0]&&x<pc.bb[2]&&z>pc.bb[1]&&z<pc.bb[3]&&inPoly(x,z,pc.p))) ok=false; }
       if(ok){ const sc=Math.hypot(cx-MJ.x,cz-MJ.z)+o*.3; if(!best||sc<best.sc) best={sc,cx,cz,tx:s.tx,tz:s.tz,nx,nz}; } } }); };
@@ -3441,13 +3441,24 @@ async function boot(saved){
     pl(of,.9,2.0,.8,1.0,1.21,new THREE.MeshLambertMaterial({color:0x5a3b28})); pl(of,1.2,.9,-1.0,1.5,1.21,new THREE.MeshLambertMaterial({color:0x9fc3d0})); addSolid({x:oq[0],z:oq[1],hw:2.2,hd:1.3,c:Math.cos(-of.rotation.y),s:Math.sin(-of.rotation.y),r:2.6});
     const pq=W(8.2,-5.5); const py=new THREE.Group(); py.position.set(pq[0],H(pq[0],pq[1]),pq[1]); py.rotation.y=Math.atan2(-nx,-nz); scene.add(py); bx(py,.25,4.5,.25,0,0,0,new THREE.MeshLambertMaterial({color:0x5c666c}));
     pl(py,3.2,1.1,0,4.6,.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')})); pl(py,3.2,1.1,0,4.6,-.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')}),Math.PI);
+    // myjnia samochodowa za komisem: dwa otwarte stanowiska samoobsługowe z daszkiem i lancami
+    { let wp=null; for(const vc of [15,17,19,13,21]){ for(const uc of [0,-5,5,-9,9]){ let ok=true; for(let u=-7;u<=7&&ok;u+=2.5) for(let v=-5;v<=5&&ok;v+=2.5){ const q=W(uc+u,vc+v); if(blocked(q[0],q[1],.8)||roadNearF(q[0],q[1],.8)||RES_PC.some(pc=>q[0]>pc.bb[0]&&q[0]<pc.bb[2]&&q[1]>pc.bb[1]&&q[1]<pc.bb[3]&&inPoly(q[0],q[1],pc.p))) ok=false; } if(ok){ wp=[uc,vc]; break; } } if(wp) break; }
+      if(wp){ const q=W(wp[0],wp[1]); const wg=new THREE.Group(); wg.position.set(q[0],H(q[0],q[1]),q[1]); const rr=Math.atan2(-nx,-nz); wg.rotation.y=rr; scene.add(wg);
+        const wc=new THREE.MeshLambertMaterial({color:0xb9bcbf,map:detailTex}), blueM=new THREE.MeshLambertMaterial({color:0x1d6fb8}), steel=new THREE.MeshLambertMaterial({color:0x6c7478});
+        const loc=(lx,lz)=>[q[0]+lx*Math.cos(rr)+lz*Math.sin(rr), q[1]-lx*Math.sin(rr)+lz*Math.cos(rr)];
+        const wall=(lx,lz,w,d)=>{ bx(wg,w,3.2,d,lx,0,lz,wc); const c=loc(lx,lz); addSolid({x:c[0],z:c[1],hw:w/2,hd:d/2,c:Math.cos(-rr),s:Math.sin(-rr),r:Math.hypot(w,d)/2+.3}); };
+        wall(0,-3.6,8.6,.25); [-4.3,0,4.3].forEach(x=>wall(x,0,.25,7.2));
+        bx(wg,9.0,.25,7.8,0,3.2,0,new THREE.MeshLambertMaterial({color:0x2d5d8c})); bx(wg,9.0,.9,.12,0,3.45,3.95,blueM,true);
+        pl(wg,8.4,.8,0,3.9,4.02,new THREE.MeshBasicMaterial({map:signTex('MYJNIA','#1d6fb8','#ffffff',512,96,'900 64px Barlow, Arial')}));
+        [-2.15,2.15].forEach(x=>{ bx(wg,.5,1.2,.3,x,0,-3.3,steel,true); const h=new THREE.Mesh(new THREE.TorusGeometry(.35,.03,6,14),new THREE.MeshLambertMaterial({color:0xf2c230})); h.position.set(x+.35,1.0,-3.1); wg.add(h); });
+        const pad=[loc(-4.8,-4.2),loc(4.8,-4.2),loc(4.8,6.2),loc(-4.8,6.2)]; drape(pad,lotPaver,.1,2.2); LOTS.push(pad); wg.traverse(o=>{ if(o.isMesh)o.castShadow=true; }); } }
     const door=W(-6,4.2-1.2-1.4); const pd=npcFind(door[0],door[1],.6,200);
     const it=[]; Object.keys(CARS).forEach(k=>it.push([CARS[k].n,CARS[k].p,'car',k])); it.push(['Rower',300,'bike',1]); Object.keys(TUNE).forEach(k=>it.push(['Tuning: '+TUNE[k].n,TUNE[k].p,'tune',k])); Object.keys(OUTFITS).forEach(k=>it.push(['Ubranie: '+OUTFITS[k].n,OUTFITS[k].p,'outfit',k]));
     const shop={n:'Auto-Komis Trębaczew',sub:'samochody, rower, tuning i ubrania · kupione auto podstawimy obok punktu „i”',p:pd,items:it,komis:true};
     POIS.push({n:'Auto-Komis Trębaczew',x:pd[0],z:pd[1],p:pd,c:'#c4221e',ic:'K',sp:labelSprite('Auto-Komis','#c4221e')}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(pd[0],H(pd[0],pd[1])+9,pd[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
     return {shop,p:pd}; })();
   // zakupy w komisie i katalogu mebli: sprawdzenie przed zapłatą
-  function shopGuard(it){ if(it[2]==='car'&&OWN.car===it[3]) return 'To auto już stoi na twoim parkingu'; if(it[2]==='bike'&&OWN.bike) return 'Masz już rower';
+  function shopGuard(it){ if(it[2]==='car'&&OWN.car===it[3]) return 'To auto już masz'; if(it[2]==='bike'&&OWN.bike) return 'Masz już rower';
     if(it[2]==='tune'){ if(!OWN.car) return 'Najpierw kup auto w komisie'; if(OWN.tune[it[3]]) return 'To już jest w twoim aucie'; }
     if(it[2]==='outfit'&&OWN.outfits.includes(it[3])){ applyOutfit(it[3]); return 'Ubranie założone (masz je już)'; } if(it[2]==='mebel'&&OWN.furn.includes(it[3])) return 'Ten mebel już stoi w domu'; return ''; }
   function shopBuyExtra(it){ const t=it[2];
