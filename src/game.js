@@ -60,7 +60,7 @@ async function boot(saved){
   const BLD=[];
   DATA_B.split(';').forEach(s=>{ const q=s.indexOf('"'); const name=q>=0?s.slice(q+1,s.lastIndexOf('"')):''; const nums=(q>=0?s.slice(0,q):s).split(',').filter(x=>x!=='').map(Number);
     const [x,z,w,d,deg,code,lv]=nums; BLD.push({x,z,w,d,a:deg*Math.PI/180,code,lv:lv||0,name}); });
-  BLD.forEach(b=>{ if(b.name==='Żabka'&&Math.hypot(b.x+65,b.z-42)>300) b.name='Żabka Działoszyn'; if(b.name==='Myjnia'||b.name.startsWith('Myjnia Ręczna')) b.skip=true; });
+  BLD.forEach(b=>{ if(b.name==='Żabka'&&Math.hypot(b.x+65,b.z-42)>300) b.name='Żabka Działoszyn'; if(b.name==='Myjnia'||b.name.startsWith('Myjnia Ręczna')||b.name==='STALPOL'||(Math.abs(b.x+976)<1&&Math.abs(b.z-470)<1)) b.skip=true; });
   const BPARTS={}; if(typeof DATA_PARTS!=='undefined'&&DATA_PARTS) DATA_PARTS.split(';').forEach(e=>{ const [i,r]=e.split(':'); BPARTS[+i]=r.split('|').map(q=>{ const [x,z,w,d]=q.split(',').map(Number); return {x,z,w,d}; }); });
   if(typeof DATA_ADDR!=='undefined'&&DATA_ADDR) DATA_ADDR.split(';').forEach(e=>{ const k=e.indexOf(':'); const b=BLD[+e.slice(0,k)]; if(!b)return; const [st2,num]=e.slice(k+1).split('|'); b.addr=(st2?st2+' ':'')+num; });
   BLD.forEach((b,i)=>{ if(BPARTS[i]) b.parts=BPARTS[i]; });
@@ -93,12 +93,17 @@ async function boot(saved){
     if(SAD_PITCH){ const hs=SAD_PITCH.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:SAD_PITCH.pts,bb:bbox(SAD_PITCH.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); } }
 
   // myjnia przy DK42: ramka układu (hala + dom + wiata; z przodu komis, z tyłu duży plac w kostce z tirami); lokalnie x - w prawo patrząc od ulicy, z - do ulicy
+  const LPGF=(()=>{ const B=BLD.find(b=>b.name==='STALPOL'); if(!B) return null; const nr=nearestRoad(B.x,B.z,r=>r.t!=='track'); if(!nr.r||nr.d>120) return null; const RD=nr.r; let bs=null;
+    for(let d=0;d<RD.L;d+=2){ const s0=sampleLine(RD.pts,RD.len,d); const q=Math.hypot(s0.x-B.x,s0.z-B.z); if(!bs||q<bs.q) bs={q,s:s0}; }
+    const s0=bs.s; let nx=-s0.tz, nz=s0.tx; if((B.x-s0.x)*nx+(B.z-s0.z)*nz<0){ nx=-nx; nz=-nz; }
+    const mx=-nx, mz=-nz, th=Math.atan2(mx,mz), ex=mz, ez=-mx; const Ox=B.x+mx*2.5, Oz=B.z+mz*2.5;
+    const L=(a,b)=>[Ox+ex*a+mx*b, Oz+ez*a+mz*b]; return {L,th,mx,mz,Ox,Oz,lot:[L(-24,-12),L(20,-12),L(20,26),L(-24,26)]}; })();
   const MJF=(()=>{ const MJ=DATA_B.includes('"Myjnia"')?{x:920,z:-320}:null; if(!MJ) return null; const nr=nearestRoad(MJ.x,MJ.z,r=>r.t!=='track'); const RD=(nr.r&&nr.d<80)?nr.r:ROADS.find(r=>r.main); let bs=null;
     for(let d=0;d<RD.L;d+=2){ const s0=sampleLine(RD.pts,RD.len,d); const q=Math.hypot(s0.x-MJ.x,s0.z-MJ.z); if(!bs||q<bs.q) bs={q,s:s0}; }
     const s0=bs.s; let nx=-s0.tz, nz=s0.tx; if((MJ.x-s0.x)*nx+(MJ.z-s0.z)*nz<0){ nx=-nx; nz=-nz; }
     const mx=-nx, mz=-nz, th=Math.atan2(mx,mz), ex=mz, ez=-mx, vO=RD.w/2+32; const Ox=s0.x+nx*vO-ex*2.5, Oz=s0.z+nz*vO-ez*2.5;
     const L=(a,b)=>[Ox+ex*a+mx*b, Oz+ez*a+mz*b]; const rect=(a,b,c,d)=>[L(a,c),L(b,c),L(b,d),L(a,d)];
-    const F={Ox,Oz,mx,mz,th,ex,ez,L,rect,RD,front:rect(-33,16,-12,29),side:rect(16,58,-12,29),yard:rect(-34,58,-72,-12)};
+    const F={Ox,Oz,mx,mz,th,ex,ez,L,rect,RD,front:rect(-33,16,-12,29),side:rect(16,17,-12,29),yard:rect(-34,16,-125,-12)};
     const pad=rect(-36,60,-74,30); F.h=hRaw(Ox,Oz); FLAT.push({p:pad,bb:bbox(pad),fe:0,h:F.h}); return F; })();
   /* ---------- renderer + efekty ---------- */
   const canvas=document.getElementById('c');
@@ -313,7 +318,7 @@ async function boot(saved){
   function bx(g,w,h,d,x,y,z,mat,noShadow){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x,y+h/2,z); if(!noShadow){m.castShadow=true;} m.receiveShadow=true; g.add(m); return m; }
   function pl(g,w,h,x,y,z,mat,ry){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat); m.position.set(x,y,z); if(ry)m.rotation.y=ry; g.add(m); return m; }
   function tri(g,w,h,x,y,z,mat,ry){ const sh=new THREE.Shape([new THREE.Vector2(-w/2,0),new THREE.Vector2(w/2,0),new THREE.Vector2(0,h)]); const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),mat); m.position.set(x,y,z); if(ry)m.rotation.y=ry; m.receiveShadow=true; g.add(m); return m; }
-  const EXTRA_TREES=[], LOTS=[], STAIRS=[], LATER=[]; if(MJF) LOTS.push(MJF.front,MJF.side,MJF.yard); // LATER: zamiany na modele odłożone do chwili, gdy swapIn jest gotowe // STAIRS: funkcje (x,z)->wysokość podłoża ponad terenem (taras i schody kościoła)
+  const EXTRA_TREES=[], LOTS=[], STAIRS=[], LATER=[]; if(MJF) LOTS.push(MJF.front,MJF.side,MJF.yard); if(LPGF) LOTS.push(LPGF.lot); // LATER: zamiany na modele odłożone do chwili, gdy swapIn jest gotowe // STAIRS: funkcje (x,z)->wysokość podłoża ponad terenem (taras i schody kościoła)
   const stairAt=(x,z)=>{ let h=0; for(const f of STAIRS){ const v=f(x,z); if(v>h)h=v; } return h; };
   const hipGeo=new THREE.ConeGeometry(Math.SQRT1_2,1,4,1).rotateY(Math.PI/4).translate(0,.5,0);
   const gabGeo=(()=>{ const v=[-.5,0,.5,.5,0,.5,.5,1,0, -.5,0,.5,.5,1,0,-.5,1,0, .5,0,-.5,-.5,0,-.5,-.5,1,0, .5,0,-.5,-.5,1,0,.5,1,0, .5,0,.5,.5,0,-.5,.5,1,0, -.5,0,-.5,-.5,0,.5,-.5,1,0];
@@ -3500,11 +3505,21 @@ async function boot(saved){
       NPC_PICKS.push({id:'stasia_pick',p,label:'zostaw siatkę z zakupami przy furtce Pani Stasi',on:()=>NQ.stasia==='zadanie'&&hasIt('siatka'),act:()=>{ takeIt('siatka'); NQ.stasia='koniec'; nqSave(); addMoney(120); addXP(35); toast('Siatka zostawiona przy furtce - Pani Stasia na pewno się ucieszy!<br>+120 zł · +35 XP',4); }});
       const m=new THREE.Mesh(BEAC[0].geometry,beaconM); m.position.set(p[0],H(p[0],p[1]),p[1]); m.visible=false; scene.add(m); BEAC.push(m); } } }
   // komis samochodowy przy DK42: plac, auta na sprzedaż, kontener-biuro, pylon
+  // sklep ŚRUBY + stacja LPG (STALPOL) przy ul. Wyzwolenia, model z Blendera (tools/blender/lpg.py)
+  // sklep ŚRUBY + stacja LPG (STALPOL) przy ul. Wyzwolenia, model z Blendera (tools/blender/lpg.py)
+  const LPGS=(()=>{ const F=LPGF; if(!F) return null; const {L,th,mx,mz,Ox,Oz}=F; const rect=(a,b,c,d)=>[L(a,c),L(b,c),L(b,d),L(a,d)]; const hg=H(Ox,Oz);
+    const grp=new THREE.Group(); grp.position.set(Ox,hg,Oz); grp.rotation.y=th; scene.add(grp); const m=modelMesh('lpg'); if(m){ m.position.y=0; grp.add(m); }
+    const sol=(lx,lz,hw,hd)=>{ const c=L(lx,lz); addSolid({x:c[0],z:c[1],hw,hd,c:Math.cos(-th),s:Math.sin(-th),r:Math.hypot(hw,hd)+.3}); };
+    sol(0,0,7,4.5); sol(-13,.7,3,1.7); sol(11.5,-2,2.6,1); sol(9.5,8.5,.5,.7);
+    drape(rect(-22,16,5,26),lotPaver,.1,2.2); drape(rect(-24,-8,-8,5),lotPaver,.1,2.2);
+    const car=makeCar(0x8a8f78,'car'); const q=L(3,12); seatCar(car,q[0],q[1],Math.atan2(mz,mx)+.4); scene.add(car); addSolid({x:q[0],z:q[1],hw:2.2,hd:1,c:Math.cos(Math.atan2(mz,mx)),s:Math.sin(Math.atan2(mz,mx)),r:2.5});
+    { const wl=L(0,12); POIS.push({n:'Stacja LPG i sklep ŚRUBY',x:wl[0],z:wl[1],p:wl,c:'#1f5fa8',ic:'L',sp:labelSprite('Stacja LPG','#1f5fa8')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(wl[0],H(wl[0],wl[1])+9,wl[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
+    return {L,th}; })();
   const KOMIS=(()=>{ const F=MJF; if(!F) return null; const {L,th,mx,mz}=F; const hMean=F.h;
     const grp=new THREE.Group(); grp.position.set(F.Ox,hMean,F.Oz); grp.rotation.y=th; scene.add(grp);
     const sol=(lx,lz,hw,hd,r)=>{ const c=L(lx,lz); addSolid({x:c[0],z:c[1],hw,hd,c:Math.cos(-th),s:Math.sin(-th),r:r||Math.hypot(hw,hd)+.3}); };
     const pav=(poly,mat,uv)=>{ drape(poly,mat,.12,uv||2.2); };
-    const redK=matPaverRed.clone(); redK.color=new THREE.Color(0x8e8883); pav(F.rect(-33,16,8,29),redK,1.2); pav(F.rect(-33,16,-12,8),lotPaver); pav(F.side,lotPaver); pav(F.yard,lotPaver);
+    const redK=matPaverRed.clone(); redK.color=new THREE.Color(0x8e8883); pav(F.rect(-33,16,8,29),redK,1.2); pav(F.rect(-33,16,-12,8),lotPaver); pav(F.yard,lotPaver);
     const mj=modelMesh('myjnia'); if(mj){ mj.position.y=0; grp.add(mj); }
     sol(-4.5,0,4.5,6); sol(7.9,-.75,6.1,4.75); sol(5.3,4.85,3.1,.9); sol(1.5,1.6,.9,2.6); sol(-23.5,-3.5,4.6,.25); sol(-19,2.2,.25,2.9); sol(-22.8,-2.6,2,.55);
     // komis z przodu: 5 aut z cenami, kiosk-biuro, pylon
@@ -3515,8 +3530,14 @@ async function boot(saved){
     const pq=L(13,25); const py=new THREE.Group(); py.position.set(pq[0],H(pq[0],pq[1]),pq[1]); py.rotation.y=th; scene.add(py); bx(py,.25,4.5,.25,0,0,0,new THREE.MeshLambertMaterial({color:0x5c666c}));
     pl(py,3.2,1.1,0,4.6,.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')})); pl(py,3.2,1.1,0,4.6,-.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')}),Math.PI);
     // plac za myjnią: tiry z naczepami (modele z Blendera)
-    const TR=[['tir_a',-14,-26,1],['tir_b',12,-26,1],['tir_c',38,-26,1],['tir_b',-12,-46,-1],['tir_a',14,-46,-1],['tir_c',40,-46,-1],['tir_a',-6,-64,1]];
-    TR.forEach(([k,lx,lz,dr])=>{ const m=modelMesh(k); if(!m) return; const q=L(lx,lz); const g=new THREE.Group(); g.position.set(q[0],H(q[0],q[1]),q[1]); g.rotation.y=th+(dr<0?Math.PI:0); m.position.x=3; g.add(m); scene.add(g); sol(lx,lz,10.5,1.3,11); });
+    // plac to wąski, ogrodzony pas prostopadły do drogi (jak na zdjęciu lotniczym); tiry stoją wzdłuż osi pasa
+    const TR=[['tir_a',9,-34,1],['tir_b',9,-57,1],['tir_c',9,-80,1],['tir_b',9,-103,1],['tir_a',-6,-44,-1],['tir_c',-6,-68,-1],['tir_b',-22,-60,1]];
+    TR.forEach(([k,lx,lz,dr])=>{ const m=modelMesh(k); if(!m) return; const q=L(lx,lz); const g=new THREE.Group(); g.position.set(q[0],H(q[0],q[1]),q[1]); g.rotation.y=th+(dr>0?Math.PI/2:-Math.PI/2); m.position.x=3*dr; g.add(m); scene.add(g); sol(lx,lz,1.35,10.5,11); });
+    { const fm=new THREE.MeshLambertMaterial({color:0x5b6a58}), gm=new THREE.MeshLambertMaterial({color:0x7b8080});
+      const fence=(a0,b0,a1,b1)=>{ const A=L(a0,b0), Bp=L(a1,b1), len=Math.hypot(Bp[0]-A[0],Bp[1]-A[1]), n=Math.max(1,Math.round(len/10)); const ang=Math.atan2(Bp[0]-A[0],Bp[1]-A[1]);
+        for(let i=0;i<n;i++){ const t=(i+.5)/n, cx=A[0]+(Bp[0]-A[0])*t, cz=A[1]+(Bp[1]-A[1])*t; const w=new THREE.Mesh(new THREE.BoxGeometry(.08,1.9,len/n+.05),fm); w.position.set(cx,H(cx,cz)+.95,cz); w.rotation.y=ang; scene.add(w);
+          addSolid({x:cx,z:cz,hw:.3,hd:len/n/2,c:Math.cos(-ang),s:Math.sin(-ang),r:len/n/2+.6}); } };
+      fence(-34,-12,-34,-125); fence(16,-12,16,-125); fence(-34,-125,16,-125); fence(-34,-12,-34,-10); }
     // miejsce w myjni dla kupionego auta (wiata bezdotykowa) - wyjazd przodem w stronę ulicy
     const gb=L(-23.5,1.4); GARAGE={x:gb[0],z:gb[1],h:Math.atan2(mz,mx)};
     const wl=L(-23.5,6.5); POIS.push({n:'Myjnia',x:wl[0],z:wl[1],p:wl,c:'#c9242a',ic:'M',sp:labelSprite('Myjnia','#c9242a')}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(wl[0],H(wl[0],wl[1])+9,wl[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
