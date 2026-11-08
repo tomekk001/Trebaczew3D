@@ -53,9 +53,9 @@ const NPCS = {
       ma: 'Gracz wraca spod remizy i zaraz powie Ci, co usłyszał. Jesteś niecierpliwa.',
       obrazona: 'Gracz Cię okłamał w sprawie plotki. Jesteś obrażona, mówisz chłodno – niech idzie jeszcze raz pod remizę i wróci z prawdą.',
       koniec: 'Gracz przyniósł Ci prawdziwą plotkę. Jesteś zachwycona i dzielisz się (zmyślonymi) ciekawostkami ze wsi.' } },
-  andrzej: { name: 'Andrzej', who: 'wesoły, lekko podchmielony bywalec przystanku przy kościele w Trębaczewie, po sześćdziesiątce, w starej kurtce',
-    char: 'gaduła, sentymentalny, wspomina dawne czasy we wsi i pracę w zakładzie, ciepły i nieszkodliwy, trochę się plącze, ale ma dobre serce; sam przyznaje, że na dziś już wystarczy i trzeba iść do domu',
-    style: 'mówi wolno, gubi wątek, wtrąca „hik”, „kolego”, „eee”, „słowo honoru”; nigdy nie zachęca do picia, raczej żartuje, że żona każe mu pić herbatę',
+  andrzej: { name: 'Andrzej', who: 'fanatyk motocykli, stały bywalec przed sklepem Żabka w Trębaczewie, po sześćdziesiątce, w skórzanej kurtce',
+    char: 'gaduła i pasjonat jednośladów, z rozrzewnieniem wspomina swój kultowy motocykl (WSK 125, a czasem Junak) i dawne wyprawy po okolicy, ciepły i nieszkodliwy, ma dobre serce; zgubione klucze są do garażu z jego starym motorem',
+    style: 'mówi z zapałem i szczegółami o motorach, wtrąca „kolego” i „słowo honoru”; o alkoholu nie wspomina',
     stages: { start: 'Gracz zagaduje Cię pierwszy raz. Zgubiłeś klucze od domu gdzieś na trawniku przy kościele i bez nich żona Cię nie wpuści – możesz o tym napomknąć.',
       zadanie: 'Poprosiłeś gracza, żeby znalazł Twoje klucze na trawniku przy kościele. Czekasz przy przystanku i wspominasz dawne czasy.',
       ma: 'Gracz ma Twoje klucze – bardzo się cieszysz i czekasz, aż Ci je odda.',
@@ -337,6 +337,15 @@ export default {
       const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/reports' + (url.searchParams.get('del') ? '?del=' + encodeURIComponent(url.searchParams.get('del')) : ''));
       return new Response(await r.text(), { headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
     }
+    if (url.pathname === '/ranking' && req.method === 'GET') {
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/ranking');
+      return new Response(await r.text(), { headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=30' } });
+    }
+    if (url.pathname.startsWith('/acct/') && req.method === 'POST') {
+      const body = await req.text(); if (body.length > 90000) return new Response('{"error":"za duże"}', { status: 413, headers: { ...cors, 'content-type': 'application/json' } });
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do' + url.pathname, { method: 'POST', body, headers: { 'x-ip': req.headers.get('cf-connecting-ip') || '?' } });
+      return new Response(await r.text(), { status: r.status, headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+    }
     if (url.pathname === '/stats') {
       if (!await hasStatsSession(req, env)) {
         return new Response('{"error":"unauthorized"}', { status: 401, headers: { ...cors, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -408,11 +417,40 @@ export class Stats extends DurableObject {
             CREATE TABLE IF NOT EXISTS players(id TEXT PRIMARY KEY, first TEXT, mob INTEGER);
             CREATE TABLE IF NOT EXISTS scores(g TEXT, nick TEXT, s INTEGER, t INTEGER);
             CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);
+            CREATE TABLE IF NOT EXISTS accounts(name TEXT PRIMARY KEY, salt TEXT, hash TEXT, tok TEXT, save TEXT, t INTEGER);
             CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kat TEXT, opis TEXT, kontakt TEXT, info TEXT);`);
     this.rrl = new Map(); this.nrl = new Map();
     this.rl = new Map(); this.cache = null;
   }
   add(day, k, v) { this.ctx.storage.sql.exec('INSERT INTO daily(day,k,v) VALUES(?,?,?) ON CONFLICT(day,k) DO UPDATE SET v=v+excluded.v', day, k, v); }
+  async acct(req, url, q) {
+    const J = (o, st = 200) => new Response(JSON.stringify(o), { status: st });
+    const ip = req.headers.get('x-ip') || '?', now = Date.now(); this.arl = this.arl || new Map();
+    const r = this.arl.get(ip) || { t: now, n: 0 }; if (now - r.t > 600e3) { r.t = now; r.n = 0; } if (++r.n > 30) return J({ error: 'Za dużo prób. Spróbuj za kilka minut.' }, 429); this.arl.set(ip, r); if (this.arl.size > 5000) this.arl.clear();
+    let m; try { m = JSON.parse(await req.text()); } catch (e) { return J({ error: 'zły JSON' }, 400); }
+    const name = String(m.name || '').trim().toLowerCase().replace(/[^a-z0-9ąćęłńóśźż_-]/g, '').slice(0, 20), pass = String(m.pass || '');
+    const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+    const kdf = async (pw, salt) => hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: 100000 }, await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']), 256));
+    const newTok = () => hex(crypto.getRandomValues(new Uint8Array(24)).buffer);
+    if (url.pathname === '/acct/register' || url.pathname === '/acct/login') {
+      if (name.length < 3) return J({ error: 'Nazwa: minimum 3 znaki (litery, cyfry).' }, 400);
+      if (pass.length < 6 || pass.length > 100) return J({ error: 'Hasło: minimum 6 znaków.' }, 400);
+      const row = q.exec('SELECT salt,hash,save FROM accounts WHERE name=?', name).toArray()[0];
+      if (url.pathname === '/acct/register') {
+        if (row) return J({ error: 'Ta nazwa jest zajęta.' }, 409);
+        if (q.exec('SELECT COUNT(*) AS n FROM accounts').toArray()[0].n >= 20000) return J({ error: 'Rejestracja chwilowo niedostępna.' }, 503);
+        const salt = newTok(), tok = newTok(); q.exec('INSERT INTO accounts(name,salt,hash,tok,save,t) VALUES(?,?,?,?,?,?)', name, salt, await kdf(pass, salt), tok, '', now); return J({ ok: 1, name, tok });
+      }
+      if (!row || await kdf(pass, row.salt) !== row.hash) return J({ error: 'Zła nazwa lub hasło.' }, 401);
+      const tok = newTok(); q.exec('UPDATE accounts SET tok=? WHERE name=?', tok, name); return J({ ok: 1, name, tok, save: row.save || '' });
+    }
+    const tok = String(m.tok || ''); const row = tok.length >= 32 ? q.exec('SELECT name FROM accounts WHERE tok=?', tok).toArray()[0] : null;
+    if (!row) return J({ error: 'Sesja wygasła – zaloguj się ponownie.' }, 401);
+    if (url.pathname === '/acct/save') { const sv = typeof m.save === 'string' ? m.save : ''; if (sv.length > 80000) return J({ error: 'za duże' }, 413); q.exec('UPDATE accounts SET save=?, t=? WHERE name=?', sv, now, row.name); return J({ ok: 1 }); }
+    if (url.pathname === '/acct/load') { const sv = q.exec('SELECT save FROM accounts WHERE name=?', row.name).toArray()[0]; return J({ ok: 1, save: (sv && sv.save) || '' }); }
+    if (url.pathname === '/acct/logout') { q.exec('UPDATE accounts SET tok=? WHERE name=?', '', row.name); return J({ ok: 1 }); }
+    return J({ error: '?' }, 404);
+  }
   async fetch(req) {
     const url = new URL(req.url); const q = this.ctx.storage.sql; const day = new Date(Date.now() + 3600e3).toISOString().slice(0, 10);
     if (url.pathname === '/npc') { // limity rozmów: 12 na minutę i 80 dziennie na adres IP, 900 dziennie na całą grę
@@ -420,6 +458,11 @@ export class Stats extends DurableObject {
       const tot = (q.exec('SELECT v FROM daily WHERE day=? AND k=?', day, 'npc').toArray()[0] || { v: 0 }).v;
       if (++r.n > 12 || ++r.dn > 80 || tot >= 900) { this.nrl.set(ip, r); return new Response('limit', { status: 429 }); }
       this.nrl.set(ip, r); if (this.nrl.size > 5000) this.nrl.clear(); this.add(day, 'npc', 1); return new Response(String(tot + 1)); }
+    if (url.pathname === '/ranking') {
+      const rows = q.exec("SELECT nick,s FROM scores WHERE g='poziom' ORDER BY s DESC, t ASC LIMIT 50").toArray();
+      return new Response(JSON.stringify(rows.map(r => ({ n: r.nick, l: Math.floor(r.s / 100000), xp: r.s % 100000 }))));
+    }
+    if (url.pathname.startsWith('/acct/')) return this.acct(req, url, q);
     if (url.pathname === '/peak') { const v = +(await req.text()) || 0; q.exec('INSERT INTO meta(k,v) VALUES(\'peak\',?) ON CONFLICT(k) DO UPDATE SET v=MAX(v,excluded.v)', v); this.cache = null; return new Response('ok'); }
     if (url.pathname === '/report') {
       const ip = req.headers.get('x-ip') || '?', now = Date.now(); const r = this.rrl.get(ip) || { t: now, n: 0 }; if (now - r.t > 3600e3) { r.t = now; r.n = 0; } if (++r.n > 8) return new Response('{"ok":false,"error":"Za dużo zgłoszeń – spróbuj za godzinę"}', { status: 429 }); this.rrl.set(ip, r); if (this.rrl.size > 3000) this.rrl.clear();
@@ -454,6 +497,7 @@ export class Stats extends DurableObject {
         const nick = censor(clean(d.n, 18)); if (!nick || nick.length < 2) return new Response('bez nazwy', { status: 400 });
         const put = (g, s) => { const best = (q.exec('SELECT MAX(s) AS s FROM scores WHERE g=? AND nick=?', g, nick).toArray()[0] || {}).s; if (best != null && best >= s) return; q.exec('DELETE FROM scores WHERE g=? AND nick=?', g, nick); q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', g, nick, s, now); q.exec('DELETE FROM scores WHERE g=? AND rowid NOT IN (SELECT rowid FROM scores WHERE g=? ORDER BY s DESC, t ASC LIMIT 25)', g, g); };
         const money = Math.round(+d.money || 0); if (money > 0 && money <= 5e6) put('kasa', money);
+        const lvl = Math.round(+d.lvl || 0); if (lvl >= 1 && lvl <= 10) put('poziom', lvl * 100000 + Math.min(99999, Math.max(0, Math.round(+d.xp || 0))));
         const race = +d.race || 0; if (race >= 25 && race <= 600) put('wyscig', Math.round((600 - race) * 10));
       }
       q.exec('INSERT OR IGNORE INTO seen(day,id) VALUES(?,?)', day, id);

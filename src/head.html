@@ -118,6 +118,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b0d10;color:var(--in
 .tl{max-width:min(60vw,760px)}
 @media (max-width:760px){ #bWeather,#bSeason,#bQual{display:none} }
 #dead{position:fixed;inset:0;z-index:8;display:grid;place-items:center;background:rgba(0,0,0,.45);font-family:var(--font-display);font-size:min(16vw,110px);color:#b81d1d;letter-spacing:.06em;text-shadow:0 4px 0 #000;pointer-events:none}
+#load .ld{text-align:center;width:min(420px,80vw)}#loadBar{height:8px;border-radius:4px;background:#232a31;margin:16px 0 8px;overflow:hidden}#loadBar i{display:block;height:100%;width:0;background:#f2b705;transition:width .25s}#loadPct{font-size:18px;color:#97a3ad}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:#0b0d10;z-index:20;font-family:var(--font-display);font-size:30px;letter-spacing:.05em;color:#f2f2f2}
 
 /* === układ: minimapa lewy górny, przyciski obok, czat lewy dolny, pomoc prawy dolny === */
@@ -261,7 +262,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 </style>
 
 <canvas id="c" tabindex="0" aria-label="Trójwymiarowa gra: Trębaczew"></canvas>
-<div id="load">WCZYTYWANIE TRĘBACZEWA…</div>
+<div id="load"><div class="ld"><div>WCZYTYWANIE TRĘBACZEWA…</div><div id="loadBar"><i></i></div><div id="loadPct">0%</div></div></div>
 <div id="fade"></div>
 
 <div class="hud tl">
@@ -291,6 +292,8 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 
 <div class="hud" id="hint"></div>
 <div class="hud" id="mission" hidden></div>
+<button id="mMute" aria-label="Dźwięk" style="position:fixed;z-index:8;right:calc(6px + env(safe-area-inset-right,0px));top:calc(6px + env(safe-area-inset-top,0px));width:26px;height:26px;padding:0;border:0;border-radius:13px;background:rgba(0,0,0,.35);color:#fff;font-size:13px;line-height:26px;cursor:pointer;opacity:.6">🔊</button>
+<button class="btn" id="mAbort" hidden style="position:fixed;z-index:7;left:50%;top:calc(112px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-size:13px;padding:4px 12px;opacity:.85">Anuluj misję</button>
 <div class="hud" id="toast"></div>
 <div id="shop" hidden></div>
 <div id="dead" hidden>ZGINĄŁEŚ</div>
@@ -313,7 +316,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 <div id="mapView" hidden>
   <h2>MAPA TRĘBACZEWA</h2>
   <div class="mapWrap"><canvas id="bigmap"></canvas><div id="poiList"></div></div>
-  <div class="mapNote mapTools"><button class="btn" id="mapZin">+</button><button class="btn" id="mapZout">−</button><button class="btn" id="mapMe">Ja</button><span>Kółko myszy / dwa palce: przybliżanie · przeciąganie: przesuwanie · kliknięcie: przeniesienie się</span><button class="btn" id="closeMap">Zamknij · M</button></div>
+  <div class="mapNote mapTools"><button class="btn" id="mapZin">+</button><button class="btn" id="mapZout">−</button><button class="btn" id="mapMe">Ja</button><span>Kółko myszy / dwa palce: przybliżanie · przeciąganie: przesuwanie</span><button class="btn" id="closeMap">Zamknij · M</button></div>
 </div>
 
 
@@ -332,17 +335,26 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
     <button class="mItem" id="mLog" hidden>Misje <small id="mLogSub"></small></button>
     <button class="mItem" id="mMulti">Tryb wieloosobowy <small>graj z innymi mieszkańcami</small></button>
     <button class="mItem" id="mOpt">Opcje</button>
+    <button class="mItem" id="mAcct">Konto <small id="mAcctSub">zapis w chmurze</small></button>
     <button class="mItem" id="mChar">Kreator postaci</button>
     <button class="mItem" id="mNew" hidden>Nowa gra</button>
     <button class="mItem" id="mInstall" hidden>Pobierz grę <small id="mInstallSub">działa bez przeglądarki</small></button>
     <div class="mFoot"><button class="btn" id="mBug">Zgłoś błąd</button><span>Dane: © OpenStreetMap, © GUGiK</span></div>
+  </div>
+  <div class="mPanel" id="pAcct" hidden>
+    <h2>KONTO</h2>
+    <p style="max-width:34em;opacity:.8" id="accSt">Opcjonalne. Załóż konto, aby zapis gry (pieniądze, misje, auta, dom) synchronizował się między urządzeniami. Wystarczy nazwa i hasło – bez adresu e-mail.</p>
+    <div id="accIn"><div class="mRow"><input id="accName" maxlength="20" placeholder="Nazwa konta" autocomplete="username" style="padding:8px;font-size:16px"></div><div class="mRow"><input id="accPass" type="password" maxlength="100" placeholder="Hasło (min. 6 znaków)" autocomplete="current-password" style="padding:8px;font-size:16px"></div><div class="mRow"><button class="btn" id="accLogin">Zaloguj</button><button class="btn" id="accReg">Załóż konto</button></div></div>
+    <div id="accOut" hidden><p>Zalogowano jako <b id="accWho"></b></p><div class="mRow"><button class="btn" id="accPush">Zapisz teraz</button><button class="btn" id="accLogout">Wyloguj</button></div></div>
+    <p id="accMsg" style="min-height:1.4em"></p>
+    <div class="mRow"><button class="btn" data-back>Wróć</button></div>
   </div>
   <div class="mPanel" id="pOpt" hidden>
     <h2>OPCJE</h2>
     <h3>Sterowanie</h3><div id="keyList"></div>
     <div class="mRow"><button class="btn" id="kReset">Przywróć domyślne</button></div>
     <h3>Grafika i dźwięk</h3>
-    <div class="chips" id="qChips"><button data-q="1">Wysoka</button><button data-q="0">Niska (telefon)</button></div>
+    <div class="chips" id="qChips"><button data-q="0">Niskie</button><button data-q="1">Średnie</button><button data-q="2">Maksymalne</button></div>
     <label for="sensIn">Czułość myszy</label><input type="range" id="sensIn" min="0.4" max="2" step="0.1" style="width:100%">
     <h3>Świat</h3><div class="mRow" style="margin-top:4px"><button class="btn" id="oWeather">Pogoda</button><button class="btn" id="oSeason">Pora roku</button></div>
     <div class="mRow"><button class="btn" id="oSound">Dźwięk</button><button class="btn pri" data-back>Gotowe</button></div>

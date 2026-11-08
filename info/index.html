@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Info – Symulator życia w Trębaczewie</title>
+<meta name="description" content="Wszystko o grze „Symulator życia w Trębaczewie”: świat, historia, postacie, misje, ekonomia, sterowanie, tryb wieloosobowy i ranking graczy.">
+<link rel="icon" href="../src/favicon.png">
+<style>
+:root{--bg:#10151a;--card:#182028;--ink:#e8e4da;--mut:#97a3ad;--acc:#f2b705;--line:#2a3540;--grn:#46b36b}
+@media (prefers-color-scheme:light){:root{--bg:#f5f2ea;--card:#fff;--ink:#1d252c;--mut:#5b6872;--acc:#b07d00;--line:#ddd6c4;--grn:#2a8a4d}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--acc)}
+header.hero{padding:56px 16px 40px;text-align:center;background:linear-gradient(180deg,#0b3d2a 0,var(--bg) 100%);color:#fff}
+.hero small{letter-spacing:.2em;text-transform:uppercase;opacity:.8}
+.hero h1{margin:6px 0 10px;font-size:clamp(34px,7vw,64px);line-height:1.05;letter-spacing:.02em}
+.hero p{max-width:40em;margin:0 auto 22px;opacity:.9}
+.btn{display:inline-block;padding:12px 26px;border-radius:8px;background:var(--acc);color:#111;font-weight:700;text-decoration:none}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap}
+nav a{display:inline-block;padding:12px 14px;color:var(--mut);text-decoration:none;font-size:14px}nav a:hover{color:var(--ink)}
+main{max-width:920px;margin:0 auto;padding:8px 16px 60px}
+section{padding-top:34px}
+h2{font-size:28px;margin:0 0 10px;border-left:4px solid var(--acc);padding-left:12px}
+h3{margin:22px 0 6px;font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card b{display:block;margin-bottom:2px}
+.mut{color:var(--mut)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:15px}th{color:var(--mut);font-weight:600}
+kbd{background:var(--line);border-radius:4px;padding:1px 7px;font:13px monospace}
+#rk td:first-child{width:3em;color:var(--mut)}#rk tr:nth-child(-n+3) td:first-child{color:var(--acc);font-weight:700}
+footer{border-top:1px solid var(--line);padding:22px 16px;text-align:center;color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <small>gm. Działoszyn · pow. pajęczański</small>
+  <h1>Symulator życia<br>w Trębaczewie</h1>
+  <p>Gra 3D w przeglądarce, osadzona w prawdziwej wsi: z realnymi ulicami, budynkami i ukształtowaniem terenu. Bez instalacji, na komputerze i telefonie.</p>
+  <a class="btn" href="../">Zagraj teraz</a>
+</header>
+<nav><a href="#gra">O grze</a><a href="#swiat">Świat</a><a href="#fabula">Fabuła</a><a href="#postacie">Postacie</a><a href="#misje">Misje</a><a href="#ekonomia">Ekonomia</a><a href="#pojazdy">Pojazdy</a><a href="#sterowanie">Sterowanie</a><a href="#multi">Multiplayer</a><a href="#ranking">Ranking</a><a href="#konto">Konto</a><a href="#prywatnosc">Prywatność</a></nav>
+<main>
+
+<section id="gra"><h2>O grze</h2>
+<p>Zaczynasz z 200 zł w kieszeni i jednym celem: uzbierać <b>450 000 zł</b> i kupić własny dom. Po drodze pracujesz, jeździsz, pomagasz sąsiadom, ścigasz się i rozwijasz postać. Gra działa w całości w przeglądarce, zapisuje się automatycznie, a chętni mogą założyć opcjonalne konto i grać na kilku urządzeniach.</p>
+<div class="grid">
+<div class="card"><b>Realny świat</b>Drogi, budynki, działki i teren pochodzą z otwartych danych (OpenStreetMap, GUGiK).</div>
+<div class="card"><b>Kampania i misje poboczne</b>20 misji fabularnych oraz kilkadziesiąt zadań pobocznych i zleceń postaci.</div>
+<div class="card"><b>Gra z innymi</b>Wyścigi, rozmowy na czacie i wspólny świat w trybie wieloosobowym.</div>
+</div></section>
+
+<section id="swiat"><h2>Świat</h2>
+<p>Mapa obejmuje Trębaczew i okolice: ulice Szkolną, Wyzwolenia, Spacerową i Cmentarną, kościół, szkołę podstawową, park z placem zabaw, cmentarz, stadion, orlik, schronisko dla zwierząt oraz fragment DK42 z przejazdem kolejowym i stacją ORLEN w Działoszynie.</p>
+<h3>Wnętrza, do których wejdziesz</h3>
+<p class="mut">Lewiatan (duży market z działami, trzema kasami i stoiskiem mięsnym), Żabka, apteka, kościół, biblioteka, szkoła z klasami i dwoma piętrami, ORLEN, Biedronka, Lidl oraz własny dom po jego kupnie.</p>
+<h3>Pogoda i pory dnia</h3>
+<p class="mut">Cztery pory roku, zmienna pogoda i cykl dnia z nocą. Dźwięki otoczenia (ptaki, przyroda) grają tylko wtedy, gdy postać chodzi po mapie.</p></section>
+
+<section id="fabula"><h2>Fabuła</h2>
+<p>Przyjeżdżasz do Trębaczewa bez grosza przy duszy. Pierwsze kroki stawiasz przy niebieskim punkcie informacyjnym „i”, gdzie dostajesz pierwszą misję: zakupy w Lewiatanie. Z każdą kolejną robisz się w wiosce coraz bardziej znany: od przysług dla sąsiadów, przez pracę kuriera i kierowcy, po udział w wielkim wyścigu gminnym.</p>
+<p>Ostatnia misja kampanii to zakup domu za 450 000 zł. Dom możesz potem urządzić meblami z katalogu na laptopie, a nawet zaprosić do niego psa ze schroniska.</p></section>
+
+<section id="postacie"><h2>Postacie</h2>
+<p class="mut">Postaci rozmawiają z Tobą swobodnie (rozmowy napędza model językowy, z gotowymi odpowiedziami awaryjnymi). Nad głową mają „!” gdy czekają z zadaniem i „?” gdy możesz je oddać.</p>
+<div class="grid">
+<div class="card"><b>Marek</b>Wiejski sportowiec. Wyzwie Cię na serię rzutów karnych, a potem zaprosi do drużyny LZS.</div>
+<div class="card"><b>Seba</b>Pasjonat motoryzacji. Jego czarne BMW E46 330d jest do przejechania, a on sam chętnie pogada o beemkach.</div>
+<div class="card"><b>Alicja</b>Mieszkanka z wieloma pomysłami na to, jak pomóc wsi.</div>
+<div class="card"><b>Andrzej</b>Fanatyk motocykli, spotkasz go przy Żabce. Wspomina swoją legendarną WSK-ę.</div>
+<div class="card"><b>Pani Stasia i Pani Grażyna</b>W Lewiatanie: klientka i kasjerka plotkują przy kasie. Możesz się wtrącić, a Pani Stasia da Ci zadanie.</div>
+<div class="card"><b>Zenek, Heniek, Józek i inni</b>Mieszkańcy parku: quizy, worki do zebrania, bułki dla gołębi i właściciel burka.</div>
+</div></section>
+
+<section id="misje"><h2>Misje</h2>
+<h3>Kampania</h3><p>20 misji odblokowywanych kolejnymi poziomami (1–10). Nagrody od 250 zł za pierwsze zakupy do 25 000 zł za wielki wyścig gminny.</p>
+<h3>Misje poboczne</h3><p>Niebieskie znaczniki na mapie. Dostawy, wyścigi, turniej flanek, mecz, grill u rodziny, pies ze schroniska i wiele innych. Powtarzanie tej samej misji płaci coraz mniej, a co 20 minut trzy losowe misje dostają premię ×1,5. Każdą trwającą misję możesz anulować.</p>
+<h3>Zlecenia dnia i osiągnięcia</h3><p>Codziennie trzy zlecenia z różnych kategorii, a za komplet premia. Do zdobycia jest 13 osiągnięć.</p></section>
+
+<section id="ekonomia"><h2>Ekonomia</h2>
+<table>
+<tr><th>Źródło / wydatek</th><th>Wartość</th></tr>
+<tr><td>Start</td><td>200 zł</td></tr>
+<tr><td>Misje fabularne (razem)</td><td>ok. 92 000 zł</td></tr>
+<tr><td>Misje poboczne</td><td>600–2500 zł × (1 + 0,35 × poziom)</td></tr>
+<tr><td>Banknoty na chodnikach</td><td>10–150 zł, rzadko portfel 300 zł</td></tr>
+<tr><td>Mandat / szpital</td><td>10% (maks. 5000 zł) / 5% (maks. 2000 zł) gotówki</td></tr>
+<tr><td>Cel gry</td><td>dom za 450 000 zł</td></tr>
+</table>
+<p class="mut">Przy rozsądnej grze dojście do domu zajmuje kilka godzin.</p></section>
+
+<section id="pojazdy"><h2>Pojazdy</h2>
+<p>W Trębaczewie stoją i jeżdżą auta, w tym szary VW Passat B5 FL pod Lewiatanem. W Auto-Komisie przy DK42 kupisz własne auto, rower i tuning (chip, większy bak), a garaż przy punkcie informacyjnym trzyma Twój pojazd. Auta mają paliwo, tankuje się na ORLENIE (ceny aktualizowane codziennie).</p></section>
+
+<section id="sterowanie"><h2>Sterowanie</h2>
+<table>
+<tr><th>Klawisz</th><th>Akcja</th></tr>
+<tr><td><kbd>W A S D</kbd> / strzałki</td><td>ruch, w aucie gaz, hamulec, skręt</td></tr>
+<tr><td><kbd>Shift</kbd></td><td>sprint</td></tr>
+<tr><td><kbd>Spacja</kbd></td><td>skok / hamulec ręczny</td></tr>
+<tr><td><kbd>F</kbd></td><td>wsiądź lub wysiądź z pojazdu</td></tr>
+<tr><td><kbd>E</kbd></td><td>akcja: misja, rozmowa, sklep, wejście, brama</td></tr>
+<tr><td><kbd>Q</kbd></td><td>dziennik misji</td></tr>
+<tr><td><kbd>M</kbd></td><td>mapa</td></tr>
+<tr><td><kbd>C</kbd> · <kbd>R</kbd> · <kbd>N</kbd></td><td>kamera · radio · pora dnia</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>pauza i menu</td></tr>
+</table>
+<p class="mut">Na telefonie gra ma wirtualny joystick i przyciski na ekranie. Jakość grafiki (niskie, średnie, maksymalne) zmienisz w Opcjach.</p></section>
+
+<section id="multi"><h2>Tryb wieloosobowy</h2>
+<p>W menu wybierz „Tryb wieloosobowy” i podaj nazwę gracza. Inni gracze widoczni są w świecie oraz na minimapie i mapie. Możesz pisać na czacie i rzucić komuś wyzwanie na wyścig do wybranego punktu. Po wyścigu zobaczysz baner zwycięstwa lub przegranej.</p></section>
+
+<section id="ranking"><h2>Ranking graczy</h2>
+<p class="mut">Gracze posortowani według poziomu (a przy równym poziomie według doświadczenia). Do rankingu trafiasz, gdy grasz w trybie wieloosobowym pod własną nazwą.</p>
+<table id="rk"><tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr><tr><td colspan="4" class="mut">Ładowanie…</td></tr></table></section>
+
+<section id="konto"><h2>Konto i zapis gry</h2>
+<p>Gra zapisuje się w przeglądarce, a po ponownym uruchomieniu postać pojawia się tam, gdzie skończyłeś. Opcjonalnie możesz założyć konto (sama nazwa i hasło, bez e-maila) w menu głównym, w pozycji „Konto”. Dzięki temu zapis zsynchronizuje się między urządzeniami.</p></section>
+
+<section id="prywatnosc"><h2>Prywatność</h2>
+<p>Gra nie zbiera danych osobowych. Statystyki są anonimowe i zagregowane. Hasła kont są przechowywane wyłącznie w postaci skrótów. Mapa korzysta z danych OpenStreetMap i GUGiK. Błąd zgłosisz przyciskiem „Zgłoś błąd” w menu.</p></section>
+
+</main>
+<footer>Symulator życia w Trębaczewie · gra fanowska, postaci i wydarzenia są fikcyjne · dane: © OpenStreetMap, © GUGiK</footer>
+<script>
+(function(){
+  var API='https://trebaczew-mp.kontakt-3e3.workers.dev/ranking', t=document.getElementById('rk');
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  fetch(API).then(function(r){return r.json();}).then(function(j){
+    if(!j.length){t.innerHTML+='';t.rows[1].cells[0].textContent='Na razie nikogo. Zagraj w trybie wieloosobowym i zostań pierwszy!';return;}
+    var h='<tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr>';
+    j.forEach(function(p,i){h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.l+'</td><td>'+p.xp+'</td></tr>';});
+    t.innerHTML=h;
+  }).catch(function(){t.rows[1].cells[0].textContent='Nie udało się pobrać rankingu.';});
+})();
+</script>
+</body>
+</html>
