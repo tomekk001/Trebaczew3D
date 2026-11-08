@@ -3511,7 +3511,7 @@ async function boot(saved){
     CO.friends.forEach(f=>{ if(on[f.fc]&&!CO.on[f.fc]&&!CO.notified[f.fc]){ CO.notified[f.fc]=1; toast(`👋 Znajomy <b>${esc2(f.nick||on[f.fc].nick||'Gracz')}</b> jest online (pokój ${esc2(on[f.fc].room.slice(1))})`,3); } if(!on[f.fc]) CO.notified[f.fc]=0; if(on[f.fc]&&on[f.fc].nick&&on[f.fc].nick!==f.nick){ f.nick=on[f.fc].nick; } }); CO.on=on; coSaveFr(); if(CO.open) renderSoc(); }
   setInterval(()=>{ coHere(); },40000); setInterval(()=>{ coPoll(); },30000);
   const socEl=document.createElement('div'); socEl.id='soc'; socEl.hidden=true; document.body.appendChild(socEl);
-  function socToggle(v){ CO.open=v===undefined?!CO.open:v; socEl.hidden=!CO.open; if(CO.open){ keys.clear(); renderSoc(); coPoll(); } }
+  function socToggle(v){ CO.open=v===undefined?!CO.open:v; socEl.hidden=!CO.open; if(CO.open){ keys.clear(); renderSoc(); coPoll(); if(ACC.tok&&tAll-HM.t>3) homeCall('get'); } }
   function renderSoc(){ if(!CO.open) return; const rn=MP.room?MP.room.name():'', priv=rn[0]==='p'; const peers=[...MP.remote.values()];
     let h=`<div class="socH"><b>Wieloosobowo</b><button class="btn sm" data-a="x">✕</button></div>`;
     h+=`<div class="socS">Twój kod znajomego: <b class="fc">${MYFC.toUpperCase()}</b> <button class="btn sm" data-a="cpfc">Kopiuj</button><div class="sub">Podaj go znajomym, żeby dodali Cię do listy.</div></div>`;
@@ -3519,7 +3519,7 @@ async function boot(saved){
     h+=`<div class="socS"><b>Gracze w pokoju (${peers.length+1})</b>`; if(!peers.length) h+='<div class="sub">Nikogo więcej tu nie ma. Zaproś znajomego kodem pokoju.</div>';
     peers.forEach(r=>{ const fr=r.fc&&isFriend(r.fc); h+=`<div class="socP"><i style="background:${esc2(r.col)}"></i><span>${esc2(r.name||'Gracz')}</span>${r.fc&&!fr?`<button class="btn sm" data-a="addf" data-p="${esc2(r.peer)}">+ znajomy</button>`:fr?'<em>znajomy</em>':''}<button class="btn sm" data-a="menu" data-p="${esc2(r.peer)}">Zaproś…</button></div>`;
       if(CO.menu===r.peer){ h+='<div class="socM"><button class="btn sm" data-a="invroom" data-p="'+esc2(r.peer)+'">do pokoju prywatnego</button>'+CO.actions.map((a,i)=>`<button class="btn sm" data-a="act" data-i="${i}" data-p="${esc2(r.peer)}">${esc2(a.l)}</button>`).join('')+'</div>'; } });
-    h+='</div>'; h+=raceSocHtml(); h+=`<div class="socS"><b>Znajomi (${CO.friends.length})</b>`; if(!CO.friends.length) h+='<div class="sub">Dodaj znajomych przyciskiem „+ znajomy” albo wpisz kod:</div>';
+    h+='</div>'; h+=raceSocHtml(); h+=homeSocHtml(); h+=`<div class="socS"><b>Znajomi (${CO.friends.length})</b>`; if(!CO.friends.length) h+='<div class="sub">Dodaj znajomych przyciskiem „+ znajomy” albo wpisz kod:</div>';
     CO.friends.forEach(f=>{ const o=CO.on[f.fc]; h+=`<div class="socP"><i style="background:${o?'#47b04b':'#666'}"></i><span>${esc2(f.nick||f.fc.toUpperCase())}</span>${o?`<button class="btn sm" data-a="goto" data-r="${esc2(o.room)}">Dołącz (pokój ${esc2(o.room.slice(1))})</button>`:'<em>offline</em>'}<button class="btn sm" data-a="delf" data-f="${f.fc}">✕</button></div>`; });
     h+=`<div class="row"><input id="socFc" maxlength="6" placeholder="Kod znajomego" aria-label="Kod znajomego"><button class="btn sm" data-a="addc">Dodaj</button></div></div>`;
     socEl.innerHTML=h; }
@@ -3533,6 +3533,7 @@ async function boot(saved){
     if(a==='delf'){ CO.friends=CO.friends.filter(f=>f.fc!==b.dataset.f); coSaveFr(); renderSoc(); return; }
     if(a==='goto'){ MP.room.switchTo(b.dataset.r); MP.last=''; socToggle(false); return; }
     if(a==='menu'){ CO.menu=CO.menu===p?null:p; renderSoc(); return; } if(a==='invroom'){ coInviteRoom(p); CO.menu=null; renderSoc(); return; }
+    if(a[0]==='h'&&a.length>2&&a!=='hmAmt'){ homeAct(a,b); return; }
     if(a==='rjoin'){ raceJoin(p); renderSoc(); return; } if(a==='rsel'){ RACE.sel=+b.dataset.i|0; renderSoc(); return; } if(a==='rfee'){ RACE.feeSel=+b.dataset.i|0; renderSoc(); return; } if(a==='rmk'){ raceCreate(); socToggle(false); return; }
     if(a==='act'){ const act=CO.actions[+b.dataset.i]; if(act){ CO.menu=null; socToggle(false); act.fn(p); } } });
   addEventListener('keydown',e=>{ if(CO.open&&e.key==='Escape'){ e.stopPropagation(); socToggle(false); } },true);
@@ -3686,6 +3687,28 @@ async function boot(saved){
   CM.box.addEventListener('click',e=>{ if(e.target.closest('[data-c=q]')){ cmSend('quit'); cmEnd(false,'Misja przerwana'); } });
   CO.invH.cm=(d,from,nm)=>{ const k=String(d.kind||''), id=String(d.id||'').slice(0,8); const J=CMK[k]; if(!J||!id) return; coAsk({kick:'Misja kooperacyjna',title:nm+' zaprasza: '+J.t,sub:J.sub+' · nagroda '+fmt(J.rw)+' dla każdego',yes:'Dołącz',no:'Nie teraz',ttl:35,onYes:()=>{ if(CM.on||MG.on||TR.on){ toast('Skończ najpierw bieżące zajęcie',2); return; } coSend(from,'cm',{m:'acc',id}); cmOpen(k,id,from,false); }}); };
   ['harvest','parcels'].forEach(k=>CO.actions.push({l:'misja: '+CMK[k].t.toLowerCase(),fn:peer=>{ if(CM.on){ toast('Misja kooperacyjna już trwa',2); return; } const id=Math.random().toString(36).slice(2,8); CM.pend={peer,id,kind:k,t:tAll}; coSend(peer,'inv',{w:'cm',kind:k,id}); toast('✉ Zaproszenie do misji wysłane: '+esc2(peerName(peer)),2); }}));
+  /* ---------- wspólny dom i garaż (konto): skarbiec i miejsca na auta dla kilku kont, dane trzyma serwer ---------- */
+  const HM={d:null,inv:[],err:'',busy:false,t:0};
+  async function homeCall(op,extra){ if(!ACC.tok) return null; if(HM.busy) return null; HM.busy=true; const j=await accCall('home',Object.assign({tok:ACC.tok,op},extra||{})); HM.busy=false; if(j.error){ HM.err=j.error; if(CO.open) renderSoc(); return null; } HM.err=''; HM.d=j.home||null; HM.inv=j.inv||[]; HM.t=tAll; if(CO.open) renderSoc(); return j; }
+  function homeSocHtml(){ let h='<div class="socS"><b>Wspólny dom i garaż</b>';
+    if(!ACC.tok){ return h+'<div class="sub">Zaloguj się na konto (Menu → Konto), żeby założyć wspólny dom z innymi graczami.</div></div>'; }
+    if(HM.err) h+=`<div class="sub" style="color:#e07a6a">${esc2(HM.err)}</div>`;
+    const d=HM.d; if(!d){ h+='<div class="sub">Nie masz wspólnego domu. Skarbiec i garaż (4 auta) dzielisz z lokatorami.</div>'+HM.inv.map(o=>`<div class="socP"><span>Zaproszenie od <b>${esc2(o)}</b></span><button class="btn sm" data-a="hjoin" data-o="${esc2(o)}">Dołącz</button></div>`).join('')+'<div class="row"><button class="btn sm hot" data-a="hnew">Załóż wspólny dom</button></div>'; return h+'</div>'; }
+    const own=d.owner===d.me; h+=`<div class="sub">Właściciel: <b>${esc2(d.owner)}</b> · lokatorzy: ${d.members.map(esc2).join(', ')}</div>`;
+    h+=`<div class="socP"><span>Skarbiec: <b>${fmt(d.money)}</b></span></div><div class="row"><input id="hmAmt" type="number" min="1" step="100" placeholder="kwota" style="width:90px"><button class="btn sm" data-a="hput">Wpłać</button><button class="btn sm" data-a="htake">Wypłać</button></div>`;
+    h+=`<div class="sub">Garaż (${d.cars.length}/4):</div>`+(d.cars.length?d.cars.map(c=>`<div class="socP"><span>${esc2((CARS[c]||{}).n||c)}</span><button class="btn sm" data-a="htakecar" data-c="${esc2(c)}" ${OWN.car?'disabled title="Najpierw odstaw swoje auto"':''}>Weź</button></div>`).join(''):'<div class="sub">pusto</div>');
+    if(OWN.car&&CARS[OWN.car]) h+=`<div class="row"><button class="btn sm" data-a="hputcar">Odstaw moje auto (${esc2(CARS[OWN.car].n)})</button></div>`;
+    if(own){ h+='<div class="row"><input id="hmWho" maxlength="20" placeholder="nazwa konta lokatora" style="width:150px"><button class="btn sm" data-a="hinv">Zaproś</button></div>'; d.members.filter(m=>m!==d.me).forEach(m=>{ h+=`<div class="socP"><span>${esc2(m)}</span><button class="btn sm" data-a="hkick" data-w="${esc2(m)}">Usuń</button></div>`; }); }
+    h+='<div class="row"><button class="btn sm" data-a="hleave">'+(own?'Zamknij dom':'Wyprowadź się')+'</button></div>';
+    if(d.log&&d.log.length) h+='<div class="sub">'+d.log.slice(0,5).map(l=>esc2(l.x)).join('<br>')+'</div>';
+    return h+'</div>'; }
+  async function homeAct(a,b){ const amt=Math.floor(+(document.getElementById('hmAmt')||{}).value||0);
+    if(a==='hnew') await homeCall('create'); else if(a==='hjoin') await homeCall('join',{owner:b.dataset.o}); else if(a==='hleave'){ const j=await homeCall('leave'); if(j) toast('Opuszczono wspólny dom',2); }
+    else if(a==='hinv'){ const j=await homeCall('invite',{who:(document.getElementById('hmWho')||{}).value||''}); if(j) toast('Zaproszenie wysłane - lokator musi mieć konto i otworzyć ten panel',3); } else if(a==='hkick') await homeCall('kick',{who:b.dataset.w});
+    else if(a==='hput'){ if(amt<1||amt>st.money){ HM.err='Nie masz tyle pieniędzy'; renderSoc(); return; } const j=await homeCall('put',{n:amt}); if(j){ addMoney(-amt); saveGame(); toast('Wpłacono do skarbca: '+fmt(amt),2); } }
+    else if(a==='htake'){ if(amt<1){ HM.err='Podaj kwotę'; renderSoc(); return; } const j=await homeCall('take',{n:amt}); if(j){ addMoney(amt); saveGame(); toast('Wypłacono ze skarbca: '+fmt(amt),2); } }
+    else if(a==='hputcar'){ if(!OWN.car) return; if(st.car&&st.car.own){ HM.err='Wysiądź z auta'; renderSoc(); return; } const k=OWN.car; const j=await homeCall('putcar',{car:k}); if(j){ OWN.car=null; OWN.tune={}; ownSave(); try{ spawnOwnCar(); }catch(e){} saveGame(); toast('Auto odstawione do wspólnego garażu',2.5); } }
+    else if(a==='htakecar'){ if(OWN.car){ HM.err='Najpierw odstaw swoje auto'; renderSoc(); return; } const k=b.dataset.c; const j=await homeCall('takecar',{car:k}); if(j){ OWN.car=k; OWN.tune={}; ownSave(); try{ spawnOwnCar(); }catch(e){} saveGame(); toast('Auto ze wspólnego garażu czeka na Twoim parkingu',3); } } }
   const MP_ENABLED=false; if(MP_ENABLED) mpInit();
 
   /* ---------- zwierzęta: psy na podwórkach, koty, kury, krowy na pastwiskach, sarny przy lesie ---------- */
