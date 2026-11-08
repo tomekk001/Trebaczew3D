@@ -61,16 +61,14 @@ def main():
     nx0, nz0 = int(hp["nx"]), int(hp["nz"]); step0 = int(hp["step"]); nzn = int((WZ1 + 40 - int(hp["z0"])) // step0) + 1
     import statistics
     grid = [vals[r*nx0:(r+1)*nx0] for r in range(nz0)]
+    # na południe od ostatniego wiersza NMT teren łagodnie schodzi do poziomu równiny zakładu (bez stromych skarp); poziom = mediana ostatniego wiersza
+    last = grid[nz0-1]; xs0 = int(hp["x0"]); cols = [c for c in range(nx0) if 0 <= xs0 + c*step0 <= 1500]
+    P = min(200.0, statistics.median(last[c] for c in cols)); print("poziom równiny zakładu:", round(P, 1), "m n.p.m.")
+    wide = [statistics.mean(last[max(0, c-8):c+9]) for c in range(nx0)]
+    NB = 30
     for r in range(nz0, nzn):
-        k = r - nz0 + 1; row = []
-        for c in range(nx0):
-            c0, c1 = max(0, c-3), min(nx0, c+4)
-            slope = statistics.mean((grid[nz0-1][cc] - grid[nz0-13][cc]) / 12 for cc in range(c0, c1))
-            slope = max(-.25, min(.05, slope)) * max(0.0, 1 - k/70)
-            prev = grid[r-1][c]; row.append(max(176.0, prev + slope))
-        # lekkie wygładzenie poziome
-        row = [statistics.mean(row[max(0, c-2):c+3]) for c in range(nx0)]
-        grid.append(row)
+        k = r - nz0 + 1; t = min(1.0, k/NB); t = t*t*(3-2*t)
+        grid.append([wide[c]*(1-t) + P*t for c in range(nx0)])
     vals = [v for row in grid for v in row]; hp["nz"] = str(nzn)
     s = "".join(_b36(max(0, min(1295, round((v-base)*10)))) for v in vals)
     (SRC / "data_h.js").write_text(f'const HGRID={{x0:{hp["x0"]},z0:{hp["z0"]},step:{hp["step"]},nx:{hp["nx"]},nz:{hp["nz"]},base:{base},s:"{s}"}};\n')
