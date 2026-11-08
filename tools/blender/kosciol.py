@@ -1,4 +1,4 @@
-"""Kościół pw. Nawiedzenia NMP w Trębaczewie – bryła wg zdjęć (wysoki trójkątny szczyt z rozetą, kruchta,
+"""Kościół pw. Nawiedzenia NMP w Trębaczewie - bryła wg zdjęć (wysoki trójkątny szczyt z rozetą, kruchta,
 taras ze schodami, niższa nawa boczna, skrzydło przy wejściu). Lokalnie: x = oś kościoła (front na -x), z = poprzecznie."""
 import sys, os, math; sys.path.insert(0, os.path.dirname(__file__)); from common import Model
 M = Model('kosciol')

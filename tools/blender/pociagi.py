@@ -1,5 +1,5 @@
 """Pociągi: elektryczny zespół trakcyjny (człon czołowy i środkowy) oraz pociąg towarowy Magistrali Węglowej (lokomotywa i węglarka).
-Układ: x – wzdłuż toru (przód na +x), y – w górę od główki szyny, z – w poprzek."""
+Układ: x - wzdłuż toru (przód na +x), y - w górę od główki szyny, z - w poprzek."""
 import sys, os, math; sys.path.insert(0, os.path.dirname(__file__)); from common import Model
 def wheel(M, x, z0, z1, r, y, mk, n=12):
     M.prism([(x + r * math.cos(2 * math.pi * i / n), y + r * math.sin(2 * math.pi * i / n), z0) for i in range(n)], (0, 0, z1 - z0), mk)

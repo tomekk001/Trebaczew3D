@@ -1,5 +1,5 @@
 """Myjnia przy DK42 (Trębaczew): hala „MYJNIA TIR I OSOBOWE”, dom z balkonem, wiata myjni bezdotykowej + ciężarówki z naczepami.
-Układ: x – w prawo patrząc od ulicy, z – w stronę ulicy (+z), y – w górę (grunt = 0). Początek: front styku hali z domem."""
+Układ: x - w prawo patrząc od ulicy, z - w stronę ulicy (+z), y - w górę (grunt = 0). Początek: front styku hali z domem."""
 import sys, os, math; sys.path.insert(0, os.path.dirname(__file__)); from common import Model
 from budynki import gable, gable_ends
 
@@ -14,7 +14,7 @@ GL = {
  'D': ["XXXX.", "X...X", "X...X", "X...X", "X...X", "X...X", "XXXX."], 'K': ["X...X", "X..X.", "X.X..", "XX...", "X.X..", "X..X.", "X...X"], ' ': ["     "] * 7}
 
 def text(M, s, xc, y0, z, h, mk, depth=.07):
-    """Napis z pikseli (5x7) na płaszczyźnie +z; xc – środek, y0 – dół liter."""
+    """Napis z pikseli (5x7) na płaszczyźnie +z; xc - środek, y0 - dół liter."""
     px = h / 7.0; w = len(s) * 6 * px - px; x = xc - w / 2
     for ch in s:
         g = GL.get(ch, GL[' '])
@@ -107,7 +107,7 @@ def wheel(M, x, z0, z1, r, y, mk, n=12):
     M.prism([(x + r * math.cos(2 * math.pi * i / n), y + r * math.sin(2 * math.pi * i / n), z0) for i in range(n)], (0, 0, z1 - z0), mk)
 
 def tir(name, cab_col, cab2, trailer_col, tarp):
-    """Ciągnik siodłowy z naczepą (plandeka). x – wzdłuż (przód +x), z – w poprzek, y – w górę od jezdni."""
+    """Ciągnik siodłowy z naczepą (plandeka). x - wzdłuż (przód +x), z - w poprzek, y - w górę od jezdni."""
     M = Model(name); W = 1.25
     cab = M.mat('cab', cab_col, noise=.02); cab2m = M.mat('cab2', cab2); glass = M.mat('glass', '#26313a'); dark = M.mat('dark', '#1d1e20'); steel = M.mat('steel', '#a6abaf'); wh = M.mat('wh', '#141416'); rim = M.mat('rim', '#c3c6c8')
     trl = M.mat('trl', trailer_col, noise=.02); tp = M.mat('tp', tarp, noise=.03, scale=60); orange = M.mat('orange', '#e89a1c'); redl = M.mat('redl', '#b0151b'); lamp = M.mat('lamp', '#f4ecc8')

@@ -28,4 +28,4 @@ if new.get("pb95") and new.get("on"):
     new["date"] = datetime.date.today().isoformat(); new["src"] = "cenycpn.pl (Monitor Polski)"
     OUT.write_text(json.dumps(new, ensure_ascii=False) + "\n", encoding="utf-8"); print("Zapisano", new)
 else:
-    print("Nie odczytano cen – plik bez zmian")
+    print("Nie odczytano cen - plik bez zmian")

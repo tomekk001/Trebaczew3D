@@ -1,6 +1,6 @@
-"""Regał apteczny z lekami (wnętrze Apteki Magnolia) – generowany w Blenderze.
+"""Regał apteczny z lekami (wnętrze Apteki Magnolia) - generowany w Blenderze.
 Uruchomienie: python3 tools/blender/regal_apteka.py  ->  src/models/regal.glb
-Układ jak w grze: x – szerokość (2 m), y – w górę, z – do przodu (front regału na +z), środek tyłu w (0,0,0)."""
+Układ jak w grze: x - szerokość (2 m), y - w górę, z - do przodu (front regału na +z), środek tyłu w (0,0,0)."""
 import bpy, bmesh, math, os, random
 random.seed(7)
 OUT = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'models', 'regal.glb'); RES = 512
@@ -67,7 +67,7 @@ ob = bpy.data.objects.new('regal', me); scene.collection.objects.link(ob)
 for k in order: me.materials.append(mats[k])
 bpy.context.view_layer.objects.active = ob; ob.select_set(True)
 bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT'); bpy.ops.mesh.normals_make_consistent(inside=False); bpy.ops.object.mode_set(mode='OBJECT')
-# (bez fazowania – mniej wierzchołków)
+# (bez fazowania - mniej wierzchołków)
 me.uv_layers.new(name='bake'); bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=.002); bpy.ops.uv.pack_islands(margin=.002); bpy.ops.object.mode_set(mode='OBJECT')
 scene.render.engine = 'CYCLES'; scene.cycles.device = 'CPU'; scene.cycles.samples = 32; scene.render.bake.margin = 4

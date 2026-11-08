@@ -1,5 +1,5 @@
 """Budynki wg zdjęć: Delikatesy Premium, dworzec PKP, Minerał, świetlica, ORLEN (sklep + wiata), Biedronka, Lidl.
-Układ jak w grze (groupAt): x – wzdłuż frontu (L), z – na zewnątrz frontu (+z), y – w górę, środek budynku w (0,0,0)."""
+Układ jak w grze (groupAt): x - wzdłuż frontu (L), z - na zewnątrz frontu (+z), y - w górę, środek budynku w (0,0,0)."""
 import sys, os, math; sys.path.insert(0, os.path.dirname(__file__)); from common import Model
 BASE = -1.0
 def gable(M, x0, x1, z0, z1, ye, rise, mk, ov=.6, along='x', t=.22, edge=None):

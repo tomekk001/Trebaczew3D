@@ -1,5 +1,5 @@
 """Wyposażenie sklepów (Lewiatan, Żabka): regał z alkoholem, gondola z artykułami spożywczymi, lodówka z napojami, lada Żabki.
-Każdy model: środek tyłu w (0,0,0), front na +z, x – szerokość."""
+Każdy model: środek tyłu w (0,0,0), front na +z, x - szerokość."""
 import sys, os, math, random; sys.path.insert(0, os.path.dirname(__file__)); from common import Model
 random.seed(42)
 def bottle(M, x, y, z, kind, mats):
@@ -9,7 +9,7 @@ def bottle(M, x, y, z, kind, mats):
     elif kind == 'vodka':
         M.cyl(x, y, y + .22, z, .034, .034, 6, mats['clear']); M.cyl(x, y + .22, y + .28, z, .034, .014, 6, mats['clear']); M.cyl(x, y + .28, y + .31, z, .016, .016, 4, random.choice(mats['caps']))
         M.box(x - .028, x + .028, y + .05, y + .15, z + .031, z + .037, random.choice(mats['label']))
-    else:  # whisky – kanciasta, bursztynowa
+    else:  # whisky - kanciasta, bursztynowa
         M.box(x - .04, x + .04, y, y + .2, z - .03, z + .03, mats['amber']); M.cyl(x, y + .2, y + .27, z, .02, .016, 4, mats['amber']); M.cyl(x, y + .27, y + .3, z, .02, .02, 4, mats['capB'])
         M.box(x - .035, x + .035, y + .06, y + .13, z + .03, z + .036, random.choice(mats['label']))
 def drinks_mats(M):

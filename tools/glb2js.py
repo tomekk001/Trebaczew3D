@@ -16,8 +16,8 @@ def load(p):
     img = j['images'][0]; v = j['bufferViews'][img['bufferView']]; jpg = b[bin0 + v.get('byteOffset', 0): bin0 + v.get('byteOffset', 0) + v['byteLength']]
     return acc(at['POSITION']), acc(at['NORMAL']), acc(at['TEXCOORD_0']), acc(pr['indices']).ravel(), jpg
 OUTSIDE = {'lewiatan', 'kosciol', 'dzwonnica', 'myjnia', 'tir_a', 'tir_b', 'tir_c'}   # potrzebne od startu; reszta (wnętrza) jest doczytywana
-out = ['/* modele 3D z Blendera (tools/blender) – wygenerowane przez tools/glb2js.py */', 'const MODELS={};']
-out_in = ['/* modele wnętrz – doczytywane osobno (na stronie) albo wklejone (artefakt) */']
+out = ['/* modele 3D z Blendera (tools/blender) - wygenerowane przez tools/glb2js.py */', 'const MODELS={};']
+out_in = ['/* modele wnętrz - doczytywane osobno (na stronie) albo wklejone (artefakt) */']
 for p in sorted((root / 'src' / 'models').glob('*.glb')):
     P, N, U, I, jpg = load(p); n = len(P)
     pad = lambda x: x + b'\0' * (-len(x) % 4)

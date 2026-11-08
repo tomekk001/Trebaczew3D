@@ -1,6 +1,6 @@
 """Budynki wg zdjęć (część 2): szkoła, domy przy Wyzwolenia naprzeciw kościoła (159, 161, 163), kwiaciarnia „Sas-Anka” (Szkolna 9),
 dom Szkolna 3, OSP, Żabka (budynek), przedszkole (3 bryły) i wiatrak (wieża + wirnik).
-Układ jak w grze: x – wzdłuż frontu, z – na zewnątrz frontu (+z), y – w górę, środek obrysu w (0,0,0)."""
+Układ jak w grze: x - wzdłuż frontu, z - na zewnątrz frontu (+z), y - w górę, środek obrysu w (0,0,0)."""
 import sys, os, math; sys.path.insert(0, os.path.dirname(__file__))
 from common import Model
 from budynki import gable, gable_ends, hip, win, BASE
@@ -28,7 +28,7 @@ def slope_y(ye, rise, half, t):  # wysokość połaci dachu dwuspadowego w odleg
     return ye + rise * (1 - t / half)
 
 def roof_panel(M, mk, x0, x1, zm, half, ye, rise, t0, t1, side=1, lift=.05, th=.04):
-    """płyta (panele PV, okno dachowe) leżąca na połaci dachu z kalenicą wzdłuż x; t0..t1 – odległość od kalenicy"""
+    """płyta (panele PV, okno dachowe) leżąca na połaci dachu z kalenicą wzdłuż x; t0..t1 - odległość od kalenicy"""
     pts = [(x0, slope_y(ye, rise, half, t0) + lift, zm + side * t0), (x1, slope_y(ye, rise, half, t0) + lift, zm + side * t0), (x1, slope_y(ye, rise, half, t1) + lift, zm + side * t1), (x0, slope_y(ye, rise, half, t1) + lift, zm + side * t1)]
     M.prism(pts, (0, th, 0), mk)
 

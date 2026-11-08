@@ -62,12 +62,12 @@ a{color:var(--accent)}
   <div class="err" id="err">Nie udało się pobrać statystyk. Spróbuj odświeżyć stronę za chwilę.</div>
 
   <section class="tiles" aria-label="Najważniejsze liczby">
-    <div class="tile hero"><div class="v" id="tOnline">–</div><div class="l">Gra teraz</div><div class="s" id="tPeak">rekord: –</div></div>
-    <div class="tile"><div class="v" id="tPlayers">–</div><div class="l">Graczy łącznie</div><div class="s" id="tToday">dziś: –</div></div>
-    <div class="tile"><div class="v" id="tStarts">–</div><div class="l">Uruchomień gry</div><div class="s" id="tStartsToday">dziś: –</div></div>
-    <div class="tile"><div class="v" id="tHours">–</div><div class="l">Godzin w grze</div><div class="s" id="tAvg">średnio: –</div></div>
-    <div class="tile"><div class="v" id="tMissions">–</div><div class="l">Ukończonych misji</div><div class="s" id="tMain">fabularnych: –</div></div>
-    <div class="tile"><div class="v" id="tMini">–</div><div class="l">Rozegranych minigier</div><div class="s" id="tWins">wygranych: –</div></div>
+    <div class="tile hero"><div class="v" id="tOnline">-</div><div class="l">Gra teraz</div><div class="s" id="tPeak">rekord: -</div></div>
+    <div class="tile"><div class="v" id="tPlayers">-</div><div class="l">Graczy łącznie</div><div class="s" id="tToday">dziś: -</div></div>
+    <div class="tile"><div class="v" id="tStarts">-</div><div class="l">Uruchomień gry</div><div class="s" id="tStartsToday">dziś: -</div></div>
+    <div class="tile"><div class="v" id="tHours">-</div><div class="l">Godzin w grze</div><div class="s" id="tAvg">średnio: -</div></div>
+    <div class="tile"><div class="v" id="tMissions">-</div><div class="l">Ukończonych misji</div><div class="s" id="tMain">fabularnych: -</div></div>
+    <div class="tile"><div class="v" id="tMini">-</div><div class="l">Rozegranych minigier</div><div class="s" id="tWins">wygranych: -</div></div>
   </section>
 
   <div class="grid2">
@@ -77,7 +77,7 @@ a{color:var(--accent)}
 
   <section class="card"><h2>Na czym grają</h2><p class="sub">Gracze według urządzenia</p>
     <div class="split" id="split"></div>
-    <div class="legend"><span style="--c:var(--accent)" id="lMob">Telefon –</span><span style="--c:var(--blue)" id="lDesk">Komputer –</span></div>
+    <div class="legend"><span style="--c:var(--accent)" id="lMob">Telefon -</span><span style="--c:var(--blue)" id="lDesk">Komputer -</span></div>
   </section>
 
   <section class="card"><h2>Ranking minigier</h2><p class="sub">Najlepsze wygrane wyniki (nick z gry)</p><div class="boards" id="boards"></div></section>
@@ -88,7 +88,7 @@ a{color:var(--accent)}
 
 const $=id=>document.getElementById(id);
 const nf=new Intl.NumberFormat('pl-PL');
-const GAMES={'paczkomat-nadaj':'Paczkomat – nadawanie','paczkomat-odbierz':'Paczkomat – odbiór','flanki':'Flanki w parku','karne-orlik':'Karne na orliku','karne-lzs':'Karne – LZS Trębaczew','pilka':'Mecz na orliku','zonglerka':'Żonglerka LZS'};
+const GAMES={'paczkomat-nadaj':'Paczkomat - nadawanie','paczkomat-odbierz':'Paczkomat - odbiór','flanki':'Flanki w parku','karne-orlik':'Karne na orliku','karne-lzs':'Karne - LZS Trębaczew','pilka':'Mecz na orliku','zonglerka':'Żonglerka LZS'};
 function plural(n,a,b,c){ n=Math.abs(n); if(n===1)return a; const d=n%10,h=n%100; return d>=2&&d<=4&&(h<12||h>14)?b:c; }
 function fmtDay(d){ const [y,m,dd]=d.split('-'); return `${+dd}.${m}`; }
 function bars(el,days,key,unit){
@@ -117,7 +117,7 @@ function render(j){ DATA=j; $('err').style.display='none';
   $('split').innerHTML=`<i style="width:${mob/tot*100}%;background:var(--accent)"></i><i style="width:${desk/tot*100}%;background:var(--blue);margin-left:${mob&&desk?2:0}px"></i>`;
   $('lMob').textContent=`Telefon ${Math.round(mob/tot*100)}% (${nf.format(mob)})`; $('lDesk').textContent=`Komputer ${Math.round(desk/tot*100)}% (${nf.format(desk)})`;
   $('boards').innerHTML=Object.keys(GAMES).map(g=>{ const list=(j.top||{})[g]||[]; const played=(j.mini||{})[g]||0;
-    return `<div><h3>${GAMES[g]}</h3>${list.length?`<table><thead><tr><th></th><th>Gracz</th><th style="text-align:right">Pkt</th></tr></thead><tbody>${list.map((r,i)=>`<tr><td class="r">${i+1}.</td><td>${r.n.replace(/[<>&]/g,'')}</td><td class="n">${nf.format(r.s)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Brak wyników – bądź pierwszy!</div>'}<div class="empty">Rozegrano: ${nf.format(played)}</div></div>`; }).join(''); }
+    return `<div><h3>${GAMES[g]}</h3>${list.length?`<table><thead><tr><th></th><th>Gracz</th><th style="text-align:right">Pkt</th></tr></thead><tbody>${list.map((r,i)=>`<tr><td class="r">${i+1}.</td><td>${r.n.replace(/[<>&]/g,'')}</td><td class="n">${nf.format(r.s)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Brak wyników - bądź pierwszy!</div>'}<div class="empty">Rozegrano: ${nf.format(played)}</div></div>`; }).join(''); }
 async function load(){ try{ const r=await fetch('/stats',{cache:'no-store'}); if(!r.ok) throw 0; render(await r.json()); }catch(e){ if(!DATA){ $('err').style.display='block'; $('liveTxt').textContent='Brak połączenia z serwerem gry'; } } }
 load(); setInterval(load,30000); addEventListener('resize',()=>{ if(DATA) render(DATA); });
 </script>

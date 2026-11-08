@@ -2,16 +2,16 @@
 """Buduje dane świata gry z surowych danych w tools/raw/.
 
 Wejście (tools/raw):
-  osm_area.json.gz  – zrzut API OSM 0.6 /map dla całego obszaru (budynki, drogi, obszary, nazwy)
-  bdot_area.json    – budynki BDOT10k (GUGiK) z liczbą kondygnacji i funkcją, w układzie gry
-  nmt.txt           – siatka wysokości NMT (GUGiK) co 20 m
-  orto.jpg          – ortofotomapa (GUGiK) 2,5 m/piksel dla całego obszaru
+  osm_area.json.gz  - zrzut API OSM 0.6 /map dla całego obszaru (budynki, drogi, obszary, nazwy)
+  bdot_area.json    - budynki BDOT10k (GUGiK) z liczbą kondygnacji i funkcją, w układzie gry
+  nmt.txt           - siatka wysokości NMT (GUGiK) co 20 m
+  orto.jpg          - ortofotomapa (GUGiK) 2,5 m/piksel dla całego obszaru
 Wyjście (src):
-  data_b.js  – budynki (DATA_B, DATA_PARTS, DATA_ADDR)
-  data_r.js  – kolory dachów
-  data_h.js  – siatka wysokości (HGRID)
-  data_x.js  – rozszerzenie świata: drogi, tory, lasy, woda, miejscowości (DATA_X)
-  data_o.js  – ortofotomapa jako obraz (ORTO)
+  data_b.js  - budynki (DATA_B, DATA_PARTS, DATA_ADDR)
+  data_r.js  - kolory dachów
+  data_h.js  - siatka wysokości (HGRID)
+  data_x.js  - rozszerzenie świata: drogi, tory, lasy, woda, miejscowości (DATA_X)
+  data_o.js  - ortofotomapa jako obraz (ORTO)
 """
 import base64, gzip, json, math, re, sys
 from pathlib import Path
@@ -267,7 +267,7 @@ def merge_ways(lines):
                 for d, end in ((d1, "tail"), (d2, "head")):
                     if best is None or d < best[0]: best = (d, i, rev, end)
         d, i, rev, end = best; q = lines.pop(i); q = q[::-1] if rev else q
-        if d > 60: continue        # równoległa jezdnia/odnoga – pomijamy
+        if d > 60: continue        # równoległa jezdnia/odnoga - pomijamy
         chain = chain + q[1:] if end == "tail" else q[:-1] + chain
     return chain
 

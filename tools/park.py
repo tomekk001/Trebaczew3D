@@ -31,5 +31,5 @@ for e in E:
         elif t.get('playground') == 'swing': D['swing'].append(p)
         elif t.get('playground') == 'basketswing': D['web'].append(p)
         elif t.get('entrance') == 'yes': D['gate'] = p
-(ROOT / 'src' / 'data_park.js').write_text('/* park w Trębaczewie – szczegóły z OSM (tools/park.py) */\nconst PARKD=' + json.dumps(D, separators=(',', ':')) + ';\n', encoding='utf-8')
+(ROOT / 'src' / 'data_park.js').write_text('/* park w Trębaczewie - szczegóły z OSM (tools/park.py) */\nconst PARKD=' + json.dumps(D, separators=(',', ':')) + ';\n', encoding='utf-8')
 print({k: (len(v) if isinstance(v, list) else v) for k, v in D.items()})

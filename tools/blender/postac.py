@@ -1,5 +1,5 @@
 """Postać człowieka do gry: części ciała zgodne ze szkieletem z makePerson (tools/blender/postac.py -> src/data_hum.js).
-Współrzędne jak w grze (x – w bok, y – w górę, z – do przodu), w metrach. Każda ściana ma „region” (skóra, góra, spodnie, buty, włosy, oczy…),
+Współrzędne jak w grze (x - w bok, y - w górę, z - do przodu), w metrach. Każda ściana ma „region” (skóra, góra, spodnie, buty, włosy, oczy…),
 kolory dobiera gra osobno dla każdej osoby. W wierzchołkach zapisane jest zacienienie (AO) liczone promieniami.
 Części: tułów (m/k × tee/jacket/hoodie/coat), głowa z twarzą (m/k), 6 fryzur, ramię, przedramię z dłonią, udo, łydka z butem."""
 import bpy, bmesh, math, random, base64, struct, json, os
@@ -30,7 +30,7 @@ class Part:
         self.objs.append(ob); return ob
     # --- prymitywy ---
     def loft(self, rings, N, reg, cap0=True, cap1=True, sub=1, axis='y', solid=0, keep=None):
-        """rings: (t, a, f, b, cx, cz, p) – przekrój: półszerokość a (oś x), głębokość z przodu f i z tyłu b (oś z), środek (cx,cz), wykładnik superelipsy p.
+        """rings: (t, a, f, b, cx, cz, p) - przekrój: półszerokość a (oś x), głębokość z przodu f i z tyłu b (oś z), środek (cx,cz), wykładnik superelipsy p.
         reg(t, th, x, z) -> nazwa regionu; keep(t, th) -> czy zostawić ścianę (np. linia włosów)."""
         bm = bmesh.new(); R = []
         for (t, a, f, b, cx, cz, p) in rings:
@@ -152,7 +152,7 @@ SEXES = {
 }
 
 def ring_at(T, t, grow=0):
-    """pierścień przekroju na wysokości t (interpolacja) – dodatkowe pierścienie wyznaczają proste granice kolorów."""
+    """pierścień przekroju na wysokości t (interpolacja) - dodatkowe pierścienie wyznaczają proste granice kolorów."""
     for a, b in zip(T, T[1:]):
         if a[0] <= t <= b[0]:
             k = (t - a[0]) / (b[0] - a[0]); r = tuple(a[i] + (b[i] - a[i]) * k for i in range(7)); return (t, r[1] + grow, r[2] + grow, r[3] + grow) + r[4:]
@@ -263,7 +263,7 @@ def forearm():
     P = Part('farm')
     rings = [(.035, .037, .037, .037, 0, 0, 2), (.0, .043, .045, .043, 0, 0, 2), (-.06, .046, .043, .042, 0, 0, 2), (-.13, .039, .035, .035, 0, 0, 2), (-.19, .031, .028, .028, 0, 0, 2), (-.2, .03, .027, .027, 0, 0, 2), (-.232, .027, .023, .024, 0, 0, 2), (-.245, .02, .02, .02, 0, 0, 2)]
     P.loft(rings, 14, lambda t, th, x, z: 'cuff' if t < -.19 else 'slvF', sub=1)
-    # dłoń: śródręcze (cienkie w osi x – dłoń zwrócona do uda), palce i kciuk
+    # dłoń: śródręcze (cienkie w osi x - dłoń zwrócona do uda), palce i kciuk
     P.loft([(-.228, .017, .024, .022, -.002, 0, 2.2), (-.25, .018, .033, .03, -.003, .002, 2.6), (-.285, .016, .037, .033, -.004, .002, 2.8), (-.31, .013, .035, .031, -.006, .001, 2.6)], 12, lambda *a: 'skin', sub=1)
     for z, L, r in ((.025, .07, .0082), (.009, .078, .0085), (-.007, .074, .0082), (-.022, .06, .0075)):
         P.capsule((-.006, -.305, z), (-.022, -.305 - L, z + .003), r, r * .82, 'skin', 6, 2)

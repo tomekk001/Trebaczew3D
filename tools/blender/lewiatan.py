@@ -1,10 +1,10 @@
-"""Model sklepu Lewiatan (Trębaczew, ul. Szkolna) – generowany w Blenderze.
+"""Model sklepu Lewiatan (Trębaczew, ul. Szkolna) - generowany w Blenderze.
 
 Uruchomienie:  python3 tools/blender/lewiatan.py   (wymaga: pip install bpy)
 Wynik: src/models/lewiatan.glb  (jedna siatka, jedna tekstura z wypalonym AO)
 
 Układ współrzędnych jak w grze (lokalnie względem środka budynku):
-  x – wzdłuż frontu (+x = strona ulicy Szkolnej), y – w górę, z – na zewnątrz frontu (+z = parking).
+  x - wzdłuż frontu (+x = strona ulicy Szkolnej), y - w górę, z - na zewnątrz frontu (+z = parking).
 W Blenderze: bx = x, by = -z, bz = y (eksporter glTF zamienia to z powrotem na Y-up).
 """
 import bpy, bmesh, math, os, sys
@@ -100,7 +100,7 @@ def quad(p, mkey): add_faces(p, [(0, 1, 2, 3)], mkey)
 def tri(p, mkey): add_faces(p, [(0, 1, 2)], mkey)
 
 def slab(p, t, mkey, nrm):
-    # płyta o grubości t (do połaci dachu): p – 4 punkty, nrm – wektor odsunięcia
+    # płyta o grubości t (do połaci dachu): p - 4 punkty, nrm - wektor odsunięcia
     q = [(a[0] - nrm[0] * t, a[1] - nrm[1] * t, a[2] - nrm[2] * t) for a in p]
     v = p + q
     add_faces(v, [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)], mkey)
@@ -169,7 +169,7 @@ def hip_roof(x0, x1, z0, z1, ye, rise, ov, t=.22, hip_end='south'):
     return xm, yr, zr, hw, ye2
 
 def window(x, y, z, w, h, face):
-    """Okno w brązowej ramie; face: '+z', '-z', '+x', '-x' – ściana, na której leży."""
+    """Okno w brązowej ramie; face: '+z', '-z', '+x', '-x' - ściana, na której leży."""
     fr = .09; dep = .06
     if face in ('+z', '-z'):
         s = 1 if face == '+z' else -1
@@ -217,7 +217,7 @@ box(XS, L / 2 + .02, BASE, .3, VZ - .02, VZ + .06, 'plinth')
 box(-5.2, -4.5, WH + 2.2, WH + 4.0, -6.5, -5.8, 'plinth'); box(-5.3, -4.4, WH + 4.0, WH + 4.12, -6.6, -5.7, 'dark')
 # okna: front skrzydła zachodniego, boki, tył
 window(-6.0, 1.75, D / 2, 1.3, 1.1, '+z')
-# (w miejscu drugiego okna – tablica ogłoszeń w grze)
+# (w miejscu drugiego okna - tablica ogłoszeń w grze)
 # (szczyt: logo Marczak dodawane w grze)
 for z in (-11, -7.2, -3.4, .4, 4.2, 8.0, 11.8):
     window(-L / 2, 1.85, z, 1.35, 1.05, '-x')
