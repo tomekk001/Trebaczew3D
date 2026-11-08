@@ -4034,7 +4034,7 @@ async function boot(saved){
   /* ---------- menu główne, pauza (Esc), opcje z przypisywaniem klawiszy, kreator postaci, zgłaszanie błędów ---------- */
   const menuEl=$('menu'), MENU={t:0,view:'',c:null,ca:0};
   { const cc=centroid(CHURCH.pts); MENU.c=[cc[0]+40,cc[1]+30]; MENU.a0=0; MENU.r=110;
-    try{ const P=[[B_LEW.x,B_LEW.z],[B_ZAB.x,B_ZAB.z],[SCHOOL_P[0],SCHOOL_P[1]],cc]; const c=[P.reduce((t,q)=>t+q[0],0)/4,P.reduce((t,q)=>t+q[1],0)/4]; const nr=nearestRoad(c[0],c[1],r=>r.n==='Wyzwolenia'); if(nr.r){ const q=nr.r.pts[nr.seg], q2=nr.r.pts[nr.seg+1]; const dx=q2[0]-q[0], dz=q2[1]-q[1], L=dx*dx+dz*dz||1, t=clamp(((c[0]-q[0])*dx+(c[1]-q[1])*dz)/L,0,1); const rx=q[0]+dx*t, rz=q[1]+dz*t; MENU.a0=Math.atan2(rx-c[0],rz-c[1]); MENU.c=c; MENU.r=Math.max(80,Math.max(...P.map(v=>Math.hypot(v[0]-c[0],v[1]-c[1])))*1.35); } }catch(e){} }
+    try{ const P=[[B_LEW.x,B_LEW.z],[B_ZAB.x,B_ZAB.z],[SCHOOL_P[0],SCHOOL_P[1]],cc]; const c=[P.reduce((t,q)=>t+q[0],0)/4,P.reduce((t,q)=>t+q[1],0)/4]; const nr=nearestRoad(c[0],c[1],r=>r.n==='Wyzwolenia'); if(nr.r){ const q=nr.r.pts[nr.seg], q2=nr.r.pts[nr.seg+1]; const dx=q2[0]-q[0], dz=q2[1]-q[1], L=dx*dx+dz*dz||1, t=clamp(((c[0]-q[0])*dx+(c[1]-q[1])*dz)/L,0,1); const rx=q[0]+dx*t, rz=q[1]+dz*t; MENU.a0=Math.atan2(rx-c[0],rz-c[1])+Math.PI; MENU.c=c; MENU.r=Math.max(80,Math.max(...P.map(v=>Math.hypot(v[0]-c[0],v[1]-c[1])))*1.1); } }catch(e){} }
   const ACTIONS=[['w','Do przodu / gaz'],['s','Do tyłu / hamulec'],['a','W lewo'],['d','W prawo'],['shift','Sprint'],[' ','Skok / ręczny'],['f','Wsiądź / wysiądź'],['e','Akcja (misja, sklep, brama)'],['q','Dziennik misji'],['m','Mapa'],['c','Kamera'],['r','Radio w aucie'],['n','Pora dnia']];
   const keyName=c=>({Space:'Spacja',ShiftLeft:'L Shift',ShiftRight:'P Shift',ControlLeft:'L Ctrl',ControlRight:'P Ctrl',AltLeft:'L Alt',Tab:'Tab',Enter:'Enter',Backspace:'Backspace',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',CapsLock:'Caps Lock'})[c]||c.replace(/^Key|^Digit|^Numpad/,'');
   let WAITKEY=null;
@@ -4136,7 +4136,7 @@ async function boot(saved){
       const a=MENU.ca; camera.position.set(st.x+Math.sin(a)*d,fy+1.05,st.z+Math.cos(a)*d); camera.lookAt(st.x,fy+.95,st.z);
       camera.setViewOffset(Wd,Hd,Wd/2-(fx0+fw/2),Hd/2-(fy0+fh/2),Wd,Hd); MENU.vo=true; if(st.inside) inCam2();
       sun.position.set(st.x+SUNDIR.x*220,fy+SUNDIR.y*220,st.z+SUNDIR.z*220); sun.target.position.set(st.x,fy,st.z); }
-    else if(!GAME.started){ const a=MENU.a0+Math.sin(MENU.t*.12)*.2, r=MENU.r, c=MENU.c, y=H(c[0],c[1]), off=r*.3; camera.position.set(c[0]+Math.sin(a)*r,y+Math.max(62,r*.5),c[1]+Math.cos(a)*r); camera.lookAt(c[0]-Math.cos(a)*off,y+2,c[1]+Math.sin(a)*off); sun.position.set(c[0]+SUNDIR.x*220,y+SUNDIR.y*220,c[1]+SUNDIR.z*220); sun.target.position.set(c[0],y,c[1]); }
+    else if(!GAME.started){ const a=MENU.a0+Math.sin(MENU.t*.12)*.2, r=MENU.r, c=MENU.c, y=H(c[0],c[1]), off=-r*.22; camera.position.set(c[0]+Math.sin(a)*r,y+Math.max(62,r*.5),c[1]+Math.cos(a)*r); camera.lookAt(c[0]-Math.cos(a)*off,y+2,c[1]+Math.sin(a)*off); sun.position.set(c[0]+SUNDIR.x*220,y+SUNDIR.y*220,c[1]+SUNDIR.z*220); sun.target.position.set(c[0],y,c[1]); }
     else return false;
     cullUpdate(); sky.position.copy(camera.position); if(composer) composer.render(dt); else renderer.render(scene,camera); return true; }
   function inCam2(){ const p=camera.position; p.x=clamp(p.x,CUR.x-CUR.W/2+.3,CUR.x+CUR.W/2-.3); p.z=clamp(p.z,CUR.z-CUR.D/2+.3,CUR.z+CUR.D/2-.3); }
