@@ -58,7 +58,7 @@ async function boot(saved){
   const BLD=[];
   DATA_B.split(';').forEach(s=>{ const q=s.indexOf('"'); const name=q>=0?s.slice(q+1,s.lastIndexOf('"')):''; const nums=(q>=0?s.slice(0,q):s).split(',').filter(x=>x!=='').map(Number);
     const [x,z,w,d,deg,code,lv]=nums; BLD.push({x,z,w,d,a:deg*Math.PI/180,code,lv:lv||0,name}); });
-  BLD.forEach(b=>{ if(b.name==='Żabka'&&Math.hypot(b.x+65,b.z-42)>300) b.name='Żabka Działoszyn'; });
+  BLD.forEach(b=>{ if(b.name==='Żabka'&&Math.hypot(b.x+65,b.z-42)>300) b.name='Żabka Działoszyn'; if(b.name==='Myjnia'||b.name.startsWith('Myjnia Ręczna')) b.skip=true; });
   const BPARTS={}; if(typeof DATA_PARTS!=='undefined'&&DATA_PARTS) DATA_PARTS.split(';').forEach(e=>{ const [i,r]=e.split(':'); BPARTS[+i]=r.split('|').map(q=>{ const [x,z,w,d]=q.split(',').map(Number); return {x,z,w,d}; }); });
   if(typeof DATA_ADDR!=='undefined'&&DATA_ADDR) DATA_ADDR.split(';').forEach(e=>{ const k=e.indexOf(':'); const b=BLD[+e.slice(0,k)]; if(!b)return; const [st2,num]=e.slice(k+1).split('|'); b.addr=(st2?st2+' ':'')+num; });
   BLD.forEach((b,i)=>{ if(BPARTS[i]) b.parts=BPARTS[i]; });
@@ -90,6 +90,14 @@ async function boot(saved){
   let SAD_PITCH=null; if(typeof DATA_OSM!=='undefined'&&typeof DATA_X!=='undefined'){ const hp=DATA_X.P.find(q=>q[0]==='Sadowiec-Wrzosy'); let bd=600; if(hp) DATA_OSM.P.forEach(([sp,sf,f])=>{ if(sp!=='soccer'&&sp!=='basketball') return; const pts=[]; for(let i=0;i<f.length;i+=2) pts.push([f[i],f[i+1]]); const c=centroid(pts), dd=Math.hypot(c[0]-hp[2],c[1]-hp[3]); if(dd<bd){ bd=dd; SAD_PITCH={t:'lei:pitch',n:'Orlik Sadowiec',pts}; } });
     if(SAD_PITCH){ const hs=SAD_PITCH.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:SAD_PITCH.pts,bb:bbox(SAD_PITCH.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); } }
 
+  // myjnia przy DK42: ramka układu (hala + dom + wiata; z przodu komis, z tyłu duży plac w kostce z tirami); lokalnie x – w prawo patrząc od ulicy, z – do ulicy
+  const MJF=(()=>{ const MJ=DATA_B.includes('"Myjnia"')?{x:920,z:-320}:null; if(!MJ) return null; const nr=nearestRoad(MJ.x,MJ.z,r=>r.t!=='track'); const RD=(nr.r&&nr.d<80)?nr.r:ROADS.find(r=>r.main); let bs=null;
+    for(let d=0;d<RD.L;d+=2){ const s0=sampleLine(RD.pts,RD.len,d); const q=Math.hypot(s0.x-MJ.x,s0.z-MJ.z); if(!bs||q<bs.q) bs={q,s:s0}; }
+    const s0=bs.s; let nx=-s0.tz, nz=s0.tx; if((MJ.x-s0.x)*nx+(MJ.z-s0.z)*nz<0){ nx=-nx; nz=-nz; }
+    const mx=-nx, mz=-nz, th=Math.atan2(mx,mz), ex=mz, ez=-mx, vO=RD.w/2+32; const Ox=s0.x+nx*vO-ex*2.5, Oz=s0.z+nz*vO-ez*2.5;
+    const L=(a,b)=>[Ox+ex*a+mx*b, Oz+ez*a+mz*b]; const rect=(a,b,c,d)=>[L(a,c),L(b,c),L(b,d),L(a,d)];
+    const F={Ox,Oz,mx,mz,th,ex,ez,L,rect,RD,front:rect(-33,16,-12,29),side:rect(16,58,-12,29),yard:rect(-34,58,-72,-12)};
+    const pad=rect(-36,60,-74,30); F.h=hRaw(Ox,Oz); FLAT.push({p:pad,bb:bbox(pad),fe:0,h:F.h}); return F; })();
   /* ---------- renderer + efekty ---------- */
   const canvas=document.getElementById('c');
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -293,7 +301,7 @@ async function boot(saved){
   function bx(g,w,h,d,x,y,z,mat,noShadow){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat); m.position.set(x,y+h/2,z); if(!noShadow){m.castShadow=true;} m.receiveShadow=true; g.add(m); return m; }
   function pl(g,w,h,x,y,z,mat,ry){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat); m.position.set(x,y,z); if(ry)m.rotation.y=ry; g.add(m); return m; }
   function tri(g,w,h,x,y,z,mat,ry){ const sh=new THREE.Shape([new THREE.Vector2(-w/2,0),new THREE.Vector2(w/2,0),new THREE.Vector2(0,h)]); const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),mat); m.position.set(x,y,z); if(ry)m.rotation.y=ry; m.receiveShadow=true; g.add(m); return m; }
-  const EXTRA_TREES=[], LOTS=[], STAIRS=[], LATER=[]; // LATER: zamiany na modele odłożone do chwili, gdy swapIn jest gotowe // STAIRS: funkcje (x,z)->wysokość podłoża ponad terenem (taras i schody kościoła)
+  const EXTRA_TREES=[], LOTS=[], STAIRS=[], LATER=[]; if(MJF) LOTS.push(MJF.front,MJF.side,MJF.yard); // LATER: zamiany na modele odłożone do chwili, gdy swapIn jest gotowe // STAIRS: funkcje (x,z)->wysokość podłoża ponad terenem (taras i schody kościoła)
   const stairAt=(x,z)=>{ let h=0; for(const f of STAIRS){ const v=f(x,z); if(v>h)h=v; } return h; };
   const hipGeo=new THREE.ConeGeometry(Math.SQRT1_2,1,4,1).rotateY(Math.PI/4).translate(0,.5,0);
   const gabGeo=(()=>{ const v=[-.5,0,.5,.5,0,.5,.5,1,0, -.5,0,.5,.5,1,0,-.5,1,0, .5,0,-.5,-.5,0,-.5,-.5,1,0, .5,0,-.5,-.5,1,0,.5,1,0, .5,0,.5,.5,0,-.5,.5,1,0, -.5,0,-.5,-.5,0,.5,-.5,1,0];
@@ -1864,10 +1872,9 @@ async function boot(saved){
         [-3,3].forEach(x=>bx(gate,.1,1.9,.1,x,0,0,iron)); leaf(-3,true); leaf(3,false);
         { const wp=[gx+Math.cos(ang)*1.5,gz-Math.sin(ang)*1.5]; addSolid({x:wp[0],z:wp[1],hw:1.5,hd:.12,c:Math.cos(-ang),s:Math.sin(-ang),r:1.7}); }
         // prawa strona: płot z betonowych płyt, słupek, tablica „OGŁOSZENIA” pod daszkiem
-        bx(gate,3.4,1.75,.14,-(3.1+1.7),0,0,concM); for(let i=0;i<4;i++) bx(gate,3.4,.03,.15,-(3.1+1.7),.4+i*.4,0,new THREE.MeshLambertMaterial({color:0x9a968e}),true); bx(gate,.32,2.1,.32,-4.7,0,-.12,concM);
+        bx(gate,3.4,1.75,.14,-(3.1+1.7),0,0,concM); for(let i=0;i<4;i++) bx(gate,3.4,.03,.15,-(3.1+1.7),.4+i*.4,0,new THREE.MeshLambertMaterial({color:0x9a968e}),true); 
         { const wp=[gx+Math.cos(ang)*-4.8,gz-Math.sin(ang)*-4.8]; addSolid({x:wp[0],z:wp[1],hw:1.8,hd:.15,c:Math.cos(-ang),s:Math.sin(-ang),r:2}); }
-        const ogT=tex(256,200,(x,w,h)=>{ x.fillStyle='#3a2a1e'; x.fillRect(0,0,w,h); x.fillStyle='#efe9da'; x.fillRect(8,8,w-16,36); x.fillStyle='#222'; x.font='800 30px Barlow, Arial'; x.textAlign='center'; x.fillText('OGŁOSZENIA',w/2,36); [['#fff',14,56],['#ffe28a',100,56],['#fff',14,128],['#f2c230',150,130]].forEach(([c,xx,yy])=>{ x.fillStyle=c; x.fillRect(xx,yy,80,64); }); });
-        bx(gate,.08,2.6,.08,-4.2,0,.7,iron,true); bx(gate,.08,2.6,.08,-5.7,0,.7,iron,true); bx(gate,1.8,1.15,.08,-4.95,1.45,.7,new THREE.MeshLambertMaterial({color:0x3a2a1e})); pl(gate,1.7,1.05,-4.95,2.0,.65,new THREE.MeshLambertMaterial({map:ogT}),Math.PI); bx(gate,2.0,.08,.5,-4.95,2.65,.65,new THREE.MeshLambertMaterial({color:0x4a4d50}));
+        // (tablica „OGŁOSZENIA” i słupy usunięte — stały element na jezdni)
         // lewa strona: siatka na słupkach
         { const t=fenceT.clone(); t.needsUpdate=true; t.repeat.set(4,1); const fm=new THREE.Mesh(new THREE.PlaneGeometry(10,1.5),new THREE.MeshLambertMaterial({map:t,transparent:true,alphaTest:.3,side:THREE.DoubleSide,color:0x6f7a70})); fm.position.set(3.1+5,.75,0); gate.add(fm); for(let i=0;i<=4;i++) bx(gate,.06,1.6,.06,3.1+i*2.5,0,0,new THREE.MeshLambertMaterial({color:0x7c8288}),true);
           const wp=[gx+Math.cos(ang)*8.1,gz-Math.sin(ang)*8.1]; addSolid({x:wp[0],z:wp[1],hw:5,hd:.1,c:Math.cos(-ang),s:Math.sin(-ang),r:5.2}); }
@@ -3461,7 +3468,7 @@ async function boot(saved){
   const TUNE={chip:{n:'Chip tuning (+15% prędkości, +25% przyspieszenia)',p:6000},bak:{n:'Większy bak (+50%)',p:3000}};
   const OUTFITS={dres:{n:'Dres sportowy',p:400,o:{style:'hoodie',top:0x1f2a44,bot:0x1f2a44}},skora:{n:'Kurtka skórzana',p:1200,o:{style:'jacket',top:0x161616,bot:0x2c3e66}},garnitur:{n:'Garnitur',p:2500,o:{style:'coat',top:0x23262f,bot:0x23262f}}};
   // garaż gracza: wiata obok punktu informacyjnego
-  const GARAGE=(()=>{ if(!INFO) return null; const fx=-Math.sin(SPAWN.yaw), fz=-Math.cos(SPAWN.yaw); const q=npcFind(INFO.p[0]-fz*7,INFO.p[1]+fx*7,2.6,900); const h=Math.atan2(fz,fx);
+  let GARAGE=(()=>{ if(!INFO) return null; const fx=-Math.sin(SPAWN.yaw), fz=-Math.cos(SPAWN.yaw); const q=npcFind(INFO.p[0]-fz*7,INFO.p[1]+fx*7,2.6,900); const h=Math.atan2(fz,fx);
     return {x:q[0],z:q[1],h}; })();
   let OWN_CAR=null, OWN_BIKE=null;
   function spawnOwnCar(){ if(OWN_CAR){ scene.remove(OWN_CAR.g); const i=parked.indexOf(OWN_CAR); if(i>=0) parked.splice(i,1); OWN_CAR=null; } const C=CARS[OWN.car]; if(!C||!GARAGE) return;
@@ -3473,34 +3480,29 @@ async function boot(saved){
       NPC_PICKS.push({id:'stasia_pick',p,label:'zostaw siatkę z zakupami przy furtce Pani Stasi',on:()=>NQ.stasia==='zadanie'&&hasIt('siatka'),act:()=>{ takeIt('siatka'); NQ.stasia='koniec'; nqSave(); addMoney(120); addXP(35); toast('Siatka zostawiona przy furtce – Pani Stasia na pewno się ucieszy!<br>+120 zł · +35 XP',4); }});
       const m=new THREE.Mesh(BEAC[0].geometry,beaconM); m.position.set(p[0],H(p[0],p[1]),p[1]); m.visible=false; scene.add(m); BEAC.push(m); } } }
   // komis samochodowy przy DK42: plac, auta na sprzedaż, kontener-biuro, pylon
-  const KOMIS=(()=>{ let best=null; const MJ=BLD.find(b=>b.name==='Myjnia')||{x:920,z:-320}; const nr=nearestRoad(MJ.x,MJ.z,r=>r.t!=='track'); const RD=(nr.r&&nr.d<80)?nr.r:DK;
-    const tryAt=(s,wide)=>{ [1,-1].forEach(sg=>{ const nx=-s.tz*sg, nz=s.tx*sg; for(let o=RD.w/2+(wide?7:8.5);o<=RD.w/2+(wide?30:14);o+=2.5){ const cx=s.x+nx*o, cz=s.z+nz*o; let ok=true;
-      for(let u=-9;u<=9&&ok;u+=2) for(let v=-7;v<=7&&ok;v+=2){ const x=cx+s.tx*u+nx*v, z=cz+s.tz*u+nz*v; if(blocked(x,z,.6)||roadNearF(x,z,.5)) ok=false; else if(RES_PC.some(pc=>x>pc.bb[0]&&x<pc.bb[2]&&z>pc.bb[1]&&z<pc.bb[3]&&inPoly(x,z,pc.p))) ok=false; }
-      if(ok){ const sc=Math.hypot(cx-MJ.x,cz-MJ.z)+o*.3; if(!best||sc<best.sc) best={sc,cx,cz,tx:s.tx,tz:s.tz,nx,nz}; } } }); };
-    for(let d=0;d<RD.L;d+=4){ const s=sampleLine(RD.pts,RD.len,d); if(Math.hypot(s.x-MJ.x,s.z-MJ.z)>90) continue; tryAt(s,false); }
-    if(!best){ for(let d=0;d<DK.L;d+=6){ const s=sampleLine(DK.pts,DK.len,d); if(s.x<-260||s.x>160)continue; tryAt(s,false); } }
-    if(!best) return null; const {cx,cz,tx,tz,nx,nz}=best; const W=(u,v)=>[cx+tx*u+nx*v,cz+tz*u+nz*v];
-    drape([W(-9,-6.5),W(9,-6.5),W(9,6.5),W(-9,6.5)],lotPaver,.12,2.2); LOTS.push([W(-9,-6.5),W(9,-6.5),W(9,6.5),W(-9,6.5)]);
-    const h=Math.atan2(nz,nx); [['fiat',-7],['polonez',-3.5],['astra',0],['golf',3.5],['bmw',7]].forEach(([k,u])=>{ const c=CARS[k].c, q=W(u,-1.5); const car=makeCar(c,'car'); seatCar(car,q[0],q[1],h); scene.add(car); addSolid({x:q[0],z:q[1],hw:2.2,hd:1,c:Math.cos(h),s:Math.sin(h),r:2.5});
-      const pr=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.5),new THREE.MeshBasicMaterial({map:signTex(String(CARS[k].p).replace(/\B(?=(\d{3})+$)/g,' ')+' zł','#ffd23a','#111111',256,128,'800 52px Barlow, Arial'),side:THREE.DoubleSide})); pr.position.set(q[0],H(q[0],q[1])+1.75,q[1]); pr.rotation.y=Math.atan2(nx,nz); scene.add(pr); });
-    const oq=W(-6,4.2); const of=new THREE.Group(); of.position.set(oq[0],H(oq[0],oq[1]),oq[1]); of.rotation.y=Math.atan2(-nx,-nz); scene.add(of); bx(of,4.2,2.6,2.4,0,0,0,new THREE.MeshLambertMaterial({color:0xf2f2ee})); bx(of,4.3,.12,2.5,0,2.6,0,new THREE.MeshLambertMaterial({color:0x2a2c30}));
-    pl(of,.9,2.0,.8,1.0,1.21,new THREE.MeshLambertMaterial({color:0x5a3b28})); pl(of,1.2,.9,-1.0,1.5,1.21,new THREE.MeshLambertMaterial({color:0x9fc3d0})); addSolid({x:oq[0],z:oq[1],hw:2.2,hd:1.3,c:Math.cos(-of.rotation.y),s:Math.sin(-of.rotation.y),r:2.6});
-    const pq=W(8.2,-5.5); const py=new THREE.Group(); py.position.set(pq[0],H(pq[0],pq[1]),pq[1]); py.rotation.y=Math.atan2(-nx,-nz); scene.add(py); bx(py,.25,4.5,.25,0,0,0,new THREE.MeshLambertMaterial({color:0x5c666c}));
+  const KOMIS=(()=>{ const F=MJF; if(!F) return null; const {L,th,mx,mz}=F; const hMean=F.h;
+    const grp=new THREE.Group(); grp.position.set(F.Ox,hMean,F.Oz); grp.rotation.y=th; scene.add(grp);
+    const sol=(lx,lz,hw,hd,r)=>{ const c=L(lx,lz); addSolid({x:c[0],z:c[1],hw,hd,c:Math.cos(-th),s:Math.sin(-th),r:r||Math.hypot(hw,hd)+.3}); };
+    const pav=(poly,mat,uv)=>{ drape(poly,mat,.12,uv||2.2); };
+    const redK=matPaverRed.clone(); redK.color=new THREE.Color(0x8e8883); pav(F.rect(-33,16,8,29),redK,1.2); pav(F.rect(-33,16,-12,8),lotPaver); pav(F.side,lotPaver); pav(F.yard,lotPaver);
+    const mj=modelMesh('myjnia'); if(mj){ mj.position.y=0; grp.add(mj); }
+    sol(-4.5,0,4.5,6); sol(7.9,-.75,6.1,4.75); sol(5.3,4.85,3.1,.9); sol(1.5,1.6,.9,2.6); sol(-23.5,-3.5,4.6,.25); sol(-19,2.2,.25,2.9); sol(-22.8,-2.6,2,.55);
+    // komis z przodu: 5 aut z cenami, kiosk-biuro, pylon
+    const h=Math.atan2(mz,mx); [['fiat',-14],['polonez',-10.5],['astra',-7],['golf',-3.5],['bmw',0]].forEach(([k,lx])=>{ const c=CARS[k].c, q=L(lx,18); const car=makeCar(c,'car'); seatCar(car,q[0],q[1],h); scene.add(car); addSolid({x:q[0],z:q[1],hw:2.2,hd:1,c:Math.cos(h),s:Math.sin(h),r:2.5});
+      const pr=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.5),new THREE.MeshBasicMaterial({map:signTex(String(CARS[k].p).replace(/\B(?=(\d{3})+$)/g,' ')+' zł','#ffd23a','#111111',256,128,'800 52px Barlow, Arial'),side:THREE.DoubleSide})); pr.position.set(q[0],H(q[0],q[1])+1.75,q[1]); pr.rotation.y=th; scene.add(pr); });
+    const kq=L(9,14); const of=new THREE.Group(); of.position.set(kq[0],H(kq[0],kq[1]),kq[1]); of.rotation.y=th; scene.add(of); bx(of,4.2,2.6,2.4,0,0,0,new THREE.MeshLambertMaterial({color:0xf2f2ee})); bx(of,4.3,.12,2.5,0,2.6,0,new THREE.MeshLambertMaterial({color:0x2a2c30}));
+    pl(of,.9,2.0,.8,1.0,1.21,new THREE.MeshLambertMaterial({color:0x5a3b28})); pl(of,1.2,.9,-1.0,1.5,1.21,new THREE.MeshLambertMaterial({color:0x9fc3d0})); sol(9,14,2.2,1.3,2.6);
+    const pq=L(13,25); const py=new THREE.Group(); py.position.set(pq[0],H(pq[0],pq[1]),pq[1]); py.rotation.y=th; scene.add(py); bx(py,.25,4.5,.25,0,0,0,new THREE.MeshLambertMaterial({color:0x5c666c}));
     pl(py,3.2,1.1,0,4.6,.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')})); pl(py,3.2,1.1,0,4.6,-.14,new THREE.MeshBasicMaterial({map:signTex('AUTO-KOMIS','#c4221e','#ffffff',512,160,'900 92px Barlow, Arial')}),Math.PI);
-    // myjnia samochodowa za komisem: dwa otwarte stanowiska samoobsługowe z daszkiem i lancami
-    { let wp=null; for(const vc of [15,17,19,13,21]){ for(const uc of [0,-5,5,-9,9]){ let ok=true; for(let u=-7;u<=7&&ok;u+=2.5) for(let v=-5;v<=5&&ok;v+=2.5){ const q=W(uc+u,vc+v); if(blocked(q[0],q[1],.8)||roadNearF(q[0],q[1],.8)||RES_PC.some(pc=>q[0]>pc.bb[0]&&q[0]<pc.bb[2]&&q[1]>pc.bb[1]&&q[1]<pc.bb[3]&&inPoly(q[0],q[1],pc.p))) ok=false; } if(ok){ wp=[uc,vc]; break; } } if(wp) break; }
-      if(wp){ const q=W(wp[0],wp[1]); const wg=new THREE.Group(); wg.position.set(q[0],H(q[0],q[1]),q[1]); const rr=Math.atan2(-nx,-nz); wg.rotation.y=rr; scene.add(wg);
-        const wc=new THREE.MeshLambertMaterial({color:0xb9bcbf,map:detailTex}), blueM=new THREE.MeshLambertMaterial({color:0x1d6fb8}), steel=new THREE.MeshLambertMaterial({color:0x6c7478});
-        const loc=(lx,lz)=>[q[0]+lx*Math.cos(rr)+lz*Math.sin(rr), q[1]-lx*Math.sin(rr)+lz*Math.cos(rr)];
-        const wall=(lx,lz,w,d)=>{ bx(wg,w,3.2,d,lx,0,lz,wc); const c=loc(lx,lz); addSolid({x:c[0],z:c[1],hw:w/2,hd:d/2,c:Math.cos(-rr),s:Math.sin(-rr),r:Math.hypot(w,d)/2+.3}); };
-        wall(0,-3.6,8.6,.25); [-4.3,0,4.3].forEach(x=>wall(x,0,.25,7.2));
-        bx(wg,9.0,.25,7.8,0,3.2,0,new THREE.MeshLambertMaterial({color:0x2d5d8c})); bx(wg,9.0,.9,.12,0,3.45,3.95,blueM,true);
-        pl(wg,8.4,.8,0,3.9,4.02,new THREE.MeshBasicMaterial({map:signTex('MYJNIA','#1d6fb8','#ffffff',512,96,'900 64px Barlow, Arial')}));
-        [-2.15,2.15].forEach(x=>{ bx(wg,.5,1.2,.3,x,0,-3.3,steel,true); const h=new THREE.Mesh(new THREE.TorusGeometry(.35,.03,6,14),new THREE.MeshLambertMaterial({color:0xf2c230})); h.position.set(x+.35,1.0,-3.1); wg.add(h); });
-        const pad=[loc(-4.8,-4.2),loc(4.8,-4.2),loc(4.8,6.2),loc(-4.8,6.2)]; drape(pad,lotPaver,.1,2.2); LOTS.push(pad); wg.traverse(o=>{ if(o.isMesh)o.castShadow=true; }); } }
-    const door=W(-6,4.2-1.2-1.4); const pd=npcFind(door[0],door[1],.6,200);
+    // plac za myjnią: tiry z naczepami (modele z Blendera)
+    const TR=[['tir_a',-14,-26,1],['tir_b',12,-26,1],['tir_c',38,-26,1],['tir_b',-12,-46,-1],['tir_a',14,-46,-1],['tir_c',40,-46,-1],['tir_a',-6,-64,1]];
+    TR.forEach(([k,lx,lz,dr])=>{ const m=modelMesh(k); if(!m) return; const q=L(lx,lz); const g=new THREE.Group(); g.position.set(q[0],H(q[0],q[1]),q[1]); g.rotation.y=th+(dr<0?Math.PI:0); m.position.x=3; g.add(m); scene.add(g); sol(lx,lz,10.5,1.3,11); });
+    // miejsce w myjni dla kupionego auta (wiata bezdotykowa) – wyjazd przodem w stronę ulicy
+    const gb=L(-23.5,1.4); GARAGE={x:gb[0],z:gb[1],h:Math.atan2(mz,mx)};
+    const wl=L(-23.5,6.5); POIS.push({n:'Myjnia',x:wl[0],z:wl[1],p:wl,c:'#c9242a',ic:'M',sp:labelSprite('Myjnia','#c9242a')}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(wl[0],H(wl[0],wl[1])+9,wl[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
+    const door=L(9,14+1.2+1.4); const pd=npcFind(door[0],door[1],.6,200);
     const it=[]; Object.keys(CARS).forEach(k=>it.push([CARS[k].n,CARS[k].p,'car',k])); it.push(['Rower',300,'bike',1]); Object.keys(TUNE).forEach(k=>it.push(['Tuning: '+TUNE[k].n,TUNE[k].p,'tune',k])); Object.keys(OUTFITS).forEach(k=>it.push(['Ubranie: '+OUTFITS[k].n,OUTFITS[k].p,'outfit',k]));
-    const shop={n:'Auto-Komis Trębaczew',sub:'samochody, rower, tuning i ubrania · kupione auto podstawimy obok punktu „i”',p:pd,items:it,komis:true};
+    const shop={n:'Auto-Komis Trębaczew',sub:'samochody, rower, tuning i ubrania · kupione auto podstawimy w myjni za komisem',p:pd,items:it,komis:true};
     POIS.push({n:'Auto-Komis Trębaczew',x:pd[0],z:pd[1],p:pd,c:'#c4221e',ic:'K',sp:labelSprite('Auto-Komis','#c4221e')}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(pd[0],H(pd[0],pd[1])+9,pd[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
     return {shop,p:pd}; })();
   // zakupy w komisie i katalogu mebli: sprawdzenie przed zapłatą
@@ -3508,7 +3510,7 @@ async function boot(saved){
     if(it[2]==='tune'){ if(!OWN.car) return 'Najpierw kup auto w komisie'; if(OWN.tune[it[3]]) return 'To już jest w twoim aucie'; }
     if(it[2]==='outfit'&&OWN.outfits.includes(it[3])){ applyOutfit(it[3]); return 'Ubranie założone (masz je już)'; } if(it[2]==='mebel'&&OWN.furn.includes(it[3])) return 'Ten mebel już stoi w domu'; return ''; }
   function shopBuyExtra(it){ const t=it[2];
-    if(t==='car'){ OWN.car=it[3]; OWN.tune={}; ownSave(); spawnOwnCar(); WAYPOINT=GARAGE?[GARAGE.x,GARAGE.z]:null; toast(`Kupiono: <b>${it[0]}</b><br>Auto stoi przy punkcie informacyjnym (fioletowy znacznik)`,4.5); }
+    if(t==='car'){ OWN.car=it[3]; OWN.tune={}; ownSave(); spawnOwnCar(); WAYPOINT=GARAGE?[GARAGE.x,GARAGE.z]:null; toast(`Kupiono: <b>${it[0]}</b><br>Auto czeka w myjni za komisem (zaznaczone na mapie)`,4.5); }
     else if(t==='bike'){ OWN.bike=true; ownSave(); spawnOwnBike(); toast('Kupiono rower – stoi przy twoim parkingu',3); }
     else if(t==='tune'){ OWN.tune[it[3]]=true; ownSave(); if(OWN_CAR){ const C=CARS[OWN.car]; OWN_CAR.maxV=C.v*(OWN.tune.chip?1.15:1); OWN_CAR.acc=C.a*(OWN.tune.chip?1.25:1); if(OWN.tune.bak&&OWN_CAR.capMul!==1.5){ OWN_CAR.capMul=1.5; if(OWN_CAR.cap) OWN_CAR.cap=Math.round(OWN_CAR.cap*1.5); } } toast(`Zamontowano: <b>${TUNE[it[3]].n}</b>`,3); }
     else if(t==='outfit'){ OWN.outfits.push(it[3]); ownSave(); applyOutfit(it[3]); toast(`Kupiono i założono: <b>${OUTFITS[it[3]].n}</b>`,3); }
