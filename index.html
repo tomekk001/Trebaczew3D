@@ -1826,9 +1826,13 @@ async function boot(saved){
   const carDetMat=new THREE.MeshPhongMaterial({vertexColors:true,shininess:110,specular:0x8899aa}), carLightMat=new THREE.MeshBasicMaterial({vertexColors:true});
   function profileGeo(pts,depth,bevel){ const s=new THREE.Shape(); s.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++){ const q=pts[i]; if(q.length===4) s.quadraticCurveTo(q[0],q[1],q[2],q[3]); else s.lineTo(q[0],q[1]); } s.closePath();
     const g=new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:3,curveSegments:8}); g.translate(0,0,-depth/2); g.computeVertexNormals(); return g; }
-  function carGeos(type){ if(carPaintGeo[type])return; const van=type==='van';
+  function carGeos(type){ if(carPaintGeo[type])return; const van=type==='van', pas=type==='passat';
     let body, green, roof, L;
-    if(!van){ L=4.3;
+    if(pas){ L=4.67;   // VW Passat B5 FL sedan: długi bagażnik, chromowany grill, okrągłe tylne lampy
+      body=profileGeo([[-2.3,.32],[2.25,.32],[2.35,.5,2.34,.62],[2.3,.76],[2.2,.82,1.7,.88],[.9,.96],[-1.7,.98],[-2.2,.97,-2.33,.82],[-2.37,.6,-2.3,.32]],1.62,.08);
+      green=profileGeo([[.88,.94],[.2,1.38],[.12,1.42,0,1.43],[-1.0,1.43],[-1.15,1.42,-1.25,1.36],[-1.68,.96]],1.48,.04);
+      roof=profileGeo([[.2,1.36],[.12,1.43,0,1.44],[-1.0,1.44],[-1.16,1.43,-1.26,1.37]],1.44,.04); }
+    else if(!van){ L=4.3;
       body=profileGeo([[-2.12,.34],[2.06,.34],[2.16,.5,2.15,.62],[2.12,.74],[2.0,.8,1.6,.86],[.95,.93],[-1.55,.95],[-2.0,.93,-2.12,.78],[-2.16,.6,-2.12,.34]],1.62,.08);
       green=profileGeo([[.95,.9],[.28,1.36],[.2,1.39,.1,1.4],[-1.05,1.4],[-1.2,1.39,-1.3,1.33],[-1.78,.94]],1.48,.04);
       roof=profileGeo([[.3,1.37],[.22,1.43,.1,1.44],[-1.06,1.44],[-1.22,1.43,-1.3,1.37]],1.44,.04); }
@@ -1850,6 +1854,12 @@ async function boot(saved){
     [-1,1].forEach(s=>D.push([G_(SPHs,.09,.06,.05,van?1.5:.85,van?1.25:1.0,s*.93),0x222426]));
     D.push([G_(new THREE.BoxGeometry(L*.86,.035,.012),1,1,1,0,.42,.9),0x1a1a1a],[G_(new THREE.BoxGeometry(L*.86,.035,.012),1,1,1,0,.42,-.9),0x1a1a1a]);
     [-1,1].forEach(s=>D.push([G_(new THREE.BoxGeometry(.12,.025,.012),1,1,1,van?.4:.1,.88,s*.9),0x9a9a9a],[G_(new THREE.BoxGeometry(.12,.025,.012),1,1,1,-.75,.88,s*.9),0x9a9a9a]));
+    if(pas){ const ch=0xc9ced2; D.push([G_(new THREE.BoxGeometry(.03,.2,.82),1,1,1,HL+.07,.68,0),ch]);
+      for(let k=0;k<5;k++) D.push([G_(new THREE.BoxGeometry(.035,.018,.74),1,1,1,HL+.1,.6+k*.04,0),0x15171a]);
+      D.push([G_(new THREE.CylinderGeometry(.06,.06,.02,16).rotateZ(Math.PI/2),1,1,1,HL+.115,.69,0),0x1d3f9a]);
+      D.push([G_(new THREE.BoxGeometry(.04,.07,.9),1,1,1,HL+.1,.43,0),0x15171a]);
+      [-1,1].forEach(sd=>{ D.push([G_(new THREE.BoxGeometry(L*.62,.025,.012),1,1,1,0,.66,sd*.905),ch]); D.push([G_(new THREE.BoxGeometry(L*.8,.05,.012),1,1,1,0,.38,sd*.905),0x15171a]); D.push([G_(new THREE.CylinderGeometry(.035,.035,.03,10).rotateZ(Math.PI/2),1,1,1,HL+.1,.43,sd*.36),0xfff4d8]); });
+      D.push([G_(new THREE.BoxGeometry(.03,.03,.5),1,1,1,-HL-.12,.78,0),ch]); D.push([G_(new THREE.BoxGeometry(.03,.06,.2),1,1,1,-HL-.12,.7,0),0x1a1a1a]); }
     carDetGeo[type]=mergeParts(D);
     const Lg=[]; [-1,1].forEach(s=>{ Lg.push([G_(SPHs,.05,.075,.17,HL+.06,.72,s*.6),0xfff4d8]); Lg.push([G_(new THREE.BoxGeometry(.05,.13,.3),1,1,1,-HL-.05,van?.95:.76,s*.62),0xb0151a]); Lg.push([G_(new THREE.BoxGeometry(.052,.04,.3),1,1,1,-HL-.05,van?.86:.68,s*.62),0xe08a20]); });
     carLightGeo[type]=mergeParts(Lg);
@@ -1857,7 +1867,7 @@ async function boot(saved){
       const W=[[tire,0x151515],[G_(side,1,1,1,0,0,.11),0x1c1c1c],[G_(side,1,1,1,0,0,-.11),0x1c1c1c],[G_(rim,1,1,1,0,0,.122),0xb9bec4],[G_(rim,1,1,1,0,0,-.122),0xb9bec4],[G_(new THREE.CylinderGeometry(.06,.06,.03,10).rotateX(Math.PI/2),1,1,1,0,0,.13),0x6a6e72]];
       for(let k=0;k<5;k++){ const a=k*Math.PI*2/5; [.126,-.126].forEach(z=>W.push([G_(new THREE.BoxGeometry(.05,.19,.012),1,1,1,Math.sin(a)*.1,Math.cos(a)*.1,z,0,0,-a),0x8d9399])); }
       wheelGeoHD=mergeParts(W); } }
-  function makeCar(color,type){ type=type==='van'?'van':'car'; carGeos(type); const gC=new THREE.Group(); const van=type==='van', L=van?5:4.3;
+  function makeCar(color,type){ type=type==='van'?'van':type==='passat'?'passat':'car'; carGeos(type); const gC=new THREE.Group(); const van=type==='van', L=van?5:type==='passat'?4.67:4.3;
     const paint=new THREE.MeshPhongMaterial({color,shininess:95,specular:0x9a9a9a,vertexColors:true});
     const body=new THREE.Mesh(carPaintGeo[type],paint); gC.add(body); gC.add(new THREE.Mesh(carDetGeo[type],carDetMat)); gC.add(new THREE.Mesh(carLightGeo[type],carLightMat));
     const wheels=[]; [[L/2-.85,.8],[L/2-.85,-.8],[-L/2+.8,.8],[-L/2+.8,-.8]].forEach(([x,z])=>{ const w=new THREE.Mesh(wheelGeoHD,carDetMat); w.position.set(x,.35,z); gC.add(w); wheels.push(w); });
@@ -1874,13 +1884,13 @@ async function boot(saved){
       const ra=a.L/2*Math.abs(Math.cos(a.h-ang))+a.W/2*Math.abs(Math.sin(a.h-ang)), rb=b.L/2*Math.abs(Math.cos(b.h-ang))+b.W/2*Math.abs(Math.sin(b.h-ang)); if(d>ra+rb+(m||0))return false; } return true; }
   const box=(c,x,z,h)=>{ const [L,W]=dimsOf(c); return {x:x??c.x,z:z??c.z,h:h??c.h,L,W}; };
   function park(x,z,h,van,spec){ const fx=Math.cos(h),fz=Math.sin(h); for(const k of [-1.7,0,1.7]){ if(blocked(x+fx*k,z+fz*k,1.0))return false; } if(ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+1.2))return false;
-    const L=van?5:4.4, me={x,z,h,L,W:1.95}; if(parked.some(p=>Math.abs(p.x-x)<14&&Math.abs(p.z-z)<14&&obb(me,box(p),.4)))return false;
-    const c={g:spec?spec.g:makeCar(pick(CARCOL),van?'van':''),x,z,h,v:0,steer:0,L,W:1.95,kind:van?'van':'car'}; if(spec&&spec.name)c.name=spec.name; seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); if(spec)PASSAT=c; return true; }
+    const L=van?5:spec?4.67:4.4, me={x,z,h,L,W:1.95}; if(parked.some(p=>Math.abs(p.x-x)<14&&Math.abs(p.z-z)<14&&obb(me,box(p),.4)))return false;
+    const c={g:spec?spec.g:makeCar(pick(CARCOL),van?'van':''),x,z,h,v:0,steer:0,L,W:1.95,kind:van?'van':'car'}; if(spec&&spec.name)c.name=spec.name; seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); if(spec){ PASSAT=c; c.cap=62; c.ftype='pb95'; c.fuel=8; c.lowWarn=false; } return true; }
   let PASSAT=null;
   /* szary VW Passat B5 FL 2.0 benzyna, sedan, tablica EPJ 03338 */
-  function makePassat(){ const g=makeCar(0x7d8186,'car'); const cv=document.createElement('canvas'); cv.width=256; cv.height=64; const x=cv.getContext('2d'); x.fillStyle='#f4f4f0'; x.fillRect(0,0,256,64); x.fillStyle='#1f4fa3'; x.fillRect(0,0,26,64); x.fillStyle='#fff'; x.font='700 14px Arial'; x.textAlign='center'; x.fillText('PL',13,56); x.fillStyle='#111'; x.font='700 44px "Barlow Condensed", Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('EPJ 03338',143,34); x.strokeStyle='#111'; x.lineWidth=3; x.strokeRect(1.5,1.5,253,61);
-    const t=new THREE.CanvasTexture(cv); const pm=new THREE.MeshBasicMaterial({map:t}); const HL=2.15; [[HL+.14,Math.PI/2],[-HL-.14,-Math.PI/2]].forEach(([px,ry])=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(.52,.13),pm); m.position.set(px,px>0?.44:.5,0); m.rotation.y=ry; g.add(m); });
-    const ch=new THREE.Mesh(new THREE.BoxGeometry(.02,.035,.36),new THREE.MeshBasicMaterial({color:0xcfd3d6})); ch.position.set(HL+.12,.7,0); g.add(ch); return g; }
+  function makePassat(){ const g=makeCar(0x6f7378,'passat'); const cv=document.createElement('canvas'); cv.width=256; cv.height=64; const x=cv.getContext('2d'); x.fillStyle='#f4f4f0'; x.fillRect(0,0,256,64); x.fillStyle='#1f4fa3'; x.fillRect(0,0,26,64); x.fillStyle='#fff'; x.font='700 14px Arial'; x.textAlign='center'; x.fillText('PL',13,56); x.fillStyle='#111'; x.font='700 44px "Barlow Condensed", Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('EPJ 03338',143,34); x.strokeStyle='#111'; x.lineWidth=3; x.strokeRect(1.5,1.5,253,61);
+    const t=new THREE.CanvasTexture(cv); const pm=new THREE.MeshBasicMaterial({map:t}); const HL=2.335; [[HL+.13,Math.PI/2],[-HL-.14,-Math.PI/2]].forEach(([px,ry])=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(.52,.13),pm); m.position.set(px,px>0?.4:.6,0); m.rotation.y=ry; g.add(m); });
+    return g; }
   DRIVE_SPOTS.forEach(sp=>{ if(rnd()<.45) return; if(!park(sp.x,sp.z,sp.h,rnd()<.1)){ const ok=park(sp.x-Math.cos(sp.h)*1.5,sp.z-Math.sin(sp.h)*1.5,sp.h); } });
   if(0)houses.filter(h=>h.kind==='house'&&!h.isPart).forEach(h=>{ if(rnd()>.28||parked.length>150)return; const nr=nearestRoad(h.x,h.z,r=>r.t!=='track'); if(!nr.r||nr.d>40)return; const a=nr.r.pts[nr.seg],b=nr.r.pts[nr.seg+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz); const tx=dx/L,tz=dz/L; let nx=-tz,nz=tx; const t=clamp((h.x-a[0])*tx+(h.z-a[1])*tz,0,L); const px=a[0]+tx*t,pz=a[1]+tz*t; if((h.x-px)*nx+(h.z-pz)*nz<0){nx=-nx;nz=-nz;}
     const off=nr.r.w/2+(SIDEWALK.has(nr.r.n)?6:3.6); park(px+nx*off+tx*R(4,8),pz+nz*off+tz*R(4,8),Math.atan2(nz,nx)+Math.PI); });
@@ -1982,7 +1992,7 @@ async function boot(saved){
   function roofH(c){ return ROOF[c.kind]||1.45; }
   function roofBox(c){ const d=typeof dimsOf==='function'?dimsOf(c):[4.4,1.9]; return [d[0]/2,d[1]/2]; }
   function roofAt(x,z){ let h=0; for(const c of parked){ if(c===st.car||Math.abs(c.x-x)>4||Math.abs(c.z-z)>4)continue; const lx=(x-c.x)*Math.cos(c.h)+(z-c.z)*Math.sin(c.h), lz=-(x-c.x)*Math.sin(c.h)+(z-c.z)*Math.cos(c.h); const [L2,W2]=roofBox(c); if(Math.abs(lx)<L2-.1&&Math.abs(lz)<W2-.1) h=Math.max(h,roofH(c)); } return h; }
-  function nearestParked(){ let b=null,bd=4.2; parked.forEach(c=>{ const d=Math.hypot(c.x-st.x,c.z-st.z); if(d<bd){bd=d;b=c;} }); return b; }
+  function nearestParked(){ let b=null,bd=4.2; parked.forEach(c=>{ if(c.deco) return; const d=Math.hypot(c.x-st.x,c.z-st.z); if(d<bd){bd=d;b=c;} }); return b; }
   function enterExit(){ if(st.car){ exitCar(false); return; } const c=nearestParked(); if(!c)return; st.car=c; c.v=0; fuelInit(c); canisterCheck(); player.visible=false; vehEl.hidden=false; vehEl.textContent=c.name||pick(['Fiat Seicento','Opel Astra','Skoda Fabia','VW Golf','Daewoo Lanos','Fiat 126p','Ford Mondeo']); onCarEnter(); }
   function exitCar(force){ const c=st.car; if(!c)return; const lx=c.x+Math.sin(c.h)*1.9, lz=c.z-Math.cos(c.h)*1.9; const rx=c.x-Math.sin(c.h)*1.9, rz=c.z+Math.cos(c.h)*1.9;
     if(!blocked(lx,lz,.4)){st.x=lx;st.z=lz;} else if(!blocked(rx,rz,.4)){st.x=rx;st.z=rz;} else if(!force) return; else {st.x=lx;st.z=lz;}
@@ -2302,6 +2312,8 @@ async function boot(saved){
     POIS.push({n:'Stadion LZS Trębaczew',x:cc[0],z:cc[1],p:cc,c:'#1f5fb4',ic:'⚽',sp:labelSprite('Stadion LZS Trębaczew','#1f5fb4')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(cc[0],y0+8,cc[1]); lp.sp.visible=false; scene.add(lp.sp);
     const b=document.createElement('button'); b.innerHTML='<i style="background:#1f5fb4"></i>'; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); $('poiList').append(b); }
 
+  // wsiąść można tylko do kilku aut: Passat spod Lewiatana, BMW Seby, własne auto i jedno zapasowe przy starcie; reszta to dekoracja
+  { let spare=null, sd=1e9; parked.forEach(c=>{ if(c===PASSAT) return; c.deco=true; if(c.kind==='car'){ const d=Math.hypot(c.x-SPAWN.x,c.z-SPAWN.z); if(d<sd&&d>12){ sd=d; spare=c; } } }); if(spare){ spare.deco=false; spare.name='Fiat Seicento'; } }
   /* ---------- pojazdy: rower, motocykl, ciągnik, autobus PKS, pociąg towarowy ---------- */
   function makeMoto(){ const g=new THREE.Group(); const tm=new THREE.MeshLambertMaterial({color:0x111111}), bm=new THREE.MeshPhongMaterial({color:0xb3262b,shininess:80});
     [-.7,.7].forEach(x=>{ const w=new THREE.Mesh(new THREE.TorusGeometry(.32,.09,8,18),tm); w.position.set(x,.36,0); g.add(w); }); const bd=new THREE.Mesh(new THREE.BoxGeometry(1.1,.35,.35),bm); bd.position.set(0,.72,0); g.add(bd);
@@ -3721,7 +3733,7 @@ async function boot(saved){
   const dkPt=f=>{ const s=sampleLine(DK.pts,DK.len,DK.L*f); return [s.x,s.z]; };
   const C=(id,n,lvl,xp,reward,start,desc,steps,o)=>Object.assign({id,n,lvl,xp,reward,start,desc,steps,main:true},o||{});
   const CAMPAIGN=[
-    C('m1','Pierwsze zakupy',1,80,250,()=>INFO?INFO.front.slice():sideOf(B_LEW,10,4),'Zacznij od podstaw: wejdź do Lewiatana (podejdź do drzwi albo naciśnij E / Akcja) i kup cokolwiek przy kasie.',()=>[{p:fr(B_LEW,2),t:'Kup coś w Lewiatanie',buy:'Lewiatan'}]),
+    C('m1','Pierwsza jazda',1,80,500,()=>INFO?INFO.front.slice():sideOf(B_LEW,10,4),'Szary Passat czeka na parkingu przy Lewiatanie. Wsiądź (F) i zatankuj go na Orlenie w Działoszynie (ul. Piłsudskiego).',()=>[{p:[PASSAT.x,PASSAT.z],t:'Wsiądź do szarego Passata na parkingu Lewiatana (F)',car:'passat',r:5},{p:ORLEN?ORLEN.pump:dkPt(.15),t:'Zatankuj Passata na Orlenie (stój przy dystrybutorze)',wait:6,r:7,car:'passat'}]),
     C('m2','Znicz dla dziadka',1,90,300,()=>sideOf(B_LEW,10,-4),'Kup znicz w Lewiatanie i zapal go na grobie dziadka na cmentarzu.',()=>[{p:fr(B_LEW,2),t:'Kup znicz w Lewiatanie',buy:'Lewiatan',item:'Znicz'},{p:centroid(CEM.pts),t:'Zapal znicz na grobie',wait:4,r:12}]),
     C('m3','Wizyta u lekarza',2,120,350,()=>APT_DOORS?[DOC_P[0]+APT_DOORS.n[0]*10,DOC_P[1]+APT_DOORS.n[1]*10]:[DOC_P[0]+6,DOC_P[1]+4],'Kaszel nie przechodzi. Idź do ośrodka zdrowia i odczekaj swoje w poczekalni.',()=>[{p:DOC_P,t:'Poczekaj na wizytę',wait:10,r:6,heal:1}]),
     C('m4','Mecz na orliku',2,140,500,()=>ORLIK_DOOR(),'Chłopaki z orlika grają do trzech goli. Wejdź przez furtkę i pokaż, kto tu rządzi!',()=>[{p:[orlik.m.cx,orlik.m.cz],t:'Wejdź na orlik i wygraj mecz',mini:'pilka',mo:{title:'Mecz na orliku'},r:14,onfoot:1}]),
@@ -3799,7 +3811,7 @@ async function boot(saved){
   function endMission(ok){ const m=ACTIVE.m; try{ missionHook(ACTIVE,ok); }catch(e){} if(!ok&&m.id==='s12'&&AZOR.on){ AZOR.on=false; if(AZOR.g){ if(AZOR.g.parent) AZOR.g.parent.remove(AZOR.g); } AZOR.g=null; NQ.azor=''; nqSave(); } cpMark.visible=false; cpMark.scale.set(1,1,1); smoke.visible=false; ACTIVE=null;
     if(ok){ statEvent('mission',{main:m.main?1:0}); if(m.main) DONE.add(m.id); else SIDE_T[m.id]=Date.now(); const rw=m.main?m.reward:sideReward(m); if(!m.main) sideDone(m); if(rw) addMoney(rw); if(m.xp) addXP(m.xp); toast(`<b>MISJA ZALICZONA</b><br>${m.n}${rw?` · +${fmt(rw)}`:''}${m.xp?` · +${m.xp} XP`:''}`,4.5); if(AU.ctx&&AU.on)sfx.win(); saveGame(); }
     else toast('<b>MISJA NIEUDANA</b><br>Spróbuj jeszcze raz',3.5); refreshMarks(); }
-  function stepOK(s){ if(s.car&&!st.car){ return 'Wsiądź do pojazdu'; } if(s.car==='fire'&&!(st.car&&st.car.kind==='fire')) return 'Potrzebny wóz strażacki z OSP'; if(s.car==='tractor'&&!(st.car&&st.car.kind==='tractor')) return 'Potrzebny ciągnik'; if(s.car==='bmw'&&st.car!==SEBA_CAR) return 'Wsiądź do BMW Seby'; if(s.onfoot&&st.car) return 'Wysiądź z pojazdu'; return ''; }
+  function stepOK(s){ if(s.car&&!st.car){ return 'Wsiądź do pojazdu'; } if(s.car==='passat'&&st.car!==PASSAT) return 'Potrzebny szary Passat z parkingu Lewiatana'; if(s.car==='fire'&&!(st.car&&st.car.kind==='fire')) return 'Potrzebny wóz strażacki z OSP'; if(s.car==='tractor'&&!(st.car&&st.car.kind==='tractor')) return 'Potrzebny ciągnik'; if(s.car==='bmw'&&st.car!==SEBA_CAR) return 'Wsiądź do BMW Seby'; if(s.onfoot&&st.car) return 'Wysiądź z pojazdu'; return ''; }
   function missionUpdate(dt){ sideRefresh(dt); MISSIONS.forEach((m,i)=>{ if(m.mk.visible) m.mk.children[0].material.opacity=.25+Math.sin(tAll*3+i)*.08; });
     if(smoke.visible) smoke.children.forEach(s=>{ const k=(s.userData.o+tAll*.12)%1; s.position.set(Math.sin(k*9)*1.5,2+k*18,Math.cos(k*7)*1.5); s.scale.setScalar(1+k*4); });
     if(!ACTIVE){ missionEl.hidden=true; if(!abortEl.hidden) abortEl.hidden=true; return; } if(abortEl.hidden) abortEl.hidden=false; const A=ACTIVE, s=A.steps[A.i]; if(A.m.time){ A.t-=dt; if(A.t<=0){ endMission(false); return; } }

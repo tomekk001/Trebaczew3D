@@ -13,6 +13,8 @@ Całość działa w przeglądarce, bez instalacji: wystarczy otworzyć `index.ht
 - Postać startuje tam, gdzie skończyłeś (pozycja zapisuje się w przeglądarce). W prawym górnym rogu jest malutki przycisk wyciszania. Trwającą misję anulujesz przyciskiem „Anuluj misję” pod jej opisem.
 - **Grafika:** Niskie / Średnie / Maksymalne (cienie, rozdzielczość, filtrowanie tekstur) w Opcjach.
 - **Konto (opcjonalne):** w menu „Konto” – sama nazwa i hasło (bez e-maila); zapis gry synchronizuje się między urządzeniami (`/acct/*` w `server/src/index.js`, hasła jako PBKDF2).
+- **Pierwsza misja „Pierwsza jazda”:** szary Passat (B5 FL, EPJ 03338) stoi na parkingu Lewiatana z prawie pustym bakiem; trzeba nim dojechać na ORLEN w Działoszynie i zatankować. Wsiąść można tylko do kilku aut (Passat, BMW Seby, jedno zapasowe przy starcie i własne z komisu), reszta to dekoracja.
+- Strona ze statystykami jest prywatna: dostęp tylko po zalogowaniu GitHubem przez serwer (nie ma jej w grze ani w plikach strony).
 - Ukryty kod na teleport z mapy działa 10 sekund (instrukcji nie ma w grze).
 - Podstrona `/info` (folder `info/`) opisuje grę i pokazuje globalny ranking graczy po poziomie (`GET /ranking` na serwerze).
 - **Dziennik misji** (Q): ukończone, dostępne i zablokowane misje z opisami; można zaznaczyć cel na radarze. Osobna sekcja „Postacie” pokazuje zadania wszystkich 9 rozmawiających postaci (co teraz zrobić, gdzie stoją, nagroda), a „Kolekcja” – zebrane historyjki z gum Turbo.
