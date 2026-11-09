@@ -3419,7 +3419,7 @@ async function boot(saved){
   const duelBox=document.createElement('div'); duelBox.id='duelBox'; duelBox.hidden=true; document.body.appendChild(duelBox);
   const duelMark=new THREE.Group(); { const m=new THREE.MeshBasicMaterial({color:0xff3a3a,transparent:true,opacity:.4,depthWrite:false}), w=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.45,depthWrite:false}); for(let i=0;i<8;i++){ const c=new THREE.Mesh(new THREE.CylinderGeometry(3,3,5,28,1,true),i%2?w:m); c.position.y=2.5+i*5; duelMark.add(c); } duelMark.visible=false; scene.add(duelMark); }
   function nearestPlayer(lim){ const x=st.car?st.car.x:st.x, z=st.car?st.car.z:st.z; let b=null,bd=lim; MP.remote.forEach(r=>{ const d=Math.hypot(r.x-x,r.z-z); if(d<bd){ bd=d; b=r; } }); return b; }
-  function duelTargets(){ return POIS.filter(p=>p.p&&isFinite(p.p[0])&&isFinite(p.p[1])); }
+  function duelTargets(){ return POIS.filter(p=>p.p&&isFinite(p.p[0])&&isFinite(p.p[1])&&!p.npcTag&&!/^(Paczkomat|Przystanek|Park |Plac zabaw|Cmentarz)|pomnik/i.test(p.n)); } // tylko budynki i obiekty (szkoła, stadion, schronisko...), bez postaci, przystanków i paczkomatów
   function duelAsk(){ if(!MP.room||!MP.room.me||!MP.room.connected()) return toast('Wyzwania działają w trybie wieloosobowym',2); if(MP.duel&&MP.duel.state==='race') return toast('Już się ścigasz!',2);
     const r=nearestPlayer(30); if(!r) return toast('Podejdź bliżej do innego gracza (do 30 m), żeby go wyzwać',2.5);
     MP.duel={state:'asked',with:r.peer,name:r.name||'Gracz',t:tAll}; MP.room.emit('duel',{to:r.peer,a:'ask'}).catch(()=>{}); toast(`🏁 Wyzwałeś <b>${esc(r.name||'Gracza')}</b> na wyścig. Czekam na odpowiedź…`,3); renderDuel(); }

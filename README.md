@@ -187,7 +187,7 @@ npx wrangler secret put STATS_SESSION_SECRET
 ## Multiplayer: emotki i wyścigi
 
 - **1-4**: emotki 👋 👍 😂 ⚽ nad głową; na telefonie są przyciski w panelu graczy.
-- **G**: wyzwij najbliższego gracza (do 30 m) na wyścig. Wyzwany przyjmuje klawiszem **Y** albo odrzuca klawiszem **N**. Obaj dostają tę samą metę, a zwycięzca zgarnia 200 zł.
+- **G**: wyzwij najbliższego gracza (do 30 m) na wyścig. Wyzwany przyjmuje klawiszem **Y** albo odrzuca klawiszem **N**. Obaj dostają tę samą metę, a zwycięzca zgarnia 200 zł. Meta to zawsze budynek lub obiekt (szkoła, stadion, schronisko, sklep), nigdy postać ani przystanek.
 - **Enter**: otwiera czat.
 
 ## Zgłoszenia błędów
