@@ -188,7 +188,7 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
 <p class="mut">Uwaga: gospodarka gry (pieniądze, przedmioty) działa po stronie przeglądarki, więc handel i nagrody opierają się na uczciwości graczy. Wspólny dom i garaż są natomiast zapisywane na serwerze.</p></section>
 
 <section id="ranking" data-s="Ranking"><h2>Ranking graczy</h2>
-<p class="mut">Gracze posortowani według poziomu (a przy równym poziomie według doświadczenia). Do rankingu trafiasz, gdy grasz w trybie wieloosobowym pod własną nazwą.</p>
+<p class="mut">Pięciu najlepszych graczy, posortowanych według poziomu (a przy równym poziomie według doświadczenia). Do rankingu trafiasz, gdy grasz w trybie wieloosobowym pod własną nazwą.</p>
 <table id="rk"><tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr><tr><td colspan="4" class="mut">Ładowanie…</td></tr></table></section>
 
 <section id="konto" data-s="Konto"><h2>Konto i zapis gry</h2>
@@ -223,7 +223,7 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
   fetch(API).then(function(r){return r.json();}).then(function(j){
     if(!j.length){t.rows[1].cells[0].textContent='Na razie nikogo. Zagraj w trybie wieloosobowym i zostań pierwszy!';return;}
     var h='<tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr>';
-    j.forEach(function(p,i){h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.l+'</td><td>'+p.xp+'</td></tr>';});
+    j.slice(0,5).forEach(function(p,i){h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.l+'</td><td>'+p.xp+'</td></tr>';});
     t.innerHTML=h;
   }).catch(function(){t.rows[1].cells[0].textContent='Nie udało się pobrać rankingu.';});
 

@@ -523,7 +523,7 @@ export class Stats extends DurableObject {
       if (++r.n > 12 || ++r.dn > 80 || tot >= 900) { this.nrl.set(ip, r); return new Response('limit', { status: 429 }); }
       this.nrl.set(ip, r); if (this.nrl.size > 5000) this.nrl.clear(); this.add(day, 'npc', 1); return new Response(String(tot + 1)); }
     if (url.pathname === '/ranking') {
-      const rows = q.exec("SELECT nick,s FROM scores WHERE g='poziom' ORDER BY s DESC, t ASC LIMIT 50").toArray();
+      const rows = q.exec("SELECT nick,s FROM scores WHERE g='poziom' ORDER BY s DESC, t ASC LIMIT 5").toArray();
       return new Response(JSON.stringify(rows.map(r => ({ n: r.nick, l: Math.floor(r.s / 100000), xp: r.s % 100000 }))));
     }
     if (url.pathname.startsWith('/acct/')) return this.acct(req, url, q);
@@ -583,7 +583,7 @@ export class Stats extends DurableObject {
       const uniq = {}; for (const r of q.exec('SELECT day, COUNT(*) AS n FROM seen WHERE day>=? GROUP BY day', since).toArray()) uniq[r.day] = r.n;
       for (let i = 29; i >= 0; i--) { const dd = new Date(Date.now() + 3600e3 - i * 86400e3).toISOString().slice(0, 10); const b = byDay[dd] || {}; days.push({ d: dd, gracze: uniq[dd] || 0, starty: b.starts || 0, nowi: b.new || 0, min: b.min || 0 }); }
       const players = q.exec('SELECT COUNT(*) AS n, SUM(mob) AS m FROM players').toArray()[0];
-      const top = {}; for (const r of q.exec('SELECT g,nick,s,t FROM scores ORDER BY s DESC, t ASC').toArray()) { (top[r.g] = top[r.g] || []); if (top[r.g].length < 10) top[r.g].push({ n: r.nick, s: r.s, t: r.t }); }
+      const top = {}; for (const r of q.exec('SELECT g,nick,s,t FROM scores ORDER BY s DESC, t ASC').toArray()) { (top[r.g] = top[r.g] || []); if (top[r.g].length < 5) top[r.g].push({ n: r.nick, s: r.s, t: r.t }); }
       const mini = {}; Object.keys(tot).filter(k => k.startsWith('mini:')).forEach(k => mini[k.slice(5)] = tot[k]);
       const peak = (q.exec('SELECT v FROM meta WHERE k=\'peak\'').toArray()[0] || {}).v || 0;
       const body = JSON.stringify({ gracze: players.n || 0, telefon: players.m || 0, starty: tot.starts || 0, minuty: tot.min || 0, misje: tot.missions || 0, fabula: tot.main || 0, minigry: tot.mini || 0, wygrane: tot.miniwin || 0, multi: tot.mp || 0, startyTel: tot.mob || 0, startyKomp: tot.desk || 0, peak, mini, top, dni: days, dzis: days[days.length - 1], t: Date.now() });
