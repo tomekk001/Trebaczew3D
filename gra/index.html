@@ -5122,7 +5122,7 @@ async function boot(saved){
     G.def=[{x:-4,y:-4,sp:4.1,col:'#c8261e'},{x:5,y:-9,sp:3.7,col:'#c8261e'}];
     function reset(){ G.me.x=0; G.me.y=FH*.3; G.me.vx=G.me.vy=0; G.ball.x=0; G.ball.y=FH*.22; G.ball.vx=G.ball.vy=0; G.ball.own=null; G.def[0].x=-4; G.def[0].y=-4; G.def[1].x=5; G.def[1].y=-9; G.gk.x=0; G.cool=.8; }
     function msg(m,t){ G.msg=m; G.msgT=t||1.3; }
-    function geo(){ const W=MG.W,H=MG.H; const VH=Math.min(FH+3,Math.max(22,(H-150)/((W-32)/FW))); const s=Math.min((W-32)/FW,(H-150)/VH); const half=(H-150)/2/s; const cy=Math.max(-FH/2-1.6+half,Math.min(FH/2+1.4-half,(G.camY!==undefined?G.camY:0))); return {W,H,s,ox:W/2,oy:H/2+30-cy*s}; }
+    function geo(){ const W=MG.W,H=MG.H; const VH=Math.min(FH+3,Math.max(22,(H-150)/((W-32)/FW))); const s=Math.max(4,Math.min((W-32)/FW,(H-150)/VH)); const half=(H-150)/2/s; const cy=Math.max(-FH/2-1.6+half,Math.min(FH/2+1.4-half,(G.camY!==undefined?G.camY:0))); return {W,H,s,ox:W/2,oy:H/2+30-cy*s}; }
     const toS=(x,y)=>{ const g=geo(); return [g.ox+x*g.s,g.oy+y*g.s]; };
     function shoot(){ const b=G.ball; if(b.own!=='me'){ G.charge=0; return; } const p=.35+G.charge*.65, sp=9+p*17; b.own=null; b.vx=Math.cos(G.me.dir)*sp; b.vy=Math.sin(G.me.dir)*sp; b.shot=p; G.cool=.35; mgSnd.thud(); G.charge=0; }
     G.update=dt=>{ G.t+=dt; const cyT=(G.me.y*2+G.ball.y)/3; G.camY=(G.camY===undefined?cyT:G.camY+(cyT-G.camY)*Math.min(1,dt*4)); if(G.msgT>0)G.msgT-=dt; if(G.shake>0)G.shake-=dt; if(G.cool>0)G.cool-=dt; G.parts=G.parts.filter(p=>{ p.t-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; return p.t>0; });
@@ -5187,7 +5187,7 @@ async function boot(saved){
   /* ===== 5. ŻONGLERKA NA STADIONIE LZS: utrzymaj piłkę w powietrzu 60 s ===== */
   function makeZonglerka(opt){ const GOAL=opt.goal||60; const G={t:0,time:0,touches:0,perfect:0,me:{x:0,vx:0,kick:0,walk:0},ball:{x:.1,y:2.2,vx:0,vy:0},charge:0,charging:false,msg:'',msgT:0,started:false,parts:[],best:0,dragX:null};
     const g9=9.81*.85, ZW=7; // szerokość pola gry (m)
-    function geo(){ const W=MG.W,H=MG.H; const s=Math.min(W/ (ZW+3), (H-140)/6.5); return {W,H,s,gy:H-70,ox:W/2}; }
+    function geo(){ const W=MG.W,H=MG.H; const s=Math.max(8,Math.min(W/ (ZW+3), (H-140)/6.5)); return {W,H,s,gy:H-70,ox:W/2}; }
     const toS=(x,y)=>{ const g=geo(); return [g.ox+x*g.s,g.gy-y*g.s]; };
     function msg(m,t){ G.msg=m; G.msgT=t||1; }
     function kick(force){ const b=G.ball, me=G.me; me.kick=.25; if(force!==undefined) G.charge=force; const dx=b.x-me.x, inZone=!G.started||(Math.abs(dx)<.55&&b.y>.12&&b.y<1.35&&b.vy<=1.5);
