@@ -106,7 +106,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#0b0d10;color:var(--in
 @media(max-width:480px){#trBox .trC{grid-template-columns:1fr}}
 #cmBox{position:fixed;z-index:14;top:calc(70px + env(safe-area-inset-top,0px));right:10px;background:rgba(18,21,24,.95);border:1px solid var(--line);border-top:3px solid #47b04b;padding:10px 14px;color:var(--ink);font-size:14px;max-width:min(60vw,300px);pointer-events:auto}
 #cmBox .sub{opacity:.8;font-size:12px;margin:2px 0}#cmBox .row{display:flex;gap:8px;margin-top:8px}
-#vcBox{position:fixed;z-index:13;left:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:rgba(18,21,24,.9);border:1px solid var(--line);border-radius:10px;padding:7px 12px;color:var(--ink);font-size:13px;pointer-events:none}
+#vcBox{position:fixed;z-index:13;left:max(10px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);max-width:200px;background:rgba(18,21,24,.9);border:1px solid var(--line);border-radius:10px;padding:7px 12px;color:var(--ink);font-size:13px;pointer-events:none}
 #vcBox .me.on{color:#47b04b;font-weight:700}#vcBox .sp{color:#f2c230;margin-top:3px}#vcBox .sub{opacity:.6;font-size:11px;margin-top:2px}
 #duelBox .row{display:flex;gap:8px;margin-top:8px;justify-content:center}
 #duelBox .btn.hot{background:var(--accent);color:#111;border-color:var(--accent)}
