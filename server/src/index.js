@@ -21,7 +21,7 @@ const hex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : null;
 const VEH = ['car', 'van', 'moto', 'tractor', 'bus', 'bike', 'fire', 'melex'];
 function cleanPresence(p) {
   p = p || {};
-  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)).replace(/[<>]/g, '') || null, in: String(p.in || '').replace(/[^0-9,.-]/g, '').slice(0, 24) || null, g: num(p.g, 0, 12), pk: String(p.pk || '').replace(/[^0-9,-]/g, '').slice(0, 20) || null, rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null, fc: String(p.fc || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6) || null };
+  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)).replace(/[<>]/g, '') || null, in: String(p.in || '').replace(/[^0-9,.-]/g, '').slice(0, 24) || null, g: num(p.g, 0, 12), vo: p.vo ? 1 : 0, sp: p.sp ? 1 : 0, pk: String(p.pk || '').replace(/[^0-9,-]/g, '').slice(0, 20) || null, rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null, fc: String(p.fc || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6) || null };
 }
 // Bezpieczne czyszczenie ładunku zdarzeń współpracy (krótkie liczby, napisy i płytkie struktury)
 function cleanCo(v, depth = 0) {
@@ -406,7 +406,7 @@ export class Room extends DurableObject {
   }
   async webSocketMessage(ws, raw) {
     const a = ws.deserializeAttachment(); if (!a || !a.id) return;
-    if (typeof raw !== 'string' || raw.length > 1500) return;
+    if (typeof raw !== 'string' || (raw.length > 1500 && !(raw.length <= 9000 && raw.indexOf('"vc"') > 0 && raw.indexOf('"co"') > 0))) return;
     // limit: max 40 wiadomości na sekundę od jednego gracza
     const now = Date.now(); const sec = Math.floor(now / 1000); if (a.win !== sec) { a.win = sec; a.n = 0; } if (++a.n > 40) { ws.serializeAttachment(a); return; }
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
@@ -423,7 +423,12 @@ export class Room extends DurableObject {
       if (m.topic === 'co') { // wiadomości współpracy: zaproszenia, wspólna praca, wyścigi, handel (adresowane do gracza albo do całego pokoju)
         const sec2 = Math.floor(now / 1000); if (a.cs !== sec2) { a.cs = sec2; a.cc = 0; } if (++a.cc > 25) { ws.serializeAttachment(a); return; }
         const d = m.d || {}; const k = String(d.k || '').replace(/[^a-z0-9]/gi, '').slice(0, 8); if (!k) { ws.serializeAttachment(a); return; }
-        const to = String(d.to || '').replace(/[^a-z0-9*-]/gi, '').slice(0, 12); const body = cleanCo(d.d || {}); let js = ''; try { js = JSON.stringify(body); } catch (e) {} if (js.length > 900) { ws.serializeAttachment(a); return; }
+        const to = String(d.to || '').replace(/[^a-z0-9*-]/gi, '').slice(0, 12);
+        if (k === 'vc') { // sygnalizacja czatu głosowego (WebRTC): tylko do jednego gracza, SDP jako zwykły tekst, własny limit 8 na sekundę
+          if (a.vs !== sec2) { a.vs = sec2; a.vn = 0; } if (++a.vn > 8 || !to || to === '*') { ws.serializeAttachment(a); return; }
+          const dd = d.d || {}; const mm = ['off', 'ans', 'bye'].includes(dd.m) ? dd.m : null; const sdp = typeof dd.s === 'string' ? dd.s.slice(0, 7000) : ''; if (!mm || (mm !== 'bye' && (sdp.length < 20 || !sdp.startsWith('v=0')))) { ws.serializeAttachment(a); return; }
+          ws.serializeAttachment(a); const tg = this.socks().find(w => { const x = w.deserializeAttachment(); return x && x.id === to; }); if (tg) { try { tg.send(JSON.stringify({ t: 'e', peer: a.id, topic: 'co', d: { k: 'vc', d: { m: mm, s: mm === 'bye' ? '' : sdp } } })); } catch (e) {} } return; }
+        const body = cleanCo(d.d || {}); let js = ''; try { js = JSON.stringify(body); } catch (e) {} if (js.length > 900) { ws.serializeAttachment(a); return; }
         ws.serializeAttachment(a); const o = JSON.stringify({ t: 'e', peer: a.id, topic: 'co', d: { k, d: body } });
         if (to === '*') { if (['rc', 'cn'].includes(k)) for (const w of this.socks()) if (w !== ws) { try { w.send(o); } catch (e) {} } return; }
         const tgt = this.socks().find(w => { const x = w.deserializeAttachment(); return x && x.id === to; }); if (tgt) { try { tgt.send(o); } catch (e) {} } return; }

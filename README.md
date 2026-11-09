@@ -78,6 +78,7 @@ Panel „Znajomi i pokoje” (przycisk w panelu graczy) zawiera:
 - **Wyścigi z lobby** (`rc`): 3 trasy po drodze głównej, wpisowe 0/20/50/100 zł, pula dla zwycięzcy, radiowozy jako przeszkoda (+1,5 s kary).
 - **Handel** (`tr`): dwufazowe zatwierdzenie z haszami ofert. Pieniądze, jedzenie i auta.
 - **Wspólny dom i garaż**: `/acct/home` na serwerze (skarbiec, 4 auta, do 6 lokatorów).
+- **Czat głosowy** (`vc`): opcjonalny, włączany w panelu „Znajomi i pokoje”. Dźwięk idzie peer-to-peer (WebRTC), serwer przekazuje tylko sygnalizację (limit 8 na sekundę, tylko do jednego gracza). Słychać graczy w promieniu ok. 70 m, im dalej, tym ciszej. Domyślnie push-to-talk (klawisz V), możliwy otwarty mikrofon, wyciszanie pojedynczych graczy. Rozmowy nie są nagrywane. Rozmówcy widzą nawzajem swój adres IP. Używany jest tylko serwer STUN (bez TURN), więc w części sieci połączenie może się nie udać. W iframe (np. itch.io) przeglądarka może blokować mikrofon.
 
 Wiadomości `co` są przekazywane przez pokój (limit 25 na sekundę, ładunek do 900 znaków). Ograniczenie: pieniądze i przedmioty są w zapisie gry po stronie przeglądarki, więc handel i nagrody nie są chronione przed oszustwem zmodyfikowanym klientem. Pełna walidacja wymagałaby przeniesienia ekonomii na serwer.
 
