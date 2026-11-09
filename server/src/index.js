@@ -450,6 +450,7 @@ export class Stats extends DurableObject {
             CREATE TABLE IF NOT EXISTS players(id TEXT PRIMARY KEY, first TEXT, mob INTEGER);
             CREATE TABLE IF NOT EXISTS scores(g TEXT, nick TEXT, s INTEGER, t INTEGER);
             CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);
+            CREATE TABLE IF NOT EXISTS rkfirst(nick TEXT PRIMARY KEY, t INTEGER);
             CREATE TABLE IF NOT EXISTS accounts(name TEXT PRIMARY KEY, salt TEXT, hash TEXT, tok TEXT, save TEXT, t INTEGER);
             CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kat TEXT, opis TEXT, kontakt TEXT, info TEXT);
             CREATE TABLE IF NOT EXISTS online(fc TEXT PRIMARY KEY, room TEXT, nick TEXT, ts INTEGER);
@@ -568,7 +569,9 @@ export class Stats extends DurableObject {
       if (m.ev === 'rank') { // ranking graczy: najwięcej pieniędzy (najlepszy wynik danej nazwy) i najszybszy „Wyścig dookoła wsi”
         const nick = censor(clean(d.n, 18)); if (!nick || nick.length < 2) return new Response('bez nazwy', { status: 400 });
         const put = (g, s) => { const best = (q.exec('SELECT MAX(s) AS s FROM scores WHERE g=? AND nick=?', g, nick).toArray()[0] || {}).s; if (best != null && best >= s) return; q.exec('DELETE FROM scores WHERE g=? AND nick=?', g, nick); q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', g, nick, s, now); q.exec('DELETE FROM scores WHERE g=? AND rowid NOT IN (SELECT rowid FROM scores WHERE g=? ORDER BY s DESC, t ASC LIMIT 25)', g, g); };
-        const money = Math.round(+d.money || 0); if (money > 0 && money <= 5e6) put('kasa', money);
+        // wiarygodność: nazwa w rankingu może mieć tylko tyle pieniędzy, ile da się realnie zarobić od jej pierwszego zgłoszenia (20 000 zł + 3000 zł na minutę); wyższe wartości są obcinane, więc podrobiony wynik z zewnątrz nie wskoczy na szczyt
+        q.exec('INSERT OR IGNORE INTO rkfirst(nick,t) VALUES(?,?)', nick, now); if (Math.random() < 0.02) q.exec('DELETE FROM rkfirst WHERE t<?', now - 90 * 864e5); const fst = (q.exec('SELECT t FROM rkfirst WHERE nick=?', nick).toArray()[0] || {}).t || now; const cap = 20000 + 3000 * Math.max(0, (now - fst) / 60000);
+        const money = Math.min(Math.round(+d.money || 0), Math.floor(cap)); if (money > 0 && money <= 5e6) put('kasa', money);
         const lvl = Math.round(+d.lvl || 0); if (lvl >= 1 && lvl <= 10) put('poziom', lvl * 100000 + Math.min(99999, Math.max(0, Math.round(+d.xp || 0))));
         const race = +d.race || 0; if (race >= 25 && race <= 600) put('wyscig', Math.round((600 - race) * 10));
       }
