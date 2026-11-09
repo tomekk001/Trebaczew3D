@@ -277,6 +277,8 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 
 /* telefon: czysty ekran - zamiast minimapy mała ikona „M”, gwiazdki tylko podczas pościgu, panel graczy pod ikoną 👥 */
 #bMapM,#bPeople,#bInvM{display:none}
+#bMic:not([hidden]){display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
+#bMic.on{background:#47b04b;color:#111}#bMic.talk{background:#f2c230;color:#111}#bMic.off{opacity:.75}
 @media (pointer:coarse){
   .radarBox #radar,#lvlBox{display:none!important}
   .radarBox{top:calc(66px + env(safe-area-inset-top,0px))!important;left:max(12px,env(safe-area-inset-left,0px))!important;width:132px!important;background:none!important;border:0!important;padding:0!important}
@@ -303,6 +305,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
   <button class="btn" id="bMenu" title="Esc">Menu</button>
   <button class="btn ic" id="bMapM" aria-label="Mapa" title="Mapa">M</button>
   <button class="btn ic" id="bInvM" aria-label="Ekwipunek" title="Ekwipunek">E</button>
+  <button class="btn ic" id="bMic" aria-label="Mikrofon (czat głosowy)" title="Włącz mikrofon (czat głosowy)" hidden>🎤</button>
   <button class="btn ic" id="bPeople" aria-label="Gracze online" title="Gracze online" hidden>👥</button>
   <button class="btn" id="bLog" title="Klawisz Q">Misje</button>
   <button class="btn" id="bInv" title="Klawisz I">Ekwipunek</button>

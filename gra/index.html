@@ -282,6 +282,8 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 
 /* telefon: czysty ekran - zamiast minimapy mała ikona „M”, gwiazdki tylko podczas pościgu, panel graczy pod ikoną 👥 */
 #bMapM,#bPeople,#bInvM{display:none}
+#bMic:not([hidden]){display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
+#bMic.on{background:#47b04b;color:#111}#bMic.talk{background:#f2c230;color:#111}#bMic.off{opacity:.75}
 @media (pointer:coarse){
   .radarBox #radar,#lvlBox{display:none!important}
   .radarBox{top:calc(66px + env(safe-area-inset-top,0px))!important;left:max(12px,env(safe-area-inset-left,0px))!important;width:132px!important;background:none!important;border:0!important;padding:0!important}
@@ -308,6 +310,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
   <button class="btn" id="bMenu" title="Esc">Menu</button>
   <button class="btn ic" id="bMapM" aria-label="Mapa" title="Mapa">M</button>
   <button class="btn ic" id="bInvM" aria-label="Ekwipunek" title="Ekwipunek">E</button>
+  <button class="btn ic" id="bMic" aria-label="Mikrofon (czat głosowy)" title="Włącz mikrofon (czat głosowy)" hidden>🎤</button>
   <button class="btn ic" id="bPeople" aria-label="Gracze online" title="Gracze online" hidden>👥</button>
   <button class="btn" id="bLog" title="Klawisz Q">Misje</button>
   <button class="btn" id="bInv" title="Klawisz I">Ekwipunek</button>
@@ -3388,7 +3391,7 @@ async function boot(saved){
   async function mpInit(useWs){ try{ let room; if(useWs){ let ini=null; try{ const q=(new URLSearchParams(location.search).get('room')||'').toLowerCase(); if(/^p[a-z0-9]{5,8}$/.test(q)) ini=q; else if(/^[a-z0-9]{5,8}$/.test(q)) ini='p'+q; }catch(e){} room=wsRoom(MP_URL,ini); statEvent('mp'); } else { if(!window.claude||!window.claude.use)return; room=await window.claude.use('room'); if(!room)return; try{ MP.user=await window.claude.use('user'); }catch(e){} } MP.room=room;
       if(!myNick&&CHAR.name) myNick=cleanTxt(CHAR.name,24);
       if(!myNick&&MP.user){ try{ const me=await MP.user.me(); if(me&&me.name) myNick=cleanTxt(me.name.split(' ')[0],24); }catch(e){} }
-      MP.on=true; mpEl.hidden=false; { const bp=document.getElementById('bPeople'); bp.hidden=false; bp.onclick=()=>document.body.classList.toggle('mpOpen');  if(IS_TOUCH) document.getElementById('bChat').textContent='Czat'; } nickIn.value=myNick; renderList();
+      MP.on=true; mpEl.hidden=false; { const bm=document.getElementById('bMic'); if(bm){ bm.hidden=false; bm.onclick=()=>{ if(VC.on) vcDisable(); else vcEnable(); }; setTimeout(()=>{ if(MP.on&&!VC.on) toast('🎤 Kliknij przycisk mikrofonu u góry, by rozmawiać głosowo (mówisz przytrzymując V)',5); },2500); } } { const bp=document.getElementById('bPeople'); bp.hidden=false; bp.onclick=()=>document.body.classList.toggle('mpOpen');  if(IS_TOUCH) document.getElementById('bChat').textContent='Czat'; } nickIn.value=myNick; renderList();
       room.onPeers(ch=>{ ch.left.forEach(p=>{ const r=MP.remote.get(p.peer); if(!r)return; releaseGhost(r); [r.body,r.tag,r.veh,r.bubble].forEach(o=>o&&scene.remove(o)); MP.remote.delete(p.peer); if(r.name) toast(`👋 ${r.name.replace(/[<>&]/g,'')} wychodzi z gry`,2); });
         let names=false; [...ch.joined,...ch.updated].forEach(p=>{ if(p.sameTab||p.kind!=='viewer')return; if(!p.presence||p.presence.x===undefined)return; const isNew=!MP.remote.has(p.peer); ensureRemote(p); if(isNew){ names=true; } else { const r=MP.remote.get(p.peer); const nk=cleanTxt(p.presence.nick,24); if(nk&&nk!==r.name) names=true; } });
         if(names) mpNames(); else renderList(); },()=>{});
@@ -3749,7 +3752,7 @@ async function boot(saved){
       else if(want&&me&&me<p&&tAll>(VC.back.get(p)||0)&&VC.pcs.size<8){ VC.back.set(p,tAll+5); vcCall(p); } });
     for(const p of [...VC.pcs.keys()]) if(!MP.remote.has(p)) vcClose(p);
     if(VC.t<=0){ VC.t=.3; vcRender(); } }
-  function vcRender(){ const b=VC.box; if(!VC.on){ b.hidden=true; return; } b.hidden=false; const sp=[]; MP.remote.forEach((r,p)=>{ if(r.sp&&r.vo&&VC.pcs.has(p)&&!VC.muted.has(p)) sp.push(esc2(r.name||'Gracz')); });
+  function vcRender(){ { const bm=document.getElementById('bMic'); if(bm){ bm.className='btn ic'+(VC.on?(VC.talk?' talk':' on'):' off'); bm.title=VC.on?'Wyłącz czat głosowy (mówisz: przytrzymaj V)':'Włącz mikrofon (czat głosowy)'; } } const b=VC.box; if(!VC.on){ b.hidden=true; return; } b.hidden=false; const sp=[]; MP.remote.forEach((r,p)=>{ if(r.sp&&r.vo&&VC.pcs.has(p)&&!VC.muted.has(p)) sp.push(esc2(r.name||'Gracz')); });
     const conn=[...VC.pcs.values()].filter(c=>c.pc.connectionState==='connected').length;
     b.innerHTML=`<div class="me ${VC.talk?'on':''}">${VC.track?(VC.talk?'🎤 Mówisz':(VC.ptt?'🎤 Wyciszony - przytrzymaj V':'🔇 Wyciszony')):'🔈 Tylko słuchasz'}</div>${sp.length?`<div class="sp">🔊 ${sp.join(', ')}</div>`:''}<div class="sub">połączeni: ${conn}</div>`; }
   function vcSocHtml(){ let h='<div class="socS"><b>Czat głosowy</b>'; if(!vcOk()) return h+'<div class="sub">Ta przeglądarka nie obsługuje czatu głosowego.</div></div>';
