@@ -3544,7 +3544,7 @@ async function boot(saved){
   const JOBS={cysterna:{t:'Załadunek cystern we dwoje',sub:'Ty obsługujesz wagę - zatwierdzasz ładunek, gdy waga pokaże 24 t'},palety:{t:'Brygada paletyzacji',sub:'Trafiajcie w rytm razem - obaj naciskacie w tej samej chwili'}};
   CO.invH.job=(d,from,nm)=>{ const k=String(d.kind||''); const J=JOBS[k]; if(!J) return; coAsk({kick:'Wspólna praca',title:nm+' zaprasza do pracy: '+J.t,sub:J.sub,yes:'Dołącz',no:'Nie teraz',ttl:35,onYes:()=>{ if(MG.on){ toast('Skończ najpierw bieżącą minigrę',2); return; } coSend(from,'jobok',{kind:k}); openMini(k+'2',{peer:from,host:false,title:J.t+' - Cementownia Warta',sub:J.sub}); },onNo:t=>{ if(!t) coSend(from,'jobno',{kind:k}); }}); };
   CO.h.jobok=(d,from)=>{ const w=CO.jobWait; if(!w||w.peer!==from||tAll-w.t>45||d.kind!==w.kind) return; CO.jobWait=null; if(MG.on){ coSend(from,'jobno',{kind:w.kind}); return; } const J=JOBS[w.kind]; openMini(w.kind+'2',{peer:from,host:true,title:J.t+' - Cementownia Warta',sub:w.kind==='cysterna'?'Ty ładujesz cysternę - partner obsługuje wagę':J.sub}); };
-  CO.h.jobno=(d,from)=>{ if(CO.jobWait&&CO.jobWait.peer===from){ CO.jobWait=null; toast(peerName(from)+' nie może teraz pracować',2); } };
+  CO.h.jobno=(d,from)=>{ if(CO.jobWait&&CO.jobWait.peer===from){ CO.jobWait=null; toast(esc2(peerName(from))+' nie może teraz pracować',2); } };
   CO.actions.push({l:'wspólna praca (cementownia)',fn:peer=>{ const s=typeof nearMini==='function'?nearMini():null; const k=s&&s.id; if(!JOBS[k]){ toast('Stań przy stanowisku: załadunek cystern albo paletyzacja worków',3); return; } CO.jobWait={peer,kind:k,t:tAll}; coSend(peer,'inv',{w:'job',kind:k}); toast('✉ Zaproszenie do pracy wysłane: '+esc2(peerName(peer)),2); }});
   /* ---------- wyścigi w pokoju: lobby, wpisowe, punkty kontrolne, policja jako przeszkoda, tablica wyników ---------- */
   const RACE={st:'idle',routes:null,id:'',ri:0,fee:0,host:null,mine:false,pl:new Map(),pot:0,go:0,t0:0,cp:0,openers:new Map(),openT:0,joinT:0,cops:[],pen:0,penT:-9,firstFin:0,endT:0,resT:0,box:document.createElement('div'),bt:0,sel:0,feeSel:20,left:0};
@@ -3574,7 +3574,7 @@ async function boot(saved){
   function raceResult(){ const arr=[...RACE.pl.entries()].map(([p,o])=>({p,cp:o.cp,t:o.t})); arr.sort((a,b)=>(a.t!==null&&b.t!==null)?(a.t-b.t||(a.p<b.p?-1:1)):a.t!==null?-1:b.t!==null?1:(b.cp-a.cp)); const w=arr[0]&&arr[0].t!==null?arr[0]:null; RACE.res=arr; RACE.st='result'; RACE.resT=tAll; const meT=RACE.pl.get(raceMe()); let txt='Wyścig zakończony';
     if(w&&w.p===raceMe()){ addMoney(RACE.pot); addXP(25); txt=`🏆 Wygrywasz wyścig! +${fmt(RACE.pot)}`; if(AU.ctx&&AU.on) sfx.win(); duelBanner(true,txt); } else if(w){ txt=`Wygrywa ${esc2(raceName(w.p))} (${(w.t/1000).toFixed(1)} s)`; duelBanner(false,txt); }
     if(meT&&meT.t!==null){ const b=raceBest(), k='r'+RACE.ri; if(!b[k]||meT.t<b[k]){ b[k]=meT.t; try{ localStorage.setItem('trebaczew-race',JSON.stringify(b)); }catch(e){} } }
-    try{ statEvent('mini',{g:'race',m:'r'+RACE.ri,s:meT&&meT.t?Math.round(meT.t/100):0,w:w&&w.p===raceMe()?1:0}); }catch(e){} raceClear(); raceRender(); }
+     raceClear(); raceRender(); }
   CO.h.rc=(d,from)=>{ const m=String(d.m||''), id=String(d.id||'').slice(0,8);
     if(m==='open'){ const r=d.r|0, f=d.f|0; if(r<0||r>2||!RACE_FEES.includes(f)) return; RACE.openers.set(from,{id,r,f,n:d.c|0,t:tAll}); if(CO.open) renderSoc(); if(!RACE.noted||RACE.noted!==id){ RACE.noted=id; if(RACE.st==='idle') toast(`🏁 ${esc2(peerName(from))} organizuje wyścig (${esc2(raceRoutes()[r].n)}, wpisowe ${fmt(f)}) - Znajomi i pokoje → Wyścigi`,4.5); } return; }
     if(id!==RACE.id) { if(m==='cancel'||m==='go') RACE.openers.delete(from); return; }
@@ -3631,7 +3631,7 @@ async function boot(saved){
     let gaveCar=false; if(me.c){ OWN.car=null; OWN.tune={}; gaveCar=true; }
     addMoney(th.m); th.i.forEach(([k,n])=>{ const meta=TR.thMeta[k]; if(!OWN.inv) OWN.inv={}; const e=OWN.inv[k]||(OWN.inv[k]={n:0,t:meta.t,v:meta.v}); e.n+=n; });
     if(th.c){ OWN.car=th.k; OWN.tune={chip:!!TR.th.tn[0],bak:!!TR.th.tn[1]}; } if(gaveCar||th.c){ try{ spawnOwnCar(); }catch(e){} }
-    ownSave(); saveGame(); moneyEl.textContent=fmt(st.money); const nm=peerName(TR.peer); trClose(`🤝 Handel zakończony z ${esc2(nm)}`); if(AU.ctx&&AU.on) sfx.cash(); try{ statEvent('mini',{g:'trade',m:'',s:me.m,w:1}); }catch(e){} }
+    ownSave(); saveGame(); moneyEl.textContent=fmt(st.money); const nm=peerName(TR.peer); trClose(`🤝 Handel zakończony z ${esc2(nm)}`); if(AU.ctx&&AU.on) sfx.cash(); }
   function trCheckConf(){ if(TR.lockMe&&TR.lockTh&&!TR.confMe){ if(trValidMine()||trValidIn()){ TR.err=trValidMine()||trValidIn(); trRender(); return; } TR.confMe=true; trSend('conf',{h:trHash(trCanon(TR.th)),g:trHash(trMine())}); } if(TR.confMe&&TR.confTh) trExec(); }
   CO.h.tr=(d,from)=>{ const m=String(d.m||'').slice(0,6); if(m==='acc'){ if(TR.pend&&TR.pend.peer===from&&TR.pend.id===String(d.id)&&!TR.on) trOpen(from,TR.pend.id); return; }
     if(!TR.on||from!==TR.peer||String(d.id)!==TR.id) return; TR.rx=tAll;
@@ -3666,7 +3666,7 @@ async function boot(saved){
   const cmSend=(m,d)=>coSend(CM.peer,'cm',Object.assign({m,id:CM.id},d||{}));
   function cmOpen(kind,id,peer,host){ Object.assign(CM,{on:true,k:kind,peer,id,host,t0:tAll,mine:0,their:0,fi:0,dwell:0,inMe:false,inTh:false,has:false,pend:null,kaT:0,rx:tAll,role:host?0:1,need:kind==='harvest'?4:8}); CM.box.hidden=false;
     const J=CMK[kind]; toast(`🤝 <b>${esc2(J.t)}</b> z ${esc2(peerName(peer))}<br>${esc2(J.sub)}`,6); if(kind==='harvest'){ const t=parked.filter(c=>c.kind==='tractor').sort((a,b)=>Math.hypot(a.x-st.x,a.z-st.z)-Math.hypot(b.x-st.x,b.z-st.z))[0]; if(t) WAYPOINT=[t.x,t.z]; } else if(kind==='fire'){ CM.ph=0; const t=parked.find(c=>c.kind==='fire'); WAYPOINT=host?(t?[t.x,t.z]:OSP_P):cmMid(); } else WAYPOINT=cmDepot(); cmRender(); }
-  function cmEnd(win,txt){ if(!CM.on) return; CM.on=false; CM.box.hidden=true; CM.mark.visible=false; WAYPOINT=null; if(win){ const J=CMK[CM.k]; addMoney(J.rw); addXP(40); toast(`🤝 ${esc2(txt||'Zadanie wykonane!')} +${fmt(J.rw)}`,5); duelBanner(true,esc2(J.t)+': +'+fmt(J.rw)); if(AU.ctx&&AU.on) sfx.win(); try{ statEvent('mini',{g:'coop-'+CM.k,m:'',s:Math.round(tAll-CM.t0),w:1}); }catch(e){} } else toast(esc2(txt||'Misja przerwana'),4); }
+  function cmEnd(win,txt){ if(!CM.on) return; CM.on=false; CM.box.hidden=true; CM.mark.visible=false; WAYPOINT=null; if(win){ const J=CMK[CM.k]; addMoney(J.rw); addXP(40); toast(`🤝 ${esc2(txt||'Zadanie wykonane!')} +${fmt(J.rw)}`,5); duelBanner(true,esc2(J.t)+': +'+fmt(J.rw)); if(AU.ctx&&AU.on) sfx.win(); } else toast(esc2(txt||'Misja przerwana'),4); }
   function cmTarget(){ if(CM.k==='harvest') return cmFields()[CM.fi]; if(CM.k==='parcels') return CM.has?cmDrops()[CM.role]:cmDepot(); if(CM.k==='fire') return (!CM.host||CM.ph===0)?cmMid():SAD; return null; }
   CO.h.cm=(d,from)=>{ const m=String(d.m||'').slice(0,6), id=String(d.id||'').slice(0,8);
     if(m==='acc'){ if(CM.pend&&CM.pend.peer===from&&CM.pend.id===id&&!CM.on){ const k=CM.pend.kind; cmOpen(k,id,from,true); cmSend('go',{k}); } return; }

@@ -21,13 +21,13 @@ const hex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : null;
 const VEH = ['car', 'van', 'moto', 'tractor', 'bus', 'bike', 'fire', 'melex'];
 function cleanPresence(p) {
   p = p || {};
-  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)) || null, in: String(p.in || '').replace(/[^0-9,.-]/g, '').slice(0, 24) || null, g: num(p.g, 0, 12), pk: String(p.pk || '').replace(/[^0-9,-]/g, '').slice(0, 20) || null, rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null, fc: String(p.fc || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6) || null };
+  return { x: num(p.x, -6000, 6000), z: num(p.z, -6000, 6000), h: num(p.h, -50, 50), s: num(p.s, 0, 80), v: VEH.includes(p.v) ? p.v : null, vc: hex(p.vc), col: hex(p.col) || '#888888', nick: censor(clean(p.nick, 24)).replace(/[<>]/g, '') || null, in: String(p.in || '').replace(/[^0-9,.-]/g, '').slice(0, 24) || null, g: num(p.g, 0, 12), pk: String(p.pk || '').replace(/[^0-9,-]/g, '').slice(0, 20) || null, rd: String(p.rd || '').replace(/[^a-z0-9-]/gi, '').slice(0, 12) || null, fc: String(p.fc || '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 6) || null };
 }
 // Bezpieczne czyszczenie ładunku zdarzeń współpracy (krótkie liczby, napisy i płytkie struktury)
 function cleanCo(v, depth = 0) {
   if (typeof v === 'number') return Number.isFinite(v) ? Math.max(-1e7, Math.min(1e7, v)) : 0;
   if (typeof v === 'boolean') return v;
-  if (typeof v === 'string') return censor(clean(v, 80));
+  if (typeof v === 'string') return censor(clean(v, 80)).replace(/[<>]/g, '');
   if (depth > 3) return null;
   if (Array.isArray(v)) return v.slice(0, 40).map(x => cleanCo(x, depth + 1));
   if (v && typeof v === 'object') { const o = {}; let n = 0; for (const k of Object.keys(v)) { if (++n > 24) break; if (!/^[a-zA-Z0-9_]{1,10}$/.test(k)) continue; o[k] = cleanCo(v[k], depth + 1); } return o; }
@@ -414,7 +414,7 @@ export class Room extends DurableObject {
     if (m.t === 'e') {
       if (m.topic === 'chat') {
         if (now - a.chat < 1500) { this.send(ws, { t: 'err', code: 'slow' }); ws.serializeAttachment(a); return; }
-        const t = censor(clean(m.d && m.d.t, 140)); if (!t) return; a.chat = now; ws.serializeAttachment(a);
+        const t = censor(clean(m.d && m.d.t, 140)).replace(/[<>]/g, ''); if (!t) return; a.chat = now; ws.serializeAttachment(a);
         this.bcast({ t: 'e', peer: a.id, topic: 'chat', d: { t } }, ws); this.send(ws, { t: 'e', peer: a.id, topic: 'chat', d: { t }, me: 1 }); return;
       }
       if (m.topic === 'emote') { if (now - (a.ev || 0) < 700) return; a.ev = now; ws.serializeAttachment(a); const e = Math.max(0, Math.min(7, (m.d && m.d.e) | 0)); const o = { t: 'e', peer: a.id, topic: 'emote', d: { e } }; this.bcast(o, ws); this.send(ws, { ...o, me: 1 }); return; }
