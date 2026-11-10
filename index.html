@@ -72,6 +72,18 @@ kbd{background:var(--bg2);border:1px solid var(--line);border-bottom-width:2px;b
 footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px solid var(--line);color:var(--mut);font-size:14px;text-align:center}
 .rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}.rv.on{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer;transition:.15s}.tabs button:hover{border-color:var(--acc)}.tabs button.on{background:var(--acc);color:#141414;border-color:var(--acc)}
+.tabp{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:260px}.tabp .tx{padding:22px}.tabp .tx p{margin:0 0 12px;font-size:19px}.tabp img{display:block;width:100%;height:100%;object-fit:cover;min-height:240px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chips span,.chips button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:14.5px}.chips button{cursor:pointer;font-weight:600;transition:.15s}.chips button:hover{border-color:var(--acc);transform:translateY(-2px)}.chips button:active{transform:scale(.96)}
+@media (max-width:720px){.tabp{grid-template-columns:1fr}.tabp img{height:200px;min-height:0;order:-1}}
+.sim{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}.bar{height:22px;border-radius:12px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.simInfo{display:flex;justify-content:space-between;margin:10px 0 14px;flex-wrap:wrap;gap:4px}.simInfo b{font-size:26px;color:var(--acc)}.simInfo span{color:var(--mut)}.simWin{margin:14px 0 0;padding:12px 16px;border-radius:12px;background:rgba(70,179,107,.15);border:1px solid var(--grn)}
+.lnk{background:none;border:0;color:var(--mut);font:inherit;text-decoration:underline;cursor:pointer;margin-top:10px;padding:0}
+.kb{display:flex;flex-wrap:wrap;gap:8px}.kb button{min-width:54px;height:54px;border-radius:10px;border:1px solid var(--line);border-bottom-width:4px;background:var(--card);color:var(--ink);font:inherit;font-weight:800;font-size:17px;cursor:pointer;transition:.08s;padding:0 12px}.kb button.on{background:var(--acc);color:#141414;border-color:var(--acc);transform:translateY(3px);border-bottom-width:1px}
+.kbInfo{margin-top:12px;padding:14px 18px;border-radius:12px;background:var(--card);border:1px solid var(--line);min-height:52px;font-size:17px}
+details{border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:8px 0;background:var(--card)}summary{cursor:pointer;font-weight:700}details p{margin:8px 0 2px;color:var(--mut)}
+.lb{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px}.lb.on{display:flex}.lb img{max-width:min(1100px,94vw);max-height:78vh;border-radius:12px}.lb p{color:#fff;margin:0}.lb button{position:absolute;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:50%;width:46px;height:46px;font-size:22px;cursor:pointer}.lb .x{top:16px;right:16px}.lb .pv{left:14px;top:50%}.lb .nx{right:14px;top:50%}
+.gal figure{cursor:zoom-in}
 </style>
 </head>
 <body>
@@ -79,31 +91,21 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
 <header class="hero" id="start"><div class="in">
   <small>gm. Działoszyn · pow. pajęczański</small>
   <h1>Symulator życia<br>w <span>Trębaczewie</span></h1>
-  <p>Gra 3D w przeglądarce, osadzona w prawdziwej wsi: realne ulice, budynki i ukształtowanie terenu. Bez instalacji, na komputerze i telefonie.</p>
-  <p class="pcnote">💻 Najlepiej grać na komputerze (PC) - klawiatura i mysz dają pełną kontrolę, a telefon traktuj jako opcję awaryjną.</p>
+  <p>Gra 3D w przeglądarce, osadzona w prawdziwej wsi. Bez instalacji.</p>
   <div class="cta"><a class="btn big" href="gra/">▶ Zagraj teraz</a><button class="btn alt" type="button" data-go="galeria">Zobacz galerię</button></div>
 </div></header>
 <div class="stats rv"><div><b>20+</b><span>misji fabularnych</span></div><div><b>3D</b><span>prawdziwa mapa wsi</span></div><div><b>0 zł</b><span>bez instalacji</span></div><div><b>online</b><span>tryb wieloosobowy</span></div></div>
-<div class="why">
-  <div class="rv"><em>🏘️</em><b>Prawdziwy Trębaczew</b><p>Ulice, kościół, szkoła, Żabka, Lewiatan i orliki odtworzone z map i zdjęć.</p></div>
-  <div class="rv"><em>🚗</em><b>Jazda i misje</b><p>Zatankuj auto, kup własne w komisie, wykonuj zlecenia mieszkańców.</p></div>
-  <div class="rv"><em>🧑‍🤝‍🧑</em><b>Zagraj ze znajomymi</b><p>Wspólna mapa, pojedynki i globalny ranking poziomów.</p></div>
-  <div class="rv"><em>📱</em><b>Działa wszędzie</b><p>Przeglądarka, telefon, tablet. Zapis pozycji i opcjonalne konto.</p></div>
-</div>
 <main>
+<section id="poznaj" data-s="Poznaj grę"><h2>Poznaj grę</h2>
+<div class="tabs" id="tabs" role="tablist"></div><div class="tabp" id="tabp" aria-live="polite"></div></section>
 
-
-
-<section id="gra" data-s="O grze"><h2>O grze</h2>
-<p>Zaczynasz z 200 zł w kieszeni i jednym celem: uzbierać <b>450 000 zł</b> i kupić własny dom. Po drodze pracujesz, jeździsz, pomagasz sąsiadom, ścigasz się i rozwijasz postać. Gra działa w całości w przeglądarce, zapisuje się automatycznie, a chętni mogą założyć opcjonalne konto i grać na kilku urządzeniach.</p>
-<div class="grid">
-<div class="card"><b>Realny świat</b>Drogi, budynki, działki i teren pochodzą z otwartych danych (OpenStreetMap, GUGiK).</div>
-<div class="card"><b>Kampania i misje poboczne</b>20 misji fabularnych oraz kilkadziesiąt zadań pobocznych i zleceń postaci.</div>
-<div class="card"><b>Gra z innymi</b>Wyścigi, rozmowy na czacie i wspólny świat w trybie wieloosobowym.</div>
-</div></section>
+<section id="dom" data-s="Droga do domu"><h2>Droga do domu: 450 000 zł</h2>
+<p class="mut">Kliknij zajęcia i zobacz, jak szybko uzbierasz na własny dom.</p>
+<div class="sim"><div class="bar"><i id="simBar"></i></div><div class="simInfo"><b id="simMoney">200 zł</b><span id="simLeft"></span></div>
+<div class="chips" id="simBtns"></div><div class="simWin" id="simWin" hidden>🏠 Masz dom! W prawdziwej grze to kwestia kilku godzin. <a href="gra/">Zagraj</a></div><button class="lnk" type="button" id="simReset">Zacznij od nowa</button></div></section>
 
 <section id="galeria" data-s="Galeria"><h2>Galeria</h2>
-<div class="gal">
+<div class="gal" id="gal">
 <figure><img loading="lazy" src="img/lewiatan.jpg" alt="Parking przed Lewiatanem" width="900" height="504"><figcaption>Parking przed Lewiatanem</figcaption></figure>
 <figure><img loading="lazy" src="img/szkola.jpg" alt="Szkoła podstawowa" width="900" height="504"><figcaption>Szkoła podstawowa</figcaption></figure>
 <figure><img loading="lazy" src="img/komis.jpg" alt="Komis przy myjni" width="900" height="504"><figcaption>Komis przy myjni</figcaption></figure>
@@ -112,100 +114,30 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
 </div></section>
 
 <section id="przelot" data-s="Film"><h2>Zobacz, jak to wygląda</h2>
-<p class="mut">Prawdziwa rozgrywka: jazda po Trębaczewie, okolice kościoła, szkoły, Żabki i Lewiatana.</p>
 <div class="vids"><div class="vid"><video id="filmv" controls muted loop playsinline preload="metadata" poster="img/poster1.jpg"><source src="img/film.mp4" type="video/mp4"></video></div>
 <div class="vid"><video id="filmv2" controls muted loop playsinline preload="metadata" poster="img/poster2.jpg"><source src="img/film2.mp4" type="video/mp4"></video></div></div></section>
-<section id="swiat" data-s="Świat"><h2>Świat</h2>
-<p>Mapa obejmuje Trębaczew i okolice: ulice Szkolną, Wyzwolenia, Spacerową i Cmentarną, kościół, szkołę podstawową, park z placem zabaw, cmentarz, stadion, orlik, schronisko dla zwierząt oraz fragment DK42 z przejazdem kolejowym i stacją ORLEN w Działoszynie. Drzewa, szpalery, ścieżki piesze i ławki pochodzą z danych OpenStreetMap, a chodniki i drzewa przy ulicach takich jak Reja czy Dojazdowa odwzorowano na wzór centrum. W Sadowcu stoi własny, zielony orlik. Na północ od wsi tory kolejowe schodzą coraz głębiej w wykop, a ulica Wynalazek przechodzi nad nimi prostym wiaduktem; wykop ma barierki po obu stronach, więc na drugą stronę da się przejść tylko po wiadukcie (przy Wyzwolenia tory leżą normalnie). Przy torach na ul. Wyzwolenia stoi sklep ŚRUBY ze stacją LPG, a na stadionie szatnia to biały kontener przy lewej linii bocznej, mniej więcej na wysokości połowy boiska (wejście na stadion jest bardziej po lewej). Na południu mapy leży duża Cementownia Warta: hale, piec, silosy, bocznica kolejowa, ogrodzony teren z rondem przy wjeździe i czterokondygnacyjny biurowiec (ten obok ronda). Po terenie chodzą pracownicy w białych kaskach, a nowa misja „Praca w cementowni” prowadzi do biura kadr. Obrysy hal, silosów, drogi wewnętrzne, parking dla tirów, farmy fotowoltaiczne i tory bocznicy pochodzą z danych OpenStreetMap, więc układ zakładu odpowiada mapie (wysokości terenu są tam wyrównane, bo brak publicznego modelu terenu). Po zakładzie jeżdżą elektryczne melexy (nie wymagają tankowania), a na jego terenie czekają cztery minigry: paletyzacja worków, kontrola BHP (kto nie ma białego kasku), załadunek cystern i pobieranie próbek w laboratorium. Pracownicy noszą białe kaski. Teren w okolicy zakładu jest wyrównany do równiny, bez stromych skarp. Cykl dnia obejmuje już tylko dzień i wieczór.</p>
-<h3>Wnętrza, do których wejdziesz</h3>
-<p class="mut">Lewiatan (duży market z działami, trzema kasami i stoiskiem mięsnym), Żabka, apteka, kościół, biblioteka, szkoła z klasami i dwoma piętrami, ORLEN, Biedronka, Lidl oraz własny dom po jego kupnie.</p>
-<h3>Pogoda i pory dnia</h3>
-<p class="mut">Cztery pory roku, zmienna pogoda i cykl dnia od poranka do wieczora. Dźwięki otoczenia (ptaki, przyroda) grają tylko wtedy, gdy postać chodzi po mapie.</p></section>
 
-<section id="fabula" data-s="Fabuła"><h2>Fabuła</h2>
-<p>Przyjeżdżasz do Trębaczewa bez grosza przy duszy. Pierwsze kroki stawiasz przy niebieskim punkcie informacyjnym „i”, gdzie dostajesz pierwszą misję: zakupy w Lewiatanie. Z każdą kolejną robisz się w wiosce coraz bardziej znany: od przysług dla sąsiadów, przez pracę kuriera i kierowcy, po udział w wielkim wyścigu gminnym.</p>
-<p>Ostatnia misja kampanii to zakup domu za 450 000 zł. Dom możesz potem urządzić meblami z katalogu na laptopie, a nawet zaprosić do niego psa ze schroniska.</p></section>
+<section id="klawisze" data-s="Sterowanie"><h2>Wypróbuj sterowanie</h2>
+<p class="mut">Naciskaj klawisze na swojej klawiaturze albo klikaj poniżej.</p>
+<div class="kb" id="kb"></div><div class="kbInfo" id="kbInfo">Wybierz klawisz</div></section>
 
-<section id="postacie" data-s="Postacie"><h2>Postacie</h2>
-<p class="mut">Postaci rozmawiają z Tobą swobodnie (rozmowy napędza model językowy, z gotowymi odpowiedziami awaryjnymi). Nad głową mają „!” gdy czekają z zadaniem i „?” gdy możesz je oddać.</p>
-<div class="grid">
-<div class="card"><b>Marek</b>Wiejski sportowiec. Wyzwie Cię na serię rzutów karnych, a potem zaprosi do drużyny LZS.</div>
-<div class="card"><b>Seba</b>Pasjonat motoryzacji. Jego czarne BMW E46 330d jest do przejechania, a on sam chętnie pogada o beemkach.</div>
-<div class="card"><b>Agnieszka</b>Mieszkanka z wieloma pomysłami na to, jak pomóc wsi.</div>
-<div class="card"><b>Andrzej</b>Fanatyk motocykli, spotkasz go przy Żabce. Wspomina swoją legendarną WSK-ę.</div>
-<div class="card"><b>Pani Stasia i Pani Grażyna</b>W Lewiatanie: klientka i kasjerka plotkują przy kasie. Możesz się wtrącić, a Pani Stasia da Ci zadanie.</div>
-<div class="card"><b>Zenek, Heniek, Józek i inni</b>Mieszkańcy parku: quizy, worki do zebrania, bułki dla gołębi i właściciel burka.</div>
-</div></section>
-
-<section id="misje" data-s="Misje"><h2>Misje</h2>
-<h3>Kampania</h3><p>Zaczyna się od misji „Pierwsza jazda” (zaparkowane auto, ORLEN, paliwo), a dalej jest 20 misji odblokowywanych kolejnymi poziomami (1-10). Nagrody od 250 zł za pierwsze zakupy do 25 000 zł za wielki wyścig gminny.</p>
-<h3>Misje poboczne</h3><p>Niebieskie znaczniki na mapie. Dostawy, wyścigi, turniej flanek, mecz, grill u rodziny, pies ze schroniska i wiele innych. Powtarzanie tej samej misji płaci coraz mniej, a co 20 minut trzy losowe misje dostają premię ×1,5. Każdą trwającą misję możesz anulować.</p>
-<h3>Zlecenia dnia i osiągnięcia</h3><p>Codziennie trzy zlecenia z różnych kategorii, a za komplet premia. Do zdobycia jest 13 osiągnięć.</p><h3>Prowadzenie i zlecenia dnia</h3><p>Nowy gracz dostaje żółtą strzałkę, która prowadzi do pierwszej misji, a potem do celu każdego zadania. Codziennie pojawiają się trzy zlecenia dnia z premią za komplet i rosnącym bonusem za kolejne dni z rzędu (do 7). Postęp widać w przycisku 📋 w rogu ekranu.</p></section>
-
-<section id="ekonomia" data-s="Ekonomia"><h2>Ekonomia</h2>
-<table>
-<tr><th>Źródło / wydatek</th><th>Wartość</th></tr>
-<tr><td>Start</td><td>200 zł</td></tr>
-<tr><td>Misje fabularne (razem)</td><td>ok. 92 000 zł</td></tr>
-<tr><td>Misje poboczne</td><td>600-2500 zł × (1 + 0,35 × poziom)</td></tr>
-<tr><td>Banknoty na chodnikach</td><td>10-150 zł, rzadko portfel 300 zł</td></tr>
-<tr><td>Mandat / szpital</td><td>10% (maks. 5000 zł) / 5% (maks. 2000 zł) gotówki</td></tr>
-<tr><td>Cel gry</td><td>dom za 450 000 zł</td></tr>
-</table>
-<p class="mut">Przy rozsądnej grze dojście do domu zajmuje kilka godzin.</p></section>
-
-<section id="pojazdy" data-s="Pojazdy"><h2>Pojazdy</h2>
-<p>W Trębaczewie stoją i jeżdżą auta, a w całej wsi są tylko trzy auta, do których można wsiąść. Jedno z nich czeka na parkingu pod Lewiatanem i od niego zaczyna się pierwsza misja: dojazd na ORLEN i tankowanie. Za komisem stoi myjnia „Tir i osobowe” z domem właścicieli oraz wiatą myjni bezdotykowej, a jeszcze dalej duży plac z kostki, na którym parkują tiry z naczepami. Auto kupione w komisie pojawia się od razu pod wiatą myjni i możesz nim odjechać. W komisie przy myjni (pięć aut do wyboru) kupisz własne auto, rower i tuning (chip, większy bak), a kupione auto czeka tuż obok Ciebie. Co jakiś czas przejeżdża niebieski autobus z napisem GEPARD. Przed zakupem w komisie widać parametry każdego auta (prędkość maksymalna, przyspieszenie, zwrotność); najszybsze osiąga 300 km/h. Wszystko, co kupisz, trafia do ekwipunku, który otwierasz klawiszem I (lub przyciskiem Ekwipunek, w wersji mobilnej ikoną E) i możesz do niego zajrzeć w każdej chwili. Plac za myjnią to wąski, ogrodzony pas, na którym tiry stoją wzdłuż, jak na zdjęciu lotniczym. W trybie wieloosobowym w jednym aucie może jechać do 4 osób: podejdź do auta innego gracza (do 6 m) i naciśnij F, żeby wsiąść jako pasażer, ponownie F, żeby wysiąść. Auta mają paliwo, tankuje się na ORLENIE (ceny aktualizowane codziennie).</p></section>
-
-<section id="sterowanie" data-s="Sterowanie"><h2>Sterowanie</h2>
-<p><b>Zalecamy grę na PC</b> - sterowanie klawiaturą i myszą jest najwygodniejsze.</p>
-<table>
-<tr><th>Klawisz</th><th>Akcja</th></tr>
-<tr><td><kbd>W A S D</kbd> / strzałki</td><td>ruch, w aucie gaz, hamulec, skręt</td></tr>
-<tr><td><kbd>Shift</kbd></td><td>sprint</td></tr>
-<tr><td><kbd>Spacja</kbd></td><td>skok / hamulec ręczny</td></tr>
-<tr><td><kbd>F</kbd></td><td>wsiądź lub wysiądź z pojazdu</td></tr>
-<tr><td><kbd>E</kbd></td><td>akcja: misja, rozmowa, sklep, wejście, brama</td></tr>
-<tr><td><kbd>Q</kbd></td><td>dziennik misji</td></tr>
-<tr><td><kbd>M</kbd></td><td>mapa</td></tr>
-<tr><td><kbd>C</kbd> · <kbd>R</kbd> · <kbd>N</kbd></td><td>kamera · radio · pora dnia</td></tr>
-<tr><td><kbd>Esc</kbd></td><td>pauza i menu</td></tr>
-</table>
-<p class="mut">Na telefonie gra ma wirtualny joystick i przyciski na ekranie. Jakość grafiki (niskie, średnie, maksymalne) zmienisz w Opcjach.</p></section>
-
-<section id="multi" data-s="Multiplayer"><h2>Tryb wieloosobowy</h2>
-<p>W menu wybierz „Tryb wieloosobowy” i podaj nazwę gracza. Inni gracze widoczni są w świecie oraz na minimapie i mapie. Możesz pisać na czacie i rzucić komuś wyzwanie na wyścig do wybranego punktu. Możesz też włączyć czat głosowy: mówisz przytrzymując V, a słyszysz graczy w pobliżu (rozmowa idzie bezpośrednio między graczami i nie jest nagrywana). Po wyścigu zobaczysz baner zwycięstwa lub przegranej.</p>
-<p>Przycisk „Znajomi i pokoje” otwiera panel społeczności:</p>
-<ul>
-<li><b>Pokoje prywatne z kodem</b> (do 8 osób) i link do zaproszenia, lista graczy online oraz znajomi z przyciskiem „Dołącz do znajomego”. Kod znajomego jest stały dla przeglądarki.</li>
-<li><b>Wspólny melex</b> na dwie osoby i <b>autobus Gepard</b> jako pojazd publiczny: jeździ według jednego rozkładu dla wszystkich graczy, bilet kosztuje 4 zł, a przystanek pokazuje, za ile przyjedzie.</li>
-<li><b>Wspólna praca w cementowni</b>: jeden gracz ładuje cysternę, drugi stoi na wadze i zatwierdza tonaż, albo brygada paletyzacji, w której obaj trafiają w rytm. Wypłata dla obojga.</li>
-<li><b>Misje kooperacyjne</b>: żniwa na dwa ciągniki, paczki na dwie ekipy oraz pożar (jeden gracz prowadzi wóz OSP, drugi zatrzymuje ruch na skrzyżowaniu), z nagrodą dla każdego.</li>
-<li><b>Wyścigi z lobby</b>: trasy z punktami kontrolnymi, wpisowe, pula dla zwycięzcy, tablica wyników i radiowozy stojące na drodze jako przeszkoda (kara czasowa).</li>
-<li><b>Handel</b>: wymiana pieniędzy, jedzenia i samochodów między graczami po obustronnym zatwierdzeniu ofert, także sprzedaż używanego auta.</li>
-<li><b>Wspólny dom i garaż</b> na koncie: skarbiec, cztery miejsca na auta i zaproszenia dla lokatorów (wymaga konta z menu).</li>
-</ul>
-<p class="mut">Uwaga: gospodarka gry (pieniądze, przedmioty) działa po stronie przeglądarki, więc handel i nagrody opierają się na uczciwości graczy. Wynik pieniędzy w rankingu serwer ogranicza do realnie możliwego zarobku w danym czasie. Wspólny dom i garaż są natomiast zapisywane na serwerze.</p></section>
-
-<section id="ranking" data-s="Ranking"><h2>Ranking graczy</h2>
-<p class="mut">Pięciu najlepszych graczy, posortowanych według poziomu (a przy równym poziomie według doświadczenia). Do rankingu trafiasz, gdy grasz w trybie wieloosobowym pod własną nazwą.</p>
+<section id="ranking" data-s="Ranking"><h2>Ranking: top 5</h2>
 <table id="rk"><tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr><tr><td colspan="4" class="mut">Ładowanie…</td></tr></table></section>
 
-<section id="konto" data-s="Konto"><h2>Konto i zapis gry</h2>
-<p>Gra zapisuje się w przeglądarce, a po ponownym uruchomieniu postać pojawia się tam, gdzie skończyłeś. Opcjonalnie możesz założyć konto (sama nazwa i hasło, bez e-maila) w menu głównym, w pozycji „Konto”. Dzięki temu zapis zsynchronizuje się między urządzeniami.</p></section>
-
-<section id="prywatnosc" data-s="Prywatność"><h2>Prywatność</h2>
-<p>Gra nie zbiera danych osobowych. Statystyki są anonimowe i zagregowane. Hasła kont są przechowywane wyłącznie w postaci skrótów. Mapa korzysta z danych OpenStreetMap i GUGiK. Błąd zgłosisz przyciskiem „Zgłoś błąd” w menu.</p></section>
-
-
-
+<section id="faq" data-s="FAQ"><h2>Najczęstsze pytania</h2>
+<details><summary>Czy gra jest darmowa i czy trzeba konta?</summary><p>Tak, jest darmowa. Konto jest opcjonalne (sama nazwa i hasło) i służy do synchronizacji zapisu oraz wspólnego domu.</p></details>
+<details><summary>Czy zagram na telefonie?</summary><p>Tak, ale najlepiej na komputerze, bo klawiatura i mysz dają pełną kontrolę.</p></details>
+<details><summary>Jak zagrać ze znajomymi?</summary><p>Wybierz „Tryb wieloosobowy”, załóż pokój prywatny i wyślij kod lub link.</p></details>
+<details><summary>Czy czat głosowy nagrywa rozmowy?</summary><p>Nie. Dźwięk idzie bezpośrednio między graczami, a rozmówcy widzą nawzajem swój adres IP.</p></details>
+<details><summary>Jakie dane zbiera gra?</summary><p>Tylko anonimowe statystyki. Hasła są przechowywane jako skróty. Mapa: © OpenStreetMap, © GUGiK.</p></details>
+<p class="mut"><a href="poradnik/">Poradnik</a> · <a href="faq/">Pełne FAQ</a></p></section>
 </main>
 <div class="band rv"><div><h2>Gotowy na spacer po Trębaczewie?</h2><p>Wchodzisz od razu, bez konta i bez instalacji.</p><a class="btn big" href="gra/">▶ Zagraj teraz</a></div></div>
 <footer>Symulator życia w Trębaczewie · gra fanowska, postaci i wydarzenia są fikcyjne · dane: © OpenStreetMap, © GUGiK<br><a href="gra/">Zagraj</a> · <a href="poradnik/">Poradnik</a> · <a href="misje/">Misje</a> · <a href="multiplayer/">Multiplayer</a> · <a href="faq/">FAQ</a> · <a href="zglos.html">Zgłoś błąd</a></footer>
 <script>
 (function(){
   var secs=[].slice.call(document.querySelectorAll('main section[data-s]:not([hidden])')),nav=document.getElementById('nav'),top=document.getElementById('top'),bg=document.getElementById('burger');
-  var PRI=['gra','galeria','przelot','misje','multi','ranking'],bt=function(s){return '<button type="button" data-go="'+s.id+'">'+s.getAttribute('data-s')+'</button>';};
+  var PRI=['poznaj','dom','galeria','przelot','klawisze','ranking'],bt=function(s){return '<button type="button" data-go="'+s.id+'">'+s.getAttribute('data-s')+'</button>';};
   var prim=secs.filter(function(s){return PRI.indexOf(s.id)>=0;}),rest=secs.filter(function(s){return PRI.indexOf(s.id)<0;});
   if(prim.length<4){prim=secs.slice(0,6);rest=secs.slice(6);}
   nav.innerHTML=prim.map(bt).join('')+(rest.length?'<div class="more" id="more"><button type="button" id="moreBtn" aria-haspopup="true">Więcej ▾</button><div class="dd">'+rest.map(bt).join('')+'</div></div>':'');
@@ -218,6 +150,38 @@ footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px
   var rv=document.querySelectorAll('.rv,main section');[].forEach.call(rv,function(e){e.classList.add('rv');});
   if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('on');io.unobserve(x.target);}});},{threshold:.08});[].forEach.call(document.querySelectorAll('.rv'),function(e){io.observe(e);});}else{[].forEach.call(document.querySelectorAll('.rv'),function(e){e.classList.add('on');});}
   ['filmv','filmv2'].forEach(function(id){var fv=document.getElementById(id);if(fv&&'IntersectionObserver' in window){var vo=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){fv.play().catch(function(){});}else{fv.pause();}});},{threshold:.5});vo.observe(fv);}});
+
+  /* zakładki "Poznaj grę" */
+  var TABS=[['🏘️ Świat','Prawdziwy Trębaczew z map OpenStreetMap i GUGiK.',['Szkoła i kościół','Żabka i Lewiatan','Stadion i orlik','Schronisko','DK42 z przejazdem'],'img/lewiatan.jpg'],
+   ['🎯 Misje','20 misji fabularnych, zadania poboczne i zlecenia dnia.',['Nagrody 250-25 000 zł','13 osiągnięć','Zlecenia dnia','Rozmowy z mieszkańcami'],'img/szkola.jpg'],
+   ['🚗 Pojazdy','Jedź, tankuj i kup własne auto w komisie.',['Auta i motocykle','Tankowanie na ORLEN','Komis przy myjni','Autobus Gepard'],'img/komis.jpg'],
+   ['👥 Multiplayer','Pokoje prywatne, wyścigi, handel i czat głosowy.',['Wyścigi','Wspólny melex','Praca w cementowni','Pożar z OSP','Czat głosowy 🎤'],'img/remiza.jpg'],
+   ['🌦️ Pory roku','Cztery pory roku, pogoda i cykl dnia.',['Deszcz i śnieg','Dzień i noc','Wnętrza budynków'],'img/passat.jpg']];
+  (function(){var tb=document.getElementById('tabs'),tp=document.getElementById('tabp');if(!tb)return;
+    tb.innerHTML=TABS.map(function(t,i){return '<button type="button" role="tab" data-i="'+i+'">'+t[0]+'</button>';}).join('');
+    function sel(i){var t=TABS[i];[].forEach.call(tb.children,function(b,k){b.classList.toggle('on',k===i);});tp.innerHTML='<div class="tx"><p>'+t[1]+'</p><div class="chips">'+t[2].map(function(c){return '<span>'+c+'</span>';}).join('')+'</div></div><img loading="lazy" src="'+t[3]+'" alt="">';}
+    tb.addEventListener('click',function(e){var b=e.target.closest('button');if(b)sel(+b.dataset.i);});sel(0);
+    var n=0;setInterval(function(){if(!tb.matches(':hover')&&!tp.matches(':hover')&&!tb.dataset.u){n=(n+1)%TABS.length;sel(n);}},6000);tb.addEventListener('click',function(){tb.dataset.u=1;});})();
+  /* symulator drogi do domu */
+  (function(){var G=450000,m=200,bar=document.getElementById('simBar');if(!bar)return;var A=[['🛒 Zakupy w Lewiatanie',250],['📦 Zlecenie poboczne',1500],['💵 Banknot na chodniku',80],['🚚 Praca kuriera',4000],['🏁 Wielki wyścig gminny',25000],['🚔 Mandat (−10% gotówki)',-1]];
+    var bt=document.getElementById('simBtns'),mo=document.getElementById('simMoney'),lf=document.getElementById('simLeft'),win=document.getElementById('simWin');
+    bt.innerHTML=A.map(function(a,i){return '<button type="button" data-i="'+i+'">'+a[0]+(a[1]>0?' +'+a[1].toLocaleString('pl-PL')+' zł':'')+'</button>';}).join('');
+    function draw(){var p=Math.min(100,m/G*100);bar.style.width=p+'%';mo.textContent=Math.round(m).toLocaleString('pl-PL')+' zł';lf.textContent=m>=G?'Cel osiągnięty!':'Do domu brakuje '+Math.round(G-m).toLocaleString('pl-PL')+' zł';win.hidden=m<G;}
+    bt.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var a=A[+b.dataset.i];m=a[1]<0?Math.max(0,m-Math.min(5000,m*.1)):m+a[1];draw();});
+    document.getElementById('simReset').addEventListener('click',function(){m=200;draw();});draw();})();
+  /* klawiatura */
+  (function(){var K=[['W','Idź do przodu (w aucie: gaz)'],['A','W lewo (w aucie: skręt)'],['S','Do tyłu (w aucie: hamulec)'],['D','W prawo (w aucie: skręt)'],['Shift','Sprint'],['Spacja','Skok lub hamulec ręczny'],['F','Wsiądź lub wysiądź z pojazdu'],['E','Akcja: misja, rozmowa, sklep, wejście'],['Q','Dziennik misji'],['M','Mapa'],['G','Wyzwij gracza na wyścig'],['V','Mów (czat głosowy)']];
+    var kb=document.getElementById('kb'),inf=document.getElementById('kbInfo');if(!kb)return;kb.innerHTML=K.map(function(k,i){return '<button type="button" data-i="'+i+'">'+k[0]+'</button>';}).join('');
+    function lit(i){[].forEach.call(kb.children,function(b,k){b.classList.toggle('on',k===i);});inf.innerHTML='<b>'+K[i][0]+'</b>: '+K[i][1];}
+    kb.addEventListener('click',function(e){var b=e.target.closest('button');if(b)lit(+b.dataset.i);});
+    var map={w:0,a:1,s:2,d:3,shift:4,' ':5,f:6,e:7,q:8,m:9,g:10,v:11};
+    addEventListener('keydown',function(e){if(/INPUT|TEXTAREA/.test((e.target||{}).tagName))return;var i=map[(e.key||'').toLowerCase()];if(i!==undefined){var r=document.getElementById('klawisze').getBoundingClientRect();if(r.top<innerHeight&&r.bottom>0){lit(i);if(e.key===' ')e.preventDefault();}}});})();
+  /* galeria: powiększenie */
+  (function(){var g=document.getElementById('gal');if(!g)return;var f=[].slice.call(g.querySelectorAll('figure')),i=0,lb=document.createElement('div');lb.className='lb';lb.innerHTML='<button class="x" aria-label="Zamknij">✕</button><button class="pv" aria-label="Poprzednie">‹</button><img alt=""><p></p><button class="nx" aria-label="Następne">›</button>';document.body.appendChild(lb);
+    function show(k){i=(k+f.length)%f.length;lb.querySelector('img').src=f[i].querySelector('img').src;lb.querySelector('p').textContent=f[i].querySelector('figcaption').textContent;lb.classList.add('on');}
+    f.forEach(function(x,k){x.addEventListener('click',function(){show(k);});});
+    lb.addEventListener('click',function(e){if(e.target.classList.contains('pv'))show(i-1);else if(e.target.classList.contains('nx'))show(i+1);else if(e.target.tagName!=='IMG')lb.classList.remove('on');});
+    addEventListener('keydown',function(e){if(!lb.classList.contains('on'))return;if(e.key==='Escape')lb.classList.remove('on');if(e.key==='ArrowLeft')show(i-1);if(e.key==='ArrowRight')show(i+1);});})();
   var API='https://trebaczew-mp.kontakt-3e3.workers.dev/ranking', t=document.getElementById('rk');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   fetch(API).then(function(r){return r.json();}).then(function(j){
