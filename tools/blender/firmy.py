@@ -42,6 +42,22 @@ def zuh():
     M.box(-7.2, -2.2, 0, 3.0, D / 2, D / 2 + .08, m['gate'])
     M.finish(res=512, quality=72, ao_dist=1.5)
 
+def dom_zabka():   # parterowy dom z pustaka (szary), łaty z cegły, blaszany brązowy dach, komin z cegły (zdjęcie: narożnik obok Żabki)
+    M = Model('dom_zabka'); L, D, H = 10.0, 9.0, 3.1; m = base_mats(M, '#8e8d88', '#4a3329', '#3a2820', '#7b7a76')
+    m['wallg'] = M.mat('wallg', '#8e8d88', noise=.16, scale=16); m['brickp'] = M.mat('brickp', '#a85d47', brick=(.26, .075, '#8f8b84', .012)); m['sheet'] = M.mat('sheet', '#4a3329', brick=(.4, 4, '#3a2820', .006))
+    M.box(-L / 2, L / 2, BASE, H, -D / 2, D / 2, m['wallg']); M.box(-L / 2 - .03, L / 2 + .03, BASE, .5, -D / 2 - .03, D / 2 + .03, m['plinth'])
+    rise = 2.4; gable(M, -L / 2, L / 2, -D / 2, D / 2, H, rise, m['sheet'], ov=.4, along='x'); gable_ends(M, -L / 2, L / 2, -D / 2, D / 2, H, rise, m['wallg'], along='x')
+    # łaty z cegły: pas pod dachem z lewej strony frontu, górna część szczytu prawego, naroże
+    M.box(-L / 2, -.8, 2.0, H, D / 2, D / 2 + .035, m['brickp']); M.box(L / 2, L / 2 + .035, 1.9, H, -D / 2 + .3, D / 2, m['brickp']); M.box(L / 2 - .5, L / 2 + .035, .5, 1.9, D / 2 - .1, D / 2 + .035, m['brickp'])
+    M.prism([(L / 2 - .02, H, -D / 2 + 1.8), (L / 2 - .02, H, D / 2 - 1.8), (L / 2 - .02, H + rise * .45, 0)], (.04, 0, 0), m['brickp'])
+    # komin z cegły
+    M.box(-1.8, -1.2, H + rise * .35, H + rise + .9, -.3, .3, m['brickp'])
+    # okna: front (jedno), szczyt prawy (dwa), tył
+    win(M, -2.2, 1.75, D / 2, 1.1, 1.2, m['frame'], m['glass'], '+z', m['sill'])
+    win(M, L / 2, 1.75, -1.5, 1.0, 1.2, m['frame'], m['glass'], '+x', m['sill']); win(M, L / 2, 1.75, 1.6, 1.0, 1.2, m['frame'], m['glass'], '+x', m['sill'])
+    win(M, 1.5, 1.75, -D / 2, 1.1, 1.2, m['frame'], m['glass'], '-z', m['sill']); M.box(2.4, 3.4, 0, 2.0, D / 2, D / 2 + .08, m['door'])
+    M.finish(res=512, quality=72, ao_dist=1.3)
+
 if __name__ == '__main__':
-    for f in (autopart_hala, zuh):
+    for f in (autopart_hala, zuh, dom_zabka):
         if len(sys.argv) < 2 or f.__name__ in sys.argv[1:]: f()

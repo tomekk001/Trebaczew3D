@@ -294,7 +294,7 @@ async function boot(saved){
   const inSchool=(x,z)=>inPoly(x,z,SCHOOL.pts), inKinder=(x,z)=>inPoly(x,z,KINDER.pts);
   const HALL_B=BLD.find(b=>b.isHall)||BLD.find(b=>b.code===5&&Math.max(b.w,b.d)>50);
   const houses=[];
-  const CB={}; [['komf',-2198,983],['manu',-2070,938],['tutti',-2048,921],['autop',-1136,686],['hgraf',-1125,695],['dstary',-1180,670],['dsolar',-1210,681],['zuh',-1310,625],['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
+  const CB={}; [['komf',-2198,983],['manu',-2070,938],['tutti',-2048,921],['autop',-1136,686],['hgraf',-1125,695],['dstary',-1180,670],['dsolar',-1210,681],['zuh',-1310,625],['zabdom',-50,38],['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
   if(CB.orlenRoof) CB.orlenRoof.skip=true;
   // domy nachodzące na jezdnię: odsuń od drogi (albo pomiń, gdy trzeba by przesunąć za daleko)
   { const RD=ROADS.filter(r=>!['track','path','footway','steps','cycleway','foot'].includes(r.t)); const nearPt=(r,x,z)=>{ let best=null,bd=1e9; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i],b=r.pts[i+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz||1; const t=clamp(((x-a[0])*dx+(z-a[1])*dz)/L,0,1); const px=a[0]+dx*t,pz=a[1]+dz*t; const d=Math.hypot(x-px,z-pz); if(d<bd){bd=d;best=[px,pz,d];} } return best; };
@@ -1077,6 +1077,24 @@ async function boot(saved){
         if(gr){ const c=W2(gr,gu); const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); g.rotation.y=-gr.ang; scene.add(g);
           const leaf=(x0,w0)=>{ const fr=new THREE.Group(); fr.position.set(x0,0,0); g.add(fr); [-w0/2,w0/2].forEach(o=>bx(fr,.06,1.55,.06,o,0,0,fmat,true)); [.1,.8,1.5].forEach(yy=>bx(fr,w0,.05,.05,0,yy,0,fmat,true)); const m=new THREE.Mesh(new THREE.PlaneGeometry(w0-.08,1.35),fmesh.clone()); m.material.map=fmesh.map.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(w0/1.6,1); m.position.y=.8; fr.add(m); };
           leaf(-1.5,1.76); leaf(.3,1.76); leaf(1.8,1.16); [-2.4,-.6,1.2,2.4].forEach(o=>bx(g,.12,1.8,.12,o,0,0,fmat,true)); bx(g,.1,.12,.12,.9,.95,0,fmat,true); } } } }
+
+  // --- ogrodzenie szkoły (wg zdjęcia): czarny kuty płot z łukami na cokole, tuje, ceglane słupki bramy ---
+  { const P=SCHOOL.pts, kc=centroid(P); const ironT=tex(128,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='#15171a'; x.lineWidth=2.4; for(let i=4;i<w;i+=8){ x.beginPath(); x.moveTo(i,h*.2); x.lineTo(i,h-4); x.stroke(); } x.lineWidth=3.5; x.beginPath(); x.moveTo(0,h*.3); x.quadraticCurveTo(w/2,-h*.08,w,h*.3); x.stroke(); x.beginPath(); x.moveTo(0,h-6); x.lineTo(w,h-6); x.stroke(); x.beginPath(); x.moveTo(0,h*.55); x.lineTo(w,h*.55); x.stroke(); });
+    const im=new THREE.MeshLambertMaterial({map:ironT,transparent:true,alphaTest:.3,side:THREE.DoubleSide,color:0x25272a}), blk=new THREE.MeshLambertMaterial({color:0x1c1e20}), plm=new THREE.MeshLambertMaterial({color:0x9a968c,map:detailTex}), brk=new THREE.MeshLambertMaterial({color:0xa94a2e,map:detailTex}), cap=new THREE.MeshLambertMaterial({color:0x8d8a82});
+    const segs=[], posts=[], thuja=[], gates=[]; let gDone=false;
+    for(let q=0;q<P.length-1;q++){ const a=P[q], b=P[q+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]); if(l<4) continue; const mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2; if(!roadNearF(mx,mz,6)) continue; const tx=(b[0]-a[0])/l, tz=(b[1]-a[1])/l; let nx=-tz, nz=tx; if((kc[0]-mx)*nx+(kc[1]-mz)*nz<0){ nx=-nx; nz=-nz; }
+      const A=[a[0]+nx*.8,a[1]+nz*.8]; const ang=Math.atan2(tz,tx); const gu=(!gDone&&l>25)?l*.5:-99; if(gu>0) gDone=true; const n=Math.max(1,Math.round(l/2.5));
+      for(let k=0;k<n;k++){ const u0=k/n*l, u1=(k+1)/n*l, um=(u0+u1)/2, c=[A[0]+tx*um,A[1]+tz*um]; if(gu>0&&Math.abs(um-gu)<2.6){ if(!gates.length) gates.push({x:A[0]+tx*gu,z:A[1]+tz*gu,ang,tx,tz,nx,nz}); continue; } if([u0,um,u1].some(u=>blocked(A[0]+tx*u,A[1]+tz*u,0,true)||roadNearF(A[0]+tx*u,A[1]+tz*u,.3))) continue; segs.push([c[0],c[1],ang,(u1-u0)]); posts.push([A[0]+tx*u0,A[1]+tz*u0,ang]);
+        if(k%2===0){ const tq=[c[0]+nx*.9,c[1]+nz*.9]; if(!blocked(tq[0],tq[1],.2,true)) thuja.push(tq); } } }
+    const dm=new THREE.Object3D();
+    { const ip=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1.5).translate(0,.25+.75,0),im,Math.max(1,segs.length)), pl=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.3,.22).translate(0,.15,0),plm,Math.max(1,segs.length));
+      segs.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,-q[2],0); dm.scale.set(q[3]+.04,1,1); dm.updateMatrix(); ip.setMatrixAt(i,dm.matrix); pl.setMatrixAt(i,dm.matrix); addSolid({x:q[0],z:q[1],hw:q[3]/2,hd:.1,c:Math.cos(q[2]),s:Math.sin(q[2]),r:q[3]/2+.3}); }); ip.count=pl.count=segs.length; scene.add(ip,pl);
+      const sp=new THREE.InstancedMesh(new THREE.BoxGeometry(.09,1.85,.09).translate(0,.92,0),blk,Math.max(1,posts.length)); posts.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,0,0); dm.scale.set(1,1,1); dm.updateMatrix(); sp.setMatrixAt(i,dm.matrix); }); sp.count=posts.length; sp.castShadow=true; scene.add(sp);
+      const tm=new THREE.InstancedMesh(new THREE.ConeGeometry(.42,2.7,7).translate(0,1.35,0),new THREE.MeshLambertMaterial({color:0x2c5a33}),Math.max(1,thuja.length)); thuja.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,i*1.9,0); dm.scale.set(1,.85+((i*29)%10)/35,1); dm.updateMatrix(); tm.setMatrixAt(i,dm.matrix); }); tm.count=thuja.length; tm.castShadow=true; scene.add(tm); }
+    gates.forEach(G=>{ const g=new THREE.Group(); g.position.set(G.x,H(G.x,G.z),G.z); g.rotation.y=-G.ang; scene.add(g); [-2.5,2.5].forEach(o=>{ bx(g,.55,2.1,.55,o,0,0,brk); bx(g,.7,.12,.7,o,2.1,0,cap); });
+      const leaf=(x0,w0,open)=>{ const f=new THREE.Group(); f.position.set(x0,0,0); f.rotation.y=open; g.add(f); const m=new THREE.Mesh(new THREE.PlaneGeometry(w0,1.5),im.clone()); m.material.map=ironT.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(w0/2.5,1); m.position.set(-x0*0+ (x0<0?w0/2:-w0/2)*0,1.1,0); m.position.x=x0<0?w0/2:-w0/2; f.add(m); bx(f,w0,.06,.06,x0<0?w0/2:-w0/2,.3,0,blk,true); };
+      leaf(-2.2,2.0,0); leaf(2.2,2.0,-1.1); });
+  }
   if(CB.delik) buildDelikatesy(CB.delik); if(CB.dworzec) buildDworzec(CB.dworzec); if(CB.mineral) buildMineral(CB.mineral); if(CB.swietl) buildSwietlica(CB.swietl); buildParkParkowa();
   // domy ze zdjęć (Wyzwolenia 159-163 naprzeciw kościoła, kwiaciarnia „Sas-Anka” przy Szkolnej 9, Szkolna 3) - modele z tools/blender/budynki2.py
   function buildPhotoHouse(b,name,re,ML,MD,col,roofCol,extra){ const {f,g,L,D,FZ,low,w}=groupAt(b,nearRoad(b,re)); const H0=5.8;
@@ -1098,6 +1116,7 @@ async function boot(saved){
   if(CB.autop) photoBld(CB.autop,'autopart',12,10,0xa3a9ae,0x555a60,6.6,{text:'AUTOPART',bg:'#2e3134',fg:'#ffffff',y:5.4,w:7.5,h:100,font:'800 64px Barlow, Arial',out:.12});
   if(CB.hgraf) photoBld(CB.hgraf,'autopart_hala',18.5,14,0x9da3a8,0x6b7075,5.6,null);
   if(CB.zuh) photoBld(CB.zuh,'zuh',16,40,0x464a50,0x3c4046,6.4,null);
+  if(CB.zabdom) photoBld(CB.zabdom,'dom_zabka',10,9,0x8e8d88,0x4a3329,3.1,null);
   if(CB.dstary) photoBld(CB.dstary,'dom_stary',10,9.5,0xc8ab8d,0x6d7378,5.4,null);
   if(CB.dsolar) photoBld(CB.dsolar,'dom_solar',12.5,10,0xe6dcc4,0x4b3b34,5.2,null);
 
@@ -1227,7 +1246,7 @@ async function boot(saved){
       if(i%2===0){ const bin=new THREE.Mesh(new THREE.CylinderGeometry(.28,.25,.7,14).translate(0,.35,0),conc); const bx2=x+Math.cos(ry)*1.5, bz2=z-Math.sin(ry)*1.5; bin.position.set(bx2,H(bx2,bz2),bz2); bin.castShadow=true; scene.add(bin); } });
     // latarnie parkowe: wysokie białe słupy wzdłuż asfaltowych alejek
     const plm=new THREE.MeshLambertMaterial({color:0xeceeec}); const pglobe=new THREE.MeshLambertMaterial({color:0xf4f4f0,emissive:0x000000}); const lampsP=[];
-    PP.filter(q=>!q.paver).forEach(q=>{ for(let d=6;d<q.L-3;d+=24){ const s2=sampleLine(q.pts,q.len,d); const x=s2.x+s2.tz*1.7, z=s2.z-s2.tx*1.7; if(lampsP.some(l=>Math.hypot(l[0]-x,l[1]-z)<14))continue; lampsP.push([x,z]); const y=H(x,z);
+    PP.filter(q=>!q.paver).forEach(q=>{ for(let d=6;d<q.L-3;d+=24){ const s2=sampleLine(q.pts,q.len,d); const x=s2.x+s2.tz*1.7, z=s2.z-s2.tx*1.7; if(roadNearF(x,z,1.2)||lampsP.some(l=>Math.hypot(l[0]-x,l[1]-z)<14))continue; lampsP.push([x,z]); const y=H(x,z);
       const pole=new THREE.Mesh(new THREE.CylinderGeometry(.06,.09,5.6,10).translate(0,2.8,0),plm); pole.position.set(x,y,z); const head=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.08,20),pglobe); head.position.set(x,y+5.65,z); const neck=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.3,10),plm); neck.position.set(x,y+5.5,z); scene.add(neck,pole,head); addSolid({x,z,hw:.12,hd:.12,c:1,s:0,r:.3}); } });
     // betonowe słupki (kostki) przy wjazdach z parkingów, wg OSM
     const cube=new THREE.BoxGeometry(.42,.48,.42).translate(0,.24,0);
@@ -1254,7 +1273,7 @@ async function boot(saved){
       // gabloty z ogłoszeniami przy wejściach z ulic
       const boards=[]; const gabT=tex(128,96,(x,w,h)=>{ x.fillStyle='#3a2a1e'; x.fillRect(0,0,w,h); x.fillStyle='#d9d4c8'; x.fillRect(8,8,w-16,h-16); x.fillStyle='#ffffff'; x.fillRect(16,16,40,30); x.fillRect(64,22,46,24); x.fillStyle='#c0392b'; x.fillRect(18,54,30,10); x.fillStyle='#2f6fb5'; x.fillRect(60,54,44,26); });
       PP.forEach(q=>[q.pts[0],q.pts[q.pts.length-1]].forEach((e,k)=>{ if(boards.length>=4||!resRoads.some(r=>roadDist(r,e[0],e[1])<r.w/2+5)||boards.some(b=>Math.hypot(b[0]-e[0],b[1]-e[1])<35)||!inPoly(e[0],e[1],PARK.pts)&&!PARK.pts.some(v=>Math.hypot(v[0]-e[0],v[1]-e[1])<12))return;
-        const o=k?q.pts[q.pts.length-4]||q.pts[0]:q.pts[3]||q.pts[q.pts.length-1]; const dx=o[0]-e[0], dz=o[1]-e[1], l=Math.hypot(dx,dz)||1; const x=e[0]+dx/l*3-dz/l*(q.w/2+.8), z=e[1]+dz/l*3+dx/l*(q.w/2+.8); boards.push([x,z]);
+        const o=k?q.pts[q.pts.length-4]||q.pts[0]:q.pts[3]||q.pts[q.pts.length-1]; const dx=o[0]-e[0], dz=o[1]-e[1], l=Math.hypot(dx,dz)||1; const x=e[0]+dx/l*3-dz/l*(q.w/2+.8), z=e[1]+dz/l*3+dx/l*(q.w/2+.8); if(roadNearF(x,z,1.2)) return; boards.push([x,z]);
         const g=new THREE.Group(); g.position.set(x,H(x,z),z); g.rotation.y=Math.atan2(dx,dz)+Math.PI/2; [-.55,.55].forEach(u=>{ const pst=new THREE.Mesh(new THREE.BoxGeometry(.08,2.1,.08).translate(0,1.05,0),new THREE.MeshLambertMaterial({color:0x2a2c2e})); pst.position.x=u; g.add(pst); }); const bd=new THREE.Mesh(new THREE.BoxGeometry(1.25,.95,.1),new THREE.MeshLambertMaterial({color:0x3a2a1e})); bd.position.y=1.5; g.add(bd); [-1,1].forEach(sd=>{ const f=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.82),new THREE.MeshLambertMaterial({map:gabT})); f.position.set(0,1.5,sd*.056); if(sd<0)f.rotation.y=Math.PI; g.add(f); }); g.traverse(o2=>o2.castShadow=true); scene.add(g); addSolid({x,z,hw:.65,hd:.1,c:Math.cos(-g.rotation.y),s:Math.sin(-g.rotation.y),r:.7}); })); }
     PARK.globeMat=pglobe;
     // plac z kostki od Zielonej: zaokrąglona wysepka trawy z krawężnikiem, ławki parami, jarzębiny i latarnie przy krawędzi
