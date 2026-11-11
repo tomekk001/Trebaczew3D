@@ -386,7 +386,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
     <button class="mItem" id="mOpt">Opcje</button>
     <button class="mItem" id="mAcct">Konto <small id="mAcctSub">zapis w chmurze</small></button>
     <button class="mItem" id="mChar">Kreator postaci</button>
-    <button class="mItem" id="mAdm">Admin (GitHub) <small id="mAdmSub">zaloguj się, by szybciej latać po mapie</small></button>
+    <button class="mItem" id="mAdm" hidden>Admin (GitHub) <small id="mAdmSub">zaloguj się, by szybciej latać po mapie</small></button>
     <button class="mItem" id="mNew" hidden>Nowa gra</button>
     <button class="mItem" id="mInstall" hidden>Pobierz grę <small id="mInstallSub">działa bez przeglądarki</small></button>
     <div class="mFoot"><button class="btn" id="mBug">Zgłoś błąd</button><span>Dane: © OpenStreetMap, © GUGiK</span></div>
@@ -4991,8 +4991,9 @@ async function boot(saved){
   // tryb wieloosobowy: najpierw nazwa gracza (wymagana), potem połączenie
   /* ---------- tryb admina: logowanie GitHub przez Worker (konto z listy), szybki lot z góry, noclip, współrzędne ---------- */
   const ADM={on:false,login:''}; const ADM_URL='https://trebaczew-mp.kontakt-3e3.workers.dev';
-  function admRender(){ const b=$('mAdm'); if(!b)return; b.firstChild.textContent=ADM.on?'Admin: '+ADM.login+' ✓ ':'Admin (GitHub) '; $('mAdmSub').textContent=ADM.on?'kliknij, aby wylogować':'zaloguj się, by szybciej latać po mapie'; $('admHud').hidden=!ADM.on; }
+  function admRender(){ const b=$('mAdm'); if(!b)return; b.firstChild.textContent=ADM.on?'Admin: '+ADM.login+' ✓ ':'Admin (GitHub) '; $('mAdmSub').textContent=ADM.on?'kliknij, aby wylogować':'zaloguj się, by szybciej latać po mapie'; $('admHud').hidden=!ADM.on; b.hidden=!ADM.on; }
   async function admVerify(t){ try{ const r=await fetch(ADM_URL+'/auth/verify?t='+encodeURIComponent(t),{cache:'no-store'}); const j=await r.json(); if(j&&j.ok){ ADM.on=true; ADM.login=String(j.login||'').slice(0,40); try{ sessionStorage.setItem('trebaczew-adm',t); }catch(e){} admRender(); toast('<b>Tryb admina</b><br>Widok z lotu ptaka: lot bez kolizji, Shift - bardzo szybko',5); return; } }catch(e){} ADM.on=false; try{ sessionStorage.removeItem('trebaczew-adm'); }catch(e){} admRender(); }
+  if(/[?&]admin(=|&|$)/.test(location.search)&&!sessionStorage.getItem('trebaczew-adm')){ location.href=ADM_URL+'/auth/game?return='+encodeURIComponent('https://trebaczew.io/gra/'); }
   { let t=''; try{ const m=/[#&]adm=([A-Za-z0-9_.-]{20,400})/.exec(location.hash); if(m){ t=m[1]; history.replaceState(null,'',location.pathname+location.search); } else t=sessionStorage.getItem('trebaczew-adm')||''; }catch(e){} if(t) admVerify(t); }
   $('mAdm').addEventListener('click',()=>{ if(ADM.on){ ADM.on=false; try{ sessionStorage.removeItem('trebaczew-adm'); }catch(e){} admRender(); return; } location.href=ADM_URL+'/auth/game?return='+encodeURIComponent('https://trebaczew.io/gra/'); });
   function nickCheck(v){ v=cleanTxt(v,16).replace(/\s+/g,' ').trim(); if(v.length<1) return [null,'Wpisz dowolny nick, żeby zagrać.']; if(/^(gracz|ty|admin|moderator|serwer|system)$/i.test(v)) return [null,'Ta nazwa jest zajęta - wybierz inną.']; return [v,'']; }
