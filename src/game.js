@@ -37,7 +37,7 @@ async function boot(saved){
   const HG=HGRID, HB=205; const hv=new Float32Array(HG.nx*HG.nz); for(let i=0;i<hv.length;i++) hv[i]=parseInt(HG.s.substr(i*2,2),36)/10+HG.base-HB;
   function hRaw(x,z){ let fx=clamp((x-HG.x0)/HG.step,0,HG.nx-1.0001), fz=clamp((z-HG.z0)/HG.step,0,HG.nz-1.0001); const ix=fx|0, iz=fz|0, tx=fx-ix, tz=fz-iz, n=HG.nx; const a=hv[iz*n+ix], b=hv[iz*n+ix+1], c=hv[(iz+1)*n+ix], d=hv[(iz+1)*n+ix+1]; return a*(1-tx)*(1-tz)+b*tx*(1-tz)+c*(1-tx)*tz+d*tx*tz; }
   const FLAT=[];
-  function H0(x,z){ for(const f of FLAT){ if(x>f.bb[0]-f.fe&&x<f.bb[2]+f.fe&&z>f.bb[1]-f.fe&&z<f.bb[3]+f.fe){ if(inPoly(x,z,f.p))return f.h; } } return hRaw(x,z); }
+  function H0(x,z){ for(const f of FLAT){ if(x>f.bb[0]-f.fe&&x<f.bb[2]+f.fe&&z>f.bb[1]-f.fe&&z<f.bb[3]+f.fe){ if(inPoly(x,z,f.p))return f.h; if(f.bl){ /* łagodne zejście z płaskiego placu do prawdziwego terenu zamiast skarpy */ const dx=Math.max(f.bb[0]-x,0,x-f.bb[2]), dz=Math.max(f.bb[1]-z,0,z-f.bb[3]), t=Math.min(1,Math.hypot(dx,dz)/f.bl), k=t*t*(3-2*t); return f.h+(hRaw(x,z)-f.h)*k; } } } return hRaw(x,z); }
   // głęboki wykop kolejowy na północ od Trębaczewa: tory (Magistrala Węglowa) schodzą coraz głębiej w ziemię, a ulica Wynalazek przechodzi nad nimi wiaduktem
   let CUTL=null, BRG=null; const CUT_D=6.8;
   const cutProfile=z=>{ const sm=t=>{ t=Math.max(0,Math.min(1,t)); return t*t*(3-2*t); }; return CUT_D*sm((280-z)/290)*(1-sm((-760-z)/340)); };
@@ -138,7 +138,7 @@ async function boot(saved){
       if(f.length>=6){ let x=0,z=0; f[5].split(';').forEach((s,i)=>{ const d=s.split(',').map(Number); if(i){ x+=d[0]; z+=d[1]; } else { x=d[0]; z=d[1]; } pts.push([x,z]); }); if(f[0]==='B'){ t.building=f[4]||'yes'; if(f[3]) t.man_made=f[3]; } else t.man_made='pipeline'; name=f[1]; lv=+f[2]||0; }
       else { const [tg,lv0,ps]=f; lv=+lv0||0; const n=ps.split(',').map(Number); for(let i=0;i<n.length;i+=2) pts.push([n[i],n[i+1]]); if(tg==='B') t.building='yes'; else tg.split(';').forEach(s=>{ const k=s.split('='); t[k[0]]=k.slice(1).join('='); }); }
       return {t,lv,pts,name}; });
-    const x0=150,x1=1490,z0=2595,z1=3000, pad=[[x0,z0],[x1,z0],[x1,z1],[x0,z1]]; const h=hRaw((x0+x1)/2,(z0+z1)/2); FLAT.push({p:pad,bb:bbox(pad),fe:0,h});
+    const x0=150,x1=1490,z0=2595,z1=3000, pad=[[x0,z0],[x1,z0],[x1,z1],[x0,z1]]; const h=hRaw((x0+x1)/2,(z0+z1)/2); FLAT.push({p:pad,bb:bbox(pad),fe:90,bl:90,h});
     items.forEach(it=>{ if(it.t.railway==='rail') RAILS.push(it.pts); });
     return {x0,x1,z0,z1,pad,h,items}; })();
   /* ---------- renderer + efekty ---------- */
@@ -2505,6 +2505,13 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     {n:'Disco Polo 42',g:'disco polo',bpm:128,prog:[[48,52,55],[55,59,62],[57,60,64],[53,57,60]],hook:[4,4,5,4,2,null,0,null,2,2,4,2,0,null,null,null],sw:0},
     {n:'Radio Pola',g:'lo-fi',bpm:78,prog:[[50,53,57,60],[55,59,62,65],[48,52,55,59],[57,60,64,67]],hook:[2,null,null,1,0,null,null,null,3,null,2,null,1,null,null,null],sw:.16},
     {n:'DK42 Rap',g:'boom bap',bpm:90,prog:[[48,51,55],[44,48,51],[51,55,58],[46,50,53]],hook:[0,null,null,0,2,null,0,null,null,null,4,null,2,null,null,null],sw:.12}];
+  /* stacja z prawdziwą muzyką: utwory Kevina MacLeoda (incompetech.com) na licencji CC BY 4.0, pliki w gra/muzyka */
+  const TRACKS=[['funkorama','Funkorama'],['life-of-riley','Life of Riley'],['carefree','Carefree'],['hyperfun','Hyperfun'],['pixel-peeker-polka','Pixel Peeker Polka - faster'],['rhinoceros','Rhinoceros']];
+  STN.unshift({n:'Radio Trębaczew',g:'muzyka: Kevin MacLeod, CC BY 4.0',file:true,bpm:100,prog:[[48,52,55]],hook:[],sw:0});
+  const RAD={el:null,i:Math.floor(Math.random()*TRACKS.length),on:false};
+  const radioToast=()=>toast(`🎵 <b>${TRACKS[RAD.i][1]}</b><br>Kevin MacLeod (incompetech.com) · CC BY 4.0`,3.5);
+  function radioFile(on){ if(on){ if(!RAD.el){ RAD.el=new Audio(); RAD.el.preload='none'; RAD.el.src='muzyka/'+TRACKS[RAD.i][0]+'.mp3'; RAD.el.addEventListener('ended',()=>{ RAD.i=(RAD.i+1)%TRACKS.length; RAD.el.src='muzyka/'+TRACKS[RAD.i][0]+'.mp3'; RAD.el.play().catch(()=>{}); radioToast(); }); }
+      RAD.el.volume=.42; if(RAD.el.paused){ RAD.el.play().catch(()=>{}); if(!RAD.on) radioToast(); } RAD.on=true; } else if(RAD.on){ RAD.on=false; if(RAD.el&&!RAD.el.paused) RAD.el.pause(); } }
   const STATIONS=STN.map(s=>s.n).concat(['Radio wyłączone']); const OFF=STN.length;
   function vOsc(type,f,t,dur,vol,dest,o){ o=o||{}; const C=AU.ctx; const osc=C.createOscillator(), g=C.createGain(); osc.type=type; osc.frequency.setValueAtTime(f,t); if(o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2,t+(o.gl||dur)); if(o.det) osc.detune.value=o.det;
     let node=osc; if(o.lp){ const fl=C.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=o.q||1; fl.frequency.setValueAtTime(o.lp,t); if(o.lp2) fl.frequency.exponentialRampToValueAtTime(o.lp2,t+(o.lpt||dur)); osc.connect(fl); node=fl; }
@@ -2592,7 +2599,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const copNear=COPS.some(c=>Math.hypot(c.x-st.x,c.z-st.z)<120); AU.sirG.gain.value=copNear?.035:0; if(copNear) AU.siren.frequency.value=800+Math.sin(now*3)*350;
     const radioOn=st.car&&st.car.kind!=='bike'&&st.car.kind!=='tractor'&&AU.station<OFF; AU.radioG.gain.value+=((radioOn?.85:0)-AU.radioG.gain.value)*Math.min(1,dt*3);
     const s=STN[AU.station]; const sp=60/(s?s.bpm:100)/4;
-    if(AU.next<now-.3) AU.next=now+.05; while(AU.next<now+.15){ if(radioOn) musicStep(AU.next,AU.step); AU.step++; AU.next+=sp; }
+    radioFile(!!(radioOn&&s&&s.file&&AU.on&&!GAME.paused)); if(AU.next<now-.3) AU.next=now+.05; while(AU.next<now+.15){ if(radioOn&&!(s&&s.file)) musicStep(AU.next,AU.step); AU.step++; AU.next+=sp; }
     // muzyka w sklepach, pizzerii i organy w kościele
     { const mk=st.inside?(CUR===IN?'shop':({shop:'shop',zabka:'shop',counter:'shop',pharm:'shop',rest:'rest',church:'organ'})[CUR.kind]||null):null;
       if(!AU.musG){ AU.musG=C.createGain(); AU.musG.gain.value=0; const lp=C.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2600; AU.musG.connect(lp); lp.connect(AU.master); AU.mNext=now; AU.mStep=0; }
@@ -2608,7 +2615,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
         else { if(r<.35)NAT.lark(); else if(r<.5)NAT.crow(); else if(r<.6)NAT.cuckoo(); else if(r<.7&&E.farm)NAT.cow(); } }
       else { if(E.water&&r<.5)NAT.frog(); else if(E.forest&&r<.3)NAT.owl(); else if(E.houses>2&&r<.15)NAT.dog(); else if(r<.1)NAT.owl(); } } }
   function onCarEnter(){ const kind=st.car&&st.car.kind; if(kind==='bike')return; if(!AU.ctx){ audioStart(); } if(!AU.ctx)return; if(!AU.on&&!AU.userOff){ AU.on=true; AU.master.gain.value=.6; updButtons(); }
-    if(AU.station>=OFF||!AU.picked){ AU.station=Math.floor(Math.random()*STN.length); AU.picked=true; } AU.step=0; AU.next=AU.ctx.currentTime+.25;
+    if(AU.station>=OFF||!AU.picked){ AU.station=0; AU.picked=true; } AU.step=0; AU.next=AU.ctx.currentTime+.25;
     if(kind!=='tractor') toast(`📻 <b>${STN[AU.station].n}</b><br>${STN[AU.station].g} · <kbd>R</kbd> zmienia stację`,3); }
   let lastBell=-1, lastHorn=-99;
   // jeden sygnał na przejazd, gdy czoło pociągu zbliża się do gracza (głośność zależna od odległości)
@@ -4613,7 +4620,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     if(id==='pOpt'){ renderKeys(); renderQ(); } if(id==='pChar'){ renderChar(); MENU.ca=st.yaw; MENU.t=0; } if(id==='pBug') $('bSend').href=bugHref(); WAITKEY=null; }
   menuEl.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>openPanel('')));
   let HAS_SAVE=false; try{ HAS_SAVE=!!localStorage.getItem('trebaczew-gra'); }catch(e){}
-  function playSub(){ const has=st.xp>0||DONE.size>0||HAS_SAVE; $('mPlaySub').textContent=GAME.started?'':has?`kontynuuj · poziom ${st.level}`:'nowa gra'; $('mPlay').firstChild.textContent=GAME.started?'Wznów grę ':'Tryb jednoosobowy '; $('mNew').hidden=true; $('mMulti').firstChild.textContent=GAME.started?'Wznów grę ':'Graj '; $('mMultiSub').textContent=GAME.started?'':'z innymi mieszkańcami'; $('mLog').hidden=!GAME.started; $('mLogSub').textContent=`fabuła ${DONE.size}/20`; }
+  function playSub(){ const has=st.xp>0||DONE.size>0||HAS_SAVE; $('mPlaySub').textContent=GAME.started?'':has?`kontynuuj · poziom ${st.level}`:'nowa gra'; $('mPlay').firstChild.textContent=GAME.started?'Wznów grę ':'Tryb jednoosobowy '; $('mNew').hidden=true; $('mMulti').firstChild.textContent=GAME.started?'Wznów grę ':'Graj '; $('mMultiSub').textContent=GAME.started?'':'online'; $('mLog').hidden=!GAME.started; $('mLogSub').textContent=`fabuła ${DONE.size}/20`; }
   function showMenu(v){ GAME.paused=v; if(AU.ctx){ try{ v?AU.ctx.suspend():AU.ctx.resume(); }catch(e){} } menuEl.hidden=!v; document.body.classList.toggle('inmenu',v); keys.clear(); resetJoy(); if(v){ menuEl.classList.toggle('pause',GAME.started); playSub(); openPanel(''); if(!IS_TOUCH) setTimeout(()=>$('mMulti').focus(),30); } else { if(MENU.view==='creator') MENU.view=''; if(MENU.vo){ camera.clearViewOffset(); MENU.vo=false; } canvas.focus(); clock.getDelta(); } }
   $('mPlay').addEventListener('click',()=>{ if(!GAME.started){ GAME.started=true; statEvent('start',{mob:IS_TOUCH?1:0}); if(!AU.ctx) try{ audioStart(); }catch(e){} { const how=IS_TOUCH?'Menu → Misje: lista zadań':`<kbd>${keyName(KEYMAP.q)}</kbd> dziennik misji`; if(!DONE.size&&INFO){ WAYPOINT=INFO.front.slice(); toast(`Witaj w Trębaczewie${CHAR.name?', '+CHAR.name:''}!<br>Podejdź do niebieskiego punktu informacyjnego „i” obok - tam zaczyna się pierwsza misja.<br>${how}`,7); } else toast(`Witaj w Trębaczewie${CHAR.name?', '+CHAR.name:''}!<br>${how} · żółte znaczniki to misje fabularne`,6); } } showMenu(false); });
   $('mOpt').addEventListener('click',()=>openPanel($('pOpt').hidden?'pOpt':''));
@@ -5345,7 +5352,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const clock=new THREE.Clock(); const fwd=new THREE.Vector3();
   function animPerson(p,walk,amt){ const u=p.userData, sn=Math.sin(walk), cs=Math.cos(walk); if(u.idle){ u.idle.amt=Math.max(u.idle.amt,amt); if(u.chest&&amt>.05) u.chest.rotation.y=-sn*.09*amt; } u.lL.rotation.x=sn*.55*amt; u.lR.rotation.x=-sn*.55*amt; u.aL.rotation.x=-sn*.45*amt; u.aR.rotation.x=sn*.45*amt;
     if(u.kL){ u.kL.rotation.x=amt*(.12+.8*Math.max(0,-cs)); u.kR.rotation.x=amt*(.12+.8*Math.max(0,cs)); u.eL.rotation.x=-(.12+.3*amt+Math.max(0,sn)*.25*amt); u.eR.rotation.x=-(.12+.3*amt+Math.max(0,-sn)*.25*amt); } }
-  SDK('c'); function frame(){ const rawDt=clock.getDelta(); const dt=Math.min(rawDt,0.05); tAll+=dt; WINDU.value=tAll; if(CEMENT&&CEMENT.tick) CEMENT.tick(); grassTick();
+  SDK('c'); function frame(){ const rawDt=clock.getDelta(); const dt=Math.min(rawDt,0.05); tAll+=dt; if(RAD.on&&(GAME.paused||!st.car)) radioFile(false); WINDU.value=tAll; if(CEMENT&&CEMENT.tick) CEMENT.tick(); grassTick();
     fpsAcc+=rawDt; fpsN++; if(fpsAcc>2){ const fps=fpsN/fpsAcc; fpsAcc=0; fpsN=0; if(performance.now()-T_START<14000) lowN=0; else if(fps<22) lowN++; else lowN=0; const flo=IS_TOUCH?.85:.65; const npr=lowN>=3?(lowN=0,Math.max(flo,pr-0.1)):fps>48?Math.min(DPR,pr+0.1):pr; if(npr!==pr){ pr=npr; renderer.setPixelRatio(pr); resize(); } }
     if(!mapView.hidden){ requestAnimationFrame(frame); return; }
     if(GAME.paused){ menuFrame(dt); requestAnimationFrame(frame); return; }

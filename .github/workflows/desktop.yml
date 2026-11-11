@@ -1,0 +1,35 @@
+name: Wersja na Windows
+on:
+  push:
+    branches: [main]
+    paths: ['desktop/**', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Zależności
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Kopia gry do instalatora
+        working-directory: desktop
+        run: node prepare.js
+      - name: Instalator
+        working-directory: desktop
+        run: npx electron-builder --win --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Wydanie
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v1.0.${{ github.run_number }}
+          name: Wersja na Windows 1.0.${{ github.run_number }}
+          body: Instalator gry na Windows (64-bit). Gra pobiera aktualną wersję z trebaczew.io, a bez internetu uruchamia dołączoną kopię.
+          files: desktop/dist/Trebaczew-Setup.exe
+          make_latest: true

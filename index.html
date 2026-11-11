@@ -80,6 +80,9 @@ details{border-bottom:1px solid var(--line);padding:16px 0}details:first-of-type
 .band{margin-top:90px;background:var(--dark);color:#fff}.band .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-top:54px;padding-bottom:54px}.band h2{margin:0 0 6px}.band p{margin:0;color:rgba(255,255,255,.72)}
 footer{background:var(--dark);color:rgba(255,255,255,.6);font-size:14px;border-top:1px solid rgba(255,255,255,.1)}footer .wrap{display:flex;justify-content:space-between;gap:16px 30px;flex-wrap:wrap;padding-top:22px;padding-bottom:30px}footer a{color:rgba(255,255,255,.82);text-decoration:none;margin-right:18px}footer a:hover{text-decoration:underline}
 .lb{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px}.lb.on{display:flex}.lb img{max-width:min(1200px,94vw);max-height:80vh;border-radius:3px}.lb p{color:#fff;margin:0}.lb button{position:absolute;background:none;color:#fff;border:0;width:48px;height:48px;font-size:28px;cursor:pointer}.lb .x{top:12px;right:12px}.lb .pv{left:8px;top:50%}.lb .nx{right:8px;top:50%}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:16px}.dlc{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:24px}.dlc h3{font-size:28px;margin:6px 0 8px}.dlc p{margin:0 0 16px}.dlc.off{background:none}.dlb{font-size:17px;padding:12px 26px}.soon{background:var(--bg2);color:var(--mut);cursor:default}.soon:hover{background:var(--bg2)}.sm{font-size:14px;margin:14px 0 0!important}
+@media (max-width:700px){.dl{grid-template-columns:1fr}}
+h3.sub{font-size:22px;margin:26px 0 10px}table.cr td:nth-child(n+3),table.cr th:nth-child(n+3){text-align:left}table.cr td:first-child,table.cr th:first-child{width:auto;color:inherit}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 </style>
 </head>
@@ -124,12 +127,33 @@ footer{background:var(--dark);color:rgba(255,255,255,.6);font-size:14px;border-t
 <div class="vids"><div class="vid"><video id="filmv" controls muted loop playsinline preload="metadata" poster="img/poster1.jpg"><source src="img/film.mp4" type="video/mp4"></video></div>
 <div class="vid"><video id="filmv2" controls muted loop playsinline preload="metadata" poster="img/poster2.jpg"><source src="img/film2.mp4" type="video/mp4"></video></div></div></section>
 
+<section id="pobierz" data-s="Pobierz"><h2>Pobierz na komputer</h2>
+<p class="lead">Gra działa w przeglądarce, ale możesz ją też zainstalować jako zwykły program z własnym oknem i skrótem na pulpicie.</p>
+<div class="dl">
+<div class="dlc"><span class="num">Windows 10 i 11 · 64-bit</span><h3>Windows</h3><p>Instalator, około 100 MB. Zapisy i aktualizacje są te same co w wersji przeglądarkowej, a bez internetu uruchamia się dołączona kopia gry.</p><a class="btn dlb" href="https://github.com/tomekk001/trebaczew3d/releases/latest/download/Trebaczew-Setup.exe">Pobierz na Windows</a><p class="mut sm">Instalator nie ma jeszcze podpisu cyfrowego, więc Windows może pokazać ostrzeżenie SmartScreen. Wybierz wtedy „Więcej informacji”, a potem „Uruchom mimo to”.</p></div>
+<div class="dlc off"><span class="num">macOS</span><h3>Mac</h3><p>Wersja na komputery Apple jest w przygotowaniu.</p><span class="btn dlb soon" aria-disabled="true">Wkrótce</span></div>
+</div></section>
+
 <section id="klawisze" data-s="Sterowanie"><h2>Sterowanie</h2>
 <p class="lead">Naciśnij klawisz na klawiaturze albo kliknij go poniżej.</p>
 <div class="kb" id="kb"></div><div class="kbInfo" id="kbInfo">Wybierz klawisz</div></section>
 
 <section id="ranking" data-s="Ranking"><h2>Najlepsi gracze</h2>
 <table id="rk"><tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr><tr><td colspan="4" class="mut">Ładowanie…</td></tr></table></section>
+
+<section id="autorzy" data-s="Autorzy"><h2>Autorzy</h2>
+<p class="lead">Muzyka w radiu samochodowym pochodzi od niezależnego kompozytora i jest używana na wolnej licencji.</p>
+<h3 class="sub">Muzyka</h3>
+<table class="cr"><tr><th>Utwór</th><th>Autor</th><th>Licencja</th></tr>
+<tr><td>Funkorama</td><td>Kevin MacLeod</td><td><a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a></td></tr>
+<tr><td>Life of Riley</td><td>Kevin MacLeod</td><td><a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a></td></tr>
+<tr><td>Carefree</td><td>Kevin MacLeod</td><td><a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a></td></tr>
+<tr><td>Hyperfun</td><td>Kevin MacLeod</td><td><a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a></td></tr>
+<tr><td>Pixel Peeker Polka - faster</td><td>Kevin MacLeod</td><td><a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a></td></tr>
+<tr><td>Rhinoceros</td><td>Kevin MacLeod</td><td><a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener">CC BY 4.0</a></td></tr></table>
+<p class="mut sm">Wszystkie utwory: Kevin MacLeod (<a href="https://incompetech.com" rel="noopener">incompetech.com</a>), na licencji Creative Commons: Uznanie autorstwa 4.0. W grze utwory są odtwarzane w niższej jakości dźwięku, bez innych zmian.</p>
+<h3 class="sub">Dane</h3>
+<p class="mut">Mapa, drogi i budynki: © autorzy OpenStreetMap (ODbL). Ukształtowanie terenu, ortofotomapa i wysokości budynków: Główny Urząd Geodezji i Kartografii (geoportal.gov.pl).</p></section>
 
 <section id="faq" data-s="Pytania"><h2>Pytania</h2>
 <details><summary>Czy gra jest darmowa i czy trzeba konta?</summary><p>Jest darmowa. Konto jest opcjonalne (sama nazwa i hasło) i służy do synchronizacji zapisu oraz wspólnego domu.</p></details>
