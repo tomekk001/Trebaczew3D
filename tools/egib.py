@@ -55,7 +55,43 @@ def main():
         if any(in_rect(cx, cz, g) or in_poly(g[0], g[1], p) or any(in_rect(q[0], q[1], g, 0) for q in p) for g in near): continue
         _, mx, mz, w, d, an = mar(p)
         extra.append(f"{mx:.1f},{mz:.1f},{w:.1f},{d:.1f},{math.degrees(an)%360:.0f},{b['r'] or 'x'},{b['k'] or 0}")
-    (SRC / "data_cad.js").write_text("/* ewidencja gruntów i budynków (EGiB, GUGiK): działki z klasoużytkiem (dm, delty) i budynki, których brakowało */\nconst DATA_CAD=\"" + ";".join(recs) + "\";\nconst DATA_CADB=\"" + ";".join(extra) + "\";\n", encoding="utf8")
+    # poprawki obrysów istniejących budynków wg EGiB: "indeks:x,z,w,d,kąt:części:indeksy do pominięcia"
+    from osm_buildings import decompose
+    EG = []
+    for b in json.load(open(RAW / "egib_budynki.json", encoding="utf8")):
+        p = b["p"]; a = abs(area(p))
+        if a < 8: continue
+        EG.append((p, a, sum(q[0] for q in p)/len(p), sum(q[1] for q in p)/len(p), b))
+    S = {}; T = {}
+    for ei, (p, a, cx, cz, b) in enumerate(EG):
+        for gi, g in enumerate(G):
+            if abs(g[0]-cx) > 60 or abs(g[1]-cz) > 60: continue
+            if in_poly(g[0], g[1], p): S.setdefault(ei, []).append(gi)
+            if in_rect(cx, cz, g, 0.3): T.setdefault(gi, []).append(ei)
+    fixes = {}; stats = {"1:1": 0, "E>g": 0, "g>E": 0, "pominięte": 0}
+    for ei, (p, a, cx, cz, b) in enumerate(EG):
+        gs = S.get(ei, [])
+        if not gs:
+            cand = [gi for gi, es in T.items() if ei in es]
+            if len(cand) != 1: continue
+            gi = cand[0]; es = T[gi]
+            if max(es, key=lambda e: EG[e][1]) != ei: continue          # mniejsze części dużego budynku z gry
+            ga = G[gi][2]*G[gi][3]
+            if not (0.4 < a/ga < 2.5): stats["pominięte"] += 1; continue
+            tgt = gi; skip = []; stats["g>E" if len(es) > 1 else "1:1"] += 1
+        else:
+            tgt = max(gs, key=lambda gi: G[gi][2]*G[gi][3]); skip = [gi for gi in gs if gi != tgt]
+            ga = sum(G[gi][2]*G[gi][3] for gi in gs)
+            if not (0.4 < a/ga < 2.5): stats["pominięte"] += 1; continue
+            stats["E>g" if skip else "1:1"] += 1
+        if tgt in fixes: continue
+        m = mar(p); _, mx, mz, w, d, an = m; parts = ""
+        if a/max(1e-6, w*d) < 0.93 and len(p) > 4:
+            r = decompose(p, m)
+            if r and len(r) > 1: parts = "|".join(f"{x:.1f},{z:.1f},{rw:.1f},{rd:.1f}" for x, z, rw, rd in r)
+        fixes[tgt] = f"{tgt}:{mx:.1f},{mz:.1f},{w:.1f},{d:.1f},{math.degrees(an)%360:.1f}:{parts}:{','.join(map(str, skip))}"
+    print("poprawki obrysów", len(fixes), stats)
+    (SRC / "data_cad.js").write_text("/* ewidencja gruntów i budynków (EGiB, GUGiK): działki z klasoużytkiem (dm, delty) i budynki, których brakowało */\nconst DATA_CAD=\"" + ";".join(recs) + "\";\nconst DATA_CADB=\"" + ";".join(extra) + "\";\nconst DATA_CADFIX=\"" + ";".join(fixes.values()) + "\";\n", encoding="utf8")
     print("dzialki", len(recs), "budynki dodatkowe", len(extra), "rozmiar", (SRC / "data_cad.js").stat().st_size)
 
 if __name__ == "__main__": main()
