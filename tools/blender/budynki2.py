@@ -276,36 +276,90 @@ def zabka2():
     win(M, L / 2, G1 + 1.4, -1.0, 1.0, 1.1, frame, glass, '+x')
     M.finish(res=1024, quality=76, ao_dist=1.6)
 
-# ---------------- przedszkole (3 bryły wzdłuż Szkolnej) ----------------
+# ---------------- przedszkole (3 bryły wzdłuż Szkolnej, wg zdjęcia od strony ulicy) ----------------
+# patrząc z ulicy od lewej: bryła 1 (12,5 m) = niższe lewe skrzydło + początek wyższej części środkowej,
+# bryła 0 (8,5 m) = reszta części środkowej z głównym wejściem pod daszkiem, bryła 2 (9,5 m) = prawe skrzydło szczytem do ulicy
 def przedszkole(i):
-    dims = [(8.5, 18.0, 2, 'hip'), (12.5, 12.5, 2, 'hip'), (9.5, 11.5, 2, 'front')][i]
-    L, D, fl, rt = dims; F = 3.1; H = fl * F + .3
-    M = Model('przedszkole%d' % i); m = mats(M, '#ece0c4', '#8a3a2a', '#f4f4f2', '#9d958a', '#5a2418')
-    walls(M, m, L, D, H)
-    if rt == 'hip': hip(M, -L / 2, L / 2, -D / 2, D / 2, H, 2.6, m['roof'], ov=.55)
-    else:
-        gable(M, -L / 2, L / 2, -D / 2, D / 2, H, 3.4, m['roof'], ov=.55, along='z'); gable_ends(M, -L / 2, L / 2, -D / 2, D / 2, H, 3.4, m['wall'], along='z')
-        win(M, -.5, H + 1.4, D / 2, .5, .45, m['frame'], m['glass']); win(M, .5, H + 1.4, D / 2, .5, .45, m['frame'], m['glass'])
-    M.box(-L / 2 - .05, L / 2 + .05, H - .3, H, -D / 2 - .05, D / 2 + .05, m['white'])
-    n = max(2, int(L / 2.7))
-    for f in range(fl):
-        y = 1.65 + f * F
-        for k in range(n):
-            x = -L / 2 + (k + .5) * L / n
-            if i == 1 and f == 0 and abs(x) < 1.6: continue
-            win(M, x, y, D / 2, 1.3, 1.45, m['frame'], m['glass'], '+z', m['sill']); win(M, x, y, -D / 2, 1.3, 1.45, m['frame'], m['glass'], '-z', m['sill'])
-        k2 = max(1, int(D / 3))
-        for k in range(k2):
-            z = -D / 2 + (k + .5) * D / k2; win(M, L / 2, y, z, 1.3, 1.45, m['frame'], m['glass'], '+x', m['sill']); win(M, -L / 2, y, z, 1.3, 1.45, m['frame'], m['glass'], '-x', m['sill'])
-    if i == 1:  # wejście: drzwi, daszek na słupkach, schody
-        door(M, m, 0, D / 2, 1.8, 2.3, '#3a4650', glassy=True)
-        M.box(-1.9, 1.9, 2.7, 2.9, D / 2, D / 2 + 2.3, m['white']); [M.box(x - .05, x + .05, 0, 2.7, D / 2 + 2.1, D / 2 + 2.2, m['metal']) for x in (-1.7, 1.7)]
-        for k in range(3): M.box(-1.8, 1.8, BASE, .45 - k * .15, D / 2, D / 2 + .5 + .35 * k, M.mat('step', '#c9b49a', noise=.05))
-    if i == 0:  # łukowe daszki nad drzwiami od Zagrodowej (jak na zdjęciu)
-        for x in (-L * .2, L * .25):
-            door(M, m, x, D / 2, 1.0, 2.15, '#e9e9e6')
-            M.prism([(x - .75 + 1.5 * j / 10, 2.45 + .3 * math.sin(math.pi * j / 10), D / 2) for j in range(11)], (0, 0, .5), m['roof'])
-    M.finish(res=512, quality=72, ao_dist=1.6)
+    L, D = [(8.5, 18.0), (12.5, 12.5), (9.5, 11.5)][i]; F = 3.05
+    M = Model('przedszkole%d' % i); m = mats(M, '#e9dcc3', '#5b3528', '#f4f4f2', '#d2c5ad', '#2c1a13')
+    band = M.mat('band', '#dccaa9', noise=.04, scale=22); brown = M.mat('brown', '#4a2c20'); terr = M.mat('terr', '#c98b6b', brick=(.3, .15, '#a8735a', .012))
+    rail = M.mat('rail', '#4b3a34'); pdoor = M.mat('pdoor', '#2b2d31')
+    HL, HM, HG = 6.0, 6.7, 6.5; RM = 1.9; fz = D / 2
+    def bands(x0=-L / 2, x1=L / 2):   # ciemniejsze pasy elewacji na wysokości okien
+        for y in (1.05, 1.05 + F): M.box(x0, x1, y, y + 1.5, fz, fz + .012, band)
+    def w3(x, y, w=1.9, h=1.3):       # okno trzyskrzydłowe
+        win(M, x, y, fz, w, h, m['frame'], m['glass'], '+z', m['sill'])
+        for dx in (-w / 6, w / 6): M.box(x + dx - .02, x + dx + .02, y - h / 2, y + h / 2, fz + .05, fz + .08, m['frame'])
+    def pipe(x, H):                    # rura spustowa
+        M.box(x - .05, x + .05, .2, H - .1, fz + .02, fz + .12, brown)
+    def other_sides(n_side, n_back, left=True, right=True):   # okna z boków i z tyłu
+        for f in range(2):
+            y = 1.8 + f * F
+            for k in range(n_back):
+                x = -L / 2 + (k + .5) * L / n_back; win(M, x, y, -fz, 1.3, 1.35, m['frame'], m['glass'], '-z', m['sill'])
+            for k in range(n_side):
+                z = -D / 2 + (k + .5) * D / n_side
+                if right: win(M, L / 2, y, z, 1.3, 1.35, m['frame'], m['glass'], '+x', m['sill'])
+                if left: win(M, -L / 2, y, z, 1.3, 1.35, m['frame'], m['glass'], '-x', m['sill'])
+    if i == 1:   # lewa bryła: niższe skrzydło (9,5 m) i 3 m wyższej części środkowej
+        xs = L / 2 - 3.0
+        M.box(-L / 2, xs, BASE, HL, -D / 2, D / 2, m['wall']); M.box(xs, L / 2, BASE, HM, -D / 2, D / 2, m['wall']); M.box(-L / 2 - .03, L / 2 + .03, BASE, .45, -D / 2 - .03, D / 2 + .03, m['plinth'])
+        bands()
+        hip(M, -L / 2, xs, -D / 2, D / 2, HL, 1.6, m['roof'], ov=.5); M.box(-L / 2 - .5, xs + .1, HL - .12, HL + .06, -D / 2 - .5, D / 2 + .5, brown)
+        gable(M, xs, L / 2 + .3, -D / 2, D / 2, HM, RM, m['roof'], ov=.5, along='x'); gable_ends(M, xs, L / 2, -D / 2, D / 2, HM, RM, m['wall'], along='x')
+        M.box(xs - .4, L / 2 + .3, HM - .12, HM + .06, fz + .3, fz + .52, brown)
+        for f in range(2):
+            for x in (-L / 2 + 2.4, -L / 2 + 6.9): w3(x, 1.8 + f * F)
+            w3(xs + 1.55, 1.8 + f * F)
+        pipe(-L / 2 + .45, HL); pipe(xs + .12, HM); chimney(M, m, -L / 2 + 5.4, -1.0, HL + .5, HL + 2.2)
+        other_sides(3, 4, right=False)
+    elif i == 0:  # część środkowa z głównym wejściem
+        walls(M, m, L, D, HM, plh=.45); bands()
+        gable(M, -L / 2 - .3, L / 2, -D / 2, D / 2, HM, RM, m['roof'], ov=.5, along='x'); gable_ends(M, -L / 2, L / 2, -D / 2, D / 2, HM, RM, m['wall'], along='x')
+        M.box(-L / 2 - .3, L / 2 + .3, HM - .12, HM + .06, fz + .3, fz + .52, brown)
+        for x in (-1.95, 2.05): w3(x, 1.8 + F)
+        w3(2.25, 1.8)
+        win(M, -.35, 1.8, fz, 1.0, 1.3, m['frame'], m['glass'], '+z', m['sill'])
+        dx = -2.35  # drzwi dwuskrzydłowe z naświetlem
+        M.box(dx - .85, dx + .85, .75, 3.0, fz, fz + .05, brown); M.box(dx - .77, dx + .77, .75, 2.55, fz + .05, fz + .08, pdoor); M.box(dx - .77, dx + .77, 2.6, 2.95, fz + .05, fz + .08, m['glass'])
+        M.box(dx - .02, dx + .02, .75, 2.55, fz + .08, fz + .1, brown)
+        for x0 in (dx - .7, dx + .08): M.box(x0, x0 + .62, 1.35, 2.4, fz + .08, fz + .095, m['glass'])
+        M.box(-.9, -.1, 2.75, 3.05, fz + .012, fz + .04, M.mat('plaque', '#b3262b'))          # tablica przy wejściu
+        # daszek na słupach, podest i schody z terakoty, poręcze
+        M.box(-3.65, .75, 3.25, 3.45, fz, fz + 2.3, brown); M.box(-3.75, .85, 3.45, 3.52, fz, fz + 2.4, m['roof'])
+        for x in (-3.5, .6): M.box(x - .07, x + .07, .75, 3.25, fz + 2.1, fz + 2.24, brown)
+        M.box(-3.65, .75, BASE, .75, fz, fz + 2.3, terr)
+        for k in range(5): M.box(-3.2, .3, BASE, .75 - (k + 1) * .15, fz + 2.3 + k * .3, fz + 2.6 + k * .3, terr)
+        for x in (.35, -3.25):
+            M.prism([(x, 1.65, fz + 2.3), (x, 1.7, fz + 2.3), (x, .95, fz + 3.8), (x, .9, fz + 3.8)], (.05, 0, 0), rail)
+            for k in range(4): M.box(x, x + .05, .75 - k * .15, 1.66 - k * .19, fz + 2.32 + k * .48, fz + 2.37 + k * .48, rail)
+        pipe(L / 2 - .2, HM); pipe(-3.85, 3.3)
+        chimney(M, m, 2.6, -1.5, HM + .9, HM + 2.9)
+        M.cyl(-1.0, HM + 1.5, HM + 5.2, -.5, .03, .03, 6, m['metal']); M.box(-1.6, -.4, HM + 4.6, HM + 4.64, -.52, -.48, m['metal']); M.box(-1.4, -.6, HM + 4.2, HM + 4.24, -.52, -.48, m['metal'])
+        other_sides(5, 3, left=False, right=False)
+    else:         # prawe skrzydło szczytem do ulicy
+        H = HG; rise = 3.1
+        walls(M, m, L, D, H, plh=.45); bands()
+        gable(M, -L / 2, L / 2, -D / 2, D / 2, H, rise, m['roof'], ov=.55, along='z'); gable_ends(M, -L / 2, L / 2, -D / 2, D / 2, H, rise, m['wall'], along='z')
+        for sx in (-1, 1):   # brązowe deski wiatrowe na szczycie
+            M.prism([(sx * (L / 2 + .55), H - rise * .55 / (L / 2) + .02, fz + .5), (0, H + rise + .02, fz + .5), (0, H + rise + .24, fz + .5), (sx * (L / 2 + .55), H - rise * .55 / (L / 2) + .24, fz + .5)], (0, 0, .08), brown)
+        for x in (-2.9, 0, 2.9): win(M, x, 1.8 + F, fz, 1.1, 1.35, m['frame'], m['glass'], '+z', m['sill'])
+        for x in (-.45, .45): win(M, x, H + 1.45, fz, .42, .42, m['frame'], m['glass'], '+z')
+        for x in (.6, 3.2): win(M, x, 1.8, fz, 1.1, 1.35, m['frame'], m['glass'], '+z', m['sill'])
+        # boczne wejście: wnęka z łukowym daszkiem, schodki, poręcze
+        M.box(-3.5, -2.2, .45, 2.6, fz, fz + .05, m['frame']); M.box(-3.4, -2.3, .45, 2.5, fz + .05, fz + .08, M.mat('door_br', '#4a3226'))
+        M.prism([(-3.95 + 2.2 * j / 12, 2.75 + .45 * math.sin(math.pi * j / 12), fz) for j in range(13)], (0, 0, 1.1), m['roof'])
+        M.prism([(-3.95 + 2.2 * j / 12, 2.68 + .45 * math.sin(math.pi * j / 12), fz) for j in range(13)], (0, 0, 1.05), brown)
+        for x in (-3.9, -1.8): M.box(x - .05, x + .05, .45, 2.75, fz + .95, fz + 1.05, brown)
+        M.box(-3.95, -1.75, BASE, .45, fz, fz + 1.2, terr)
+        for k in range(3): M.box(-3.95, -1.75, BASE, .45 - (k + 1) * .15, fz + 1.2 + k * .3, fz + 1.5 + k * .3, terr)
+        M.box(-1.75, 3.9, .95, 1.0, fz + 1.15, fz + 1.2, rail); M.box(-1.75, 3.9, .5, .54, fz + 1.15, fz + 1.2, rail)
+        x = -1.75
+        while x <= 3.9: M.box(x, x + .04, .0, 1.0, fz + 1.15, fz + 1.2, rail); x += .5
+        pipe(-L / 2 + .2, H)
+        chimney(M, m, -2.4, -2.0, H + 1.2, H + 3.7)
+        other_sides(3, 3, left=False)
+    M.finish(res=1024 if i == 0 else 512, quality=74, ao_dist=1.6)
 
 # ---------------- wiatrak (elektrownia wiatrowa) ----------------
 def wiatrak():
