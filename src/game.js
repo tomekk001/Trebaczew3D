@@ -86,7 +86,15 @@ async function boot(saved){
   const PLAYS=AREAS.filter(a=>a.t==='lei:playground');
   const PLAC=AREAS.find(a=>a.t==='am:parking'&&a.pts[0][0]===-40&&a.pts[0][1]===-278);
   const CHURCH=BPOLY.find(b=>b.name.startsWith('Kościół')); let CHURCH_DOOR=null;
-  [COURT,PITCH2,TRACK].forEach(a=>{ const hs=a.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:a.pts,bb:bbox(a.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); });
+  // boisko szkolne obok przedszkola: obrót o 90° wokół środka + równy plac z niebieską bieżnią wokół (bieżnia z OSM zastąpiona)
+  const TRK={lane:1.0,n:4,gap:.7};
+  { const m0=mar(PITCH2.pts), c=Math.cos(m0.an), s=Math.sin(m0.an), hw=m0.d/2, hd=m0.w/2;
+    PITCH2.pts=[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]].map(([u,v])=>[m0.cx+u*c-v*s, m0.cz+u*s+v*c]);
+    const m=mar(PITCH2.pts), hs=PITCH2.pts.map(v=>hRaw(v[0],v[1])), h=hs.reduce((a,v)=>a+v,0)/hs.length, cc=Math.cos(m.an), ss=Math.sin(m.an);
+    const ow=m.w/2+1+TRK.gap+TRK.lane*TRK.n+1.5, od=m.d/2+1+TRK.gap+TRK.lane*TRK.n+1.5;
+    const pad=[[-ow,-od],[ow,-od],[ow,od],[-ow,od]].map(([u,v])=>[m.cx+u*cc-v*ss, m.cz+u*ss+v*cc]);
+    FLAT.push({p:PITCH2.pts,bb:bbox(PITCH2.pts),fe:0,h}); FLAT.unshift({p:pad,bb:bbox(pad),fe:0,h}); }
+  [COURT].forEach(a=>{ const hs=a.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:a.pts,bb:bbox(a.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); });
   const flatH=a=>FLAT.find(f=>f.p===a.pts).h;
   // orlik w Sadowcu: boisko z OSM najbliżej wsi Sadowiec-Wrzosy (spłaszczamy pod nie teren)
   let SAD_PITCH=null; if(typeof DATA_OSM!=='undefined'&&typeof DATA_X!=='undefined'){ const hp=DATA_X.P.find(q=>q[0]==='Sadowiec-Wrzosy'); let bd=600; if(hp) DATA_OSM.P.forEach(([sp,sf,f])=>{ if(sp!=='soccer'&&sp!=='basketball') return; const pts=[]; for(let i=0;i<f.length;i+=2) pts.push([f[i],f[i+1]]); const c=centroid(pts), dd=Math.hypot(c[0]-hp[2],c[1]-hp[3]); if(dd<bd){ bd=dd; SAD_PITCH={t:'lei:pitch',n:'Orlik Sadowiec',pts}; } });
@@ -684,7 +692,7 @@ async function boot(saved){
   const orlik=buildCourt(COURT,'tartan',{rot90:true,fence:4.2,hoops:true,benches:true,solid:true,gates:ORLIK_GATES});
   const ORLIK_RD=(()=>{ let best=null,bd=1e9; ROADS.forEach(r=>{ if(['track','rail','path','foot','footway','service'].includes(r.t)||!r.L)return; for(let d=0;d<r.L;d+=3){ const q=sampleLine(r.pts,r.len,d); const dd=Math.hypot(q.x-orlik.m.cx,q.z-orlik.m.cz); if(dd<bd){bd=dd;best=[q.x,q.z];} } }); return best||[orlik.m.cx,orlik.m.cz-40]; })();
   const ORLIK_DOOR=()=>{ if(!ORLIK_GAPS.length) return [orlik.m.cx,orlik.m.cz+30]; const t=typeof PARKD!=='undefined'&&PARKD.gate?PARKD.gate:centroid(PARK.pts); let b=ORLIK_GAPS[0]; ORLIK_GAPS.forEach(g=>{ if(Math.hypot(g.out[0]-t[0],g.out[1]-t[1])<Math.hypot(b.out[0]-t[0],b.out[1]-t[1])) b=g; }); return b.out; };
-  const pitch2=buildCourt(PITCH2,'school',{fence:4.0,hoops:true,fenceCol:0x6fb070});
+  const pitch2=buildCourt(PITCH2,'school',{rot90:(()=>{ const q=mar(PITCH2.pts); return q.w<q.d; })(),fence:4.0,hoops:true,fenceCol:0x6fb070});
   // przy boisku szkolnym (Zagrodowa): ławki od ulicy i siłownia pod chmurką (żółto-zielone urządzenia) - wg zdjęć
   { const m=pitch2.m, zr=ROADS.find(r=>r.n==='Zagrodowa'); const W2=L2W(m.cx,m.cz,-m.an); const fw=m.w+2, fd=m.d+2;
     let side=null,bd=1e9; [[0,fd/2+1.4],[0,-fd/2-1.4],[fw/2+1.4,0],[-fw/2-1.4,0]].forEach(p=>{ const q=W2(p[0],p[1]); const d=zr?roadDist(zr,q[0],q[1]):0; if(d<bd){bd=d;side=p;} });
@@ -695,8 +703,16 @@ async function boot(saved){
     const corner=W2(-fw/2-3.2,(along?side[1]:fd/2)*.0+fd/2-4); for(let i=0;i<4;i++){ const q=[corner[0]+Math.cos(-m.an)*0+(i-1.5)*2.4*Math.sin(m.an)*0, corner[1]]; const lp=[-fw/2-3.2,fd/2-3-i*2.6]; const qq=W2(lp[0],lp[1]); const e=new THREE.Group(); e.position.set(qq[0],H(qq[0],qq[1]),qq[1]); e.rotation.y=-m.an; scene.add(e);
       bx(e,.16,1.9,.16,0,0,0,i%2?grn:yel); bx(e,.9,.08,.08,0,1.75,0,gm); [-1,1].forEach(sd=>{ const arm=new THREE.Mesh(new THREE.BoxGeometry(.06,1.1,.06).translate(0,-.55,0),gm); arm.position.set(sd*.4,1.75,0); arm.rotation.x=.25; e.add(arm); bx(e,.3,.04,.18,sd*.4,.55,.2,i%2?yel:grn); });
       e.traverse(o=>o.castShadow=true); addSolid({x:qq[0],z:qq[1],hw:.6,hd:.5,c:1,s:0,r:.8}); } }
-  { const m=mar(TRACK.pts); const t=tex(512,64,(x,w,h)=>{ x.fillStyle='#b4553e'; x.fillRect(0,0,w,h); x.strokeStyle='#f1ede4'; x.lineWidth=2; for(let i=1;i<4;i++){x.beginPath();x.moveTo(0,i*h/4);x.lineTo(w,i*h/4);x.stroke();} });
-    const s=new THREE.Mesh(new THREE.PlaneGeometry(m.w,m.d).rotateX(-Math.PI/2),po(new THREE.MeshLambertMaterial({map:t}),2)); s.position.set(m.cx,flatH(TRACK)+.05,m.cz); s.rotation.y=-m.an; scene.add(s); }
+  // niebieska bieżnia lekkoatletyczna (4 tory) dookoła boiska szkolnego
+  { const m=pitch2.m, g=new THREE.Group(); g.position.set(m.cx,flatH(PITCH2),m.cz); g.rotation.y=-m.an; scene.add(g);
+    const ihw=m.w/2+1+TRK.gap, ihd=m.d/2+1+TRK.gap, r0=Math.min(ihw,ihd)*.75, cw=ihw-r0, cd=ihd-r0, N=12;
+    const loop=o=>{ const pts=[]; for(let q=0;q<4;q++){ const sx=(q===0||q===3)?1:-1, sz=(q<2)?1:-1; for(let k=0;k<=N;k++){ const a=q*Math.PI/2+k/N*Math.PI/2; pts.push([sx*cw+(r0+o)*Math.cos(a), sz*cd+(r0+o)*Math.sin(a)]); } } return pts; };
+    const ring=(o0,o1,y,mat)=>{ const A=loop(o0), B=loop(o1), pos=[]; for(let i=0;i<A.length;i++){ const j=(i+1)%A.length; [[A[i],B[i],B[j]],[A[i],B[j],A[j]]].forEach(t=>t.forEach(v=>pos.push(v[0],y,v[1]))); }
+      const ge=new THREE.BufferGeometry(); ge.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); ge.computeVertexNormals(); const me=new THREE.Mesh(ge,mat); me.receiveShadow=true; g.add(me); };
+    const W=TRK.lane*TRK.n, blue=po(new THREE.MeshLambertMaterial({color:0x2b62b8,side:THREE.DoubleSide}),2), white=po(new THREE.MeshLambertMaterial({color:0xf2f2ea,side:THREE.DoubleSide}),3);
+    ring(0,W,.05,blue); for(let i=0;i<=TRK.n;i++) ring(i*TRK.lane-.04,i*TRK.lane+.04,.06,white);
+    // linia startu/mety na prostej
+    const sl=new THREE.Mesh(new THREE.PlaneGeometry(W,.12).rotateX(-Math.PI/2),white); sl.position.set(ihw+W/2,.065,0); sl.rotation.y=0; g.add(sl); }
 
   /* ---------- powierzchnie utwardzone (parkingi, plac przy parku) ---------- */
   // przycinanie nawierzchni do krawędzi dróg (żadna kostka ani plac nie wchodzi na jezdnię)
