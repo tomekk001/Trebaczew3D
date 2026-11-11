@@ -84,6 +84,8 @@ def main():
     vals = [v for row in grid for v in row]; hp["nz"] = str(nzn)
     s = "".join(_b36(max(0, min(1295, round((v-base)*10)))) for v in vals)
     (SRC / "data_h.js").write_text(f'const HGRID={{x0:{hp["x0"]},z0:{hp["z0"]},step:{hp["step"]},nx:{hp["nx"]},nz:{hp["nz"]},base:{base},s:"{s}"}};\n')
+    if (RAW / "nmt_wcs10.txt").exists():   # dokładniejsza siatka 10 m z WCS GUGiK (GRID1) dla całego świata (nx=567, nz=627, z0=-2860): zastępuje powyższą (2 znaki base36 / punkt, 0,1 m)
+        (SRC / "data_h.js").write_text('const HGRID={x0:-3100,z0:-2860,step:10,nx:567,nz:627,base:175,s:"%s"};\n' % (RAW / "nmt_wcs10.txt").read_text().strip())
 
     # ---------- budynki ----------
     old, roof, bp = load_old()

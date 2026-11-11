@@ -23,7 +23,7 @@ async function boot(saved){
   function lineLen(pts){const len=[0];for(let i=1;i<pts.length;i++)len.push(len[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));return len;}
   function resample(pts,step){ const out=[pts[0]]; for(let i=1;i<pts.length;i++){ const a=pts[i-1],b=pts[i],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(L/step)); for(let k=1;k<=n;k++) out.push([a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n]); } return out; }
 
-  /* ---------- wysokości terenu (NMT GUGiK, siatka 20 m) ---------- */
+  /* ---------- wysokości terenu (NMT GUGiK, siatka 10 m WCS GUGiK) ---------- */
   const HG=HGRID, HB=205; const hv=new Float32Array(HG.nx*HG.nz); for(let i=0;i<hv.length;i++) hv[i]=parseInt(HG.s.substr(i*2,2),36)/10+HG.base-HB;
   function hRaw(x,z){ let fx=clamp((x-HG.x0)/HG.step,0,HG.nx-1.0001), fz=clamp((z-HG.z0)/HG.step,0,HG.nz-1.0001); const ix=fx|0, iz=fz|0, tx=fx-ix, tz=fz-iz, n=HG.nx; const a=hv[iz*n+ix], b=hv[iz*n+ix+1], c=hv[(iz+1)*n+ix], d=hv[(iz+1)*n+ix+1]; return a*(1-tx)*(1-tz)+b*tx*(1-tz)+c*(1-tx)*tz+d*tx*tz; }
   const FLAT=[];
@@ -1143,7 +1143,7 @@ async function boot(saved){
     { // narożnik szkoły przy (-116,-60): domknięcie płotu na zakręcie
       let vi=-1,vd=12; P.forEach((v,i)=>{ const d=Math.hypot(v[0]+116,v[1]+60); if(i<P.length-1&&d<vd){ vd=d; vi=i; } });
       if(vi>=0){ const v=P[vi], nb=[P[(vi+1)%(P.length-1)],P[(vi-1+P.length-1)%(P.length-1)]]; nb.forEach(o=>{ const l=Math.hypot(o[0]-v[0],o[1]-v[1]); if(l<1) return; const tx=(o[0]-v[0])/l, tz=(o[1]-v[1])/l; let nx=-tz, nz=tx; if((kc[0]-v[0])*nx+(kc[1]-v[1])*nz<0){ nx=-nx; nz=-nz; } const ang=Math.atan2(tz,tx);
-          for(let u=0;u<8;u+=2){ const c=[v[0]+nx*.8+tx*(u+1),v[1]+nz*.8+tz*(u+1)]; if(segs.some(q=>Math.hypot(q[0]-c[0],q[1]-c[1])<1.4)) continue; segs.push([c[0],c[1],ang,2]); posts.push([v[0]+nx*.8+tx*u,v[1]+nz*.8+tz*u,ang]); } }); } }
+          for(let u=0;u<8;u+=2){ const c=[v[0]+nx*2.2+tx*(u+1),v[1]+nz*2.2+tz*(u+1)]; if(segs.some(q=>Math.hypot(q[0]-c[0],q[1]-c[1])<3.2)||blocked(c[0],c[1],0,true)) continue; segs.push([c[0],c[1],ang,2]); posts.push([v[0]+nx*2.2+tx*u,v[1]+nz*2.2+tz*u,ang]); } }); } }
     const dm=new THREE.Object3D();
     { const ip=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1.5).translate(0,.25+.75,0),im,Math.max(1,segs.length)), pl=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.3,.22).translate(0,.15,0),plm,Math.max(1,segs.length));
       segs.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,-q[2],0); dm.scale.set(q[3]+.04,1,1); dm.updateMatrix(); ip.setMatrixAt(i,dm.matrix); pl.setMatrixAt(i,dm.matrix); addSolid({x:q[0],z:q[1],hw:q[3]/2,hd:.1,c:Math.cos(q[2]),s:Math.sin(q[2]),r:q[3]/2+.3}); }); ip.count=pl.count=segs.length; scene.add(ip,pl);
@@ -1965,6 +1965,7 @@ async function boot(saved){
   const poiList=document.getElementById('poiList');
   POIS.forEach(p=>{ const b=document.createElement('button'); b.innerHTML=`<i style="background:${p.c}"></i>`; b.append(p.n); b.addEventListener('click',()=>{ goTo(p); toggleMap(false); }); poiList.append(b); });
   function goTo(p){ if(st.car)exitCar(true);
+    { const TPX=[[/^Szkoła Podstawowa/,-141,-46],[/^Apteka Magnolia/,-112,-206],[/^Biblioteka/,-125,-127],[/^AUTOPART/,-1146,678],[/^Biedronka/,-2326,1001],[/^Euforia/,-135,-340]]; const e=TPX.find(t=>t[0].test(p.n)); if(e){ const [,x,z]=e; let sp=null; for(let r=0;r<30&&!sp;r+=1){ for(let k=0;k<(r?12:1);k++){ const an=k*.5236, tx=x+Math.cos(an)*r, tz=z+Math.sin(an)*r; if(!blocked(tx,tz,.5)){ sp=[tx,tz]; break; } } } sp=sp||[x,z]; st.x=sp[0]; st.z=sp[1]; st.vx=st.vz=0; st.yaw=Math.atan2(sp[0]-p.x,sp[1]-p.z); st.face=st.yaw+Math.PI; st.pitch=.2; return; } }
     const bb=p.n==='Lewiatan'?B_LEW:p.n==='Żabka'?B_ZAB:null; if(bb&&bb.front){ const f=bb.front; st.x=f.x+f.nx*11; st.z=f.z+f.nz*11; st.vx=st.vz=0; st.yaw=Math.atan2(f.nx,f.nz); st.face=st.yaw+Math.PI; st.pitch=0.2; return; } const nr=nearestRoad(p.x,p.z,r=>r.t!=='track'); let dir=[0,1];
     if(nr.r){ const a=nr.r.pts[nr.seg],b=nr.r.pts[nr.seg+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz; const t=clamp(((p.x-a[0])*dx+(p.z-a[1])*dz)/L,0,1); const qx=a[0]+dx*t-p.x, qz=a[1]+dz*t-p.z, l=Math.hypot(qx,qz)||1; dir=[qx/l,qz/l]; }
     let best=null; for(let r=6;r<40&&!best;r+=2){ for(let k=0;k<16;k++){ const an=Math.atan2(dir[1],dir[0])+(k%2?1:-1)*Math.ceil(k/2)*0.35; const x=p.x+Math.cos(an)*r, z=p.z+Math.sin(an)*r; if(!blocked(x,z,.6)){ best=[x,z]; break; } } }
