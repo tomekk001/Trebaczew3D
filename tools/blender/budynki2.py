@@ -200,27 +200,81 @@ def osp():
 
 # ---------------- Żabka (budynek przy DK42) ----------------
 def zabka2():
-    M = Model('zabka2'); L, D = 14.5, 13.5; G1 = 3.3; m = mats(M, '#8f9397', '#33373b', '#2c2f32', '#6e7174', '#1e2124')
-    white = M.mat('upper', '#ecedeb', noise=.03); green = M.mat('zgreen', '#1d8f3e'); dk = M.mat('dkcol', '#4a4e52', noise=.04)
-    seam = M.mat('seam', '#33373b', brick=(4, .35, '#24272a', .01))
+    """Żabka wg zdjęć (Street View, wrz 2024): parter z szarym tynkiem i zielonym pasem, ciemny słup, balkon ze szklaną balustradą,
+    nad nim dach dwuspadowy z blachy na rąbek stojący (kalenica wzdłuż frontu) przecięty płaskim, wyższym prostopadłościanem z dużym oknem."""
+    M = Model('zabka2'); L, D = 14.5, 13.5; G1 = 3.3
+    m = mats(M, '#a9acad', '#3d4348', '#f2f2f0', '#6e7174', '#1e2124')
+    up = M.mat('upper', '#c3c5c5', noise=.03); dk = M.mat('dkcol', '#44484c', noise=.03); green = M.mat('zgreen', '#1d8f3e')
+    seam = M.mat('seam', '#3a4046', brick=(.5, 80, '#23272b', .035)); steel = M.mat('steel', '#c3c8cc'); bglass = M.mat('bglass', '#a9c3cf', noise=.05)
+    wood = M.mat('wood2', '#8a4a2e', brick=(.12, 80, '#5c3220', .02)); sky = M.mat('sky', '#cfd8de', noise=.04); white = m['white']; frame = m['frame']; glass = m['glass']
     walls(M, m, L, D, G1, plh=.35)
-    M.box(-L / 2 - .02, -L / 2 + .7, 0, G1, D / 2 - .7, D / 2 + .02, dk)
-    gx0, gx1 = -L * .28, L * .28
-    M.box(gx0, gx1, .3, 2.75, D / 2, D / 2 + .05, m['glass'])
-    x = gx0
-    while x <= gx1 + .01: M.box(x - .05, x + .05, .3, 2.75, D / 2 + .05, D / 2 + .1, m['frame']); x += (gx1 - gx0) / 4
-    M.box(gx0, gx1, 1.05, 1.1, D / 2 + .05, D / 2 + .1, m['frame']); M.box(gx0 - .1, gx1 + .1, 2.75, 2.85, D / 2, D / 2 + .1, m['frame'])
-    M.box(-L * .45, L * .2, 2.85, 3.5, D / 2 + .1, D / 2 + .5, green)
-    UZ0, UZ1 = -D / 2, D / 2 - 1.5; G2 = 2.7
-    M.box(-L / 2 + .3, L / 2 - .3, G1, G1 + G2, UZ0, UZ1, white)
-    gable(M, -L / 2 + .3, L / 2 - .3, UZ0, UZ1, G1 + G2, 4.6, seam, ov=.45, along='x') if False else gable(M, -L / 2 + .3, L / 2 - .3, UZ0, UZ1 + .3, G1 + G2, 4.4, seam, ov=.45, along='z')
-    gable_ends(M, -L / 2 + .3, L / 2 - .3, UZ0, UZ1, G1 + G2, 4.4, white, along='z')
-    balcony(M, m, 0, L, UZ1, G1 + .02, 1.5, 'glass')
-    M.box(-1.6, 1.6, G1 + .2, G1 + 2.5, UZ1, UZ1 + .05, m['frame']); M.box(-1.5, 1.5, G1 + .3, G1 + 2.4, UZ1 + .05, UZ1 + .08, m['glass']); M.box(-.03, .03, G1 + .3, G1 + 2.4, UZ1 + .08, UZ1 + .1, m['frame'])
-    win(M, 0, G1 + G2 + 2.0, UZ1, .5, .5, m['frame'], m['glass'])
-    for z in (-3.5, 0, 3.0): win(M, L / 2, 1.6, z, 1.0, 1.2, m['frame'], m['glass'], '+x'); win(M, L / 2 - .3, G1 + 1.4, z - .5, 1.0, 1.1, m['frame'], m['glass'], '+x')
+    FZ = D / 2; UZ1 = FZ - 2.0                      # tył balkonu / front wyższej kondygnacji
+    # --- parter: przeszklenie sklepu, drzwi, okno z roletą, lampa, rura
+    gx0, gx1 = .9, 5.3
+    M.box(gx0, gx1, .15, 2.3, FZ, FZ + .05, glass)
+    for x in (gx0, 2.7, 3.45, 4.45, gx1): M.box(x - .05, x + .05, .1, 2.4, FZ + .04, FZ + .1, frame)
+    M.box(gx0 - .05, gx1 + .05, 2.3, 2.4, FZ + .04, FZ + .1, frame); M.box(gx0, gx1, 1.95, 2.0, FZ + .04, FZ + .09, frame); M.box(gx0 - .05, gx1 + .05, .05, .15, FZ + .04, FZ + .1, frame)
+    M.box(3.5, 4.4, .12, .16, FZ + .03, FZ + .12, m['dark']); M.box(4.1, 4.16, .9, 1.3, FZ + .1, FZ + .14, m['metal'])   # próg i uchwyt
+    M.box(-5.1, -3.2, 1.45, 2.3, FZ, FZ + .05, m['dark']); M.box(-5.2, -3.1, 1.4, 1.45, FZ, FZ + .1, m['sill'])        # okno z roletą
+    for y in (1.6, 1.8, 2.0, 2.2): M.box(-5.05, -3.25, y, y + .03, FZ + .05, FZ + .07, m['metal'])
+    M.cyl(-5.7, 2.65, 2.9, FZ + .06, .16, .16, 12, m['white'], axis='y')                                                  # lampa-krążek
+    M.box(-L / 2 + .45, -L / 2 + .6, BASE + 1.0, G1 - .4, FZ + .02, FZ + .17, dk)                                          # rura spustowa
+    # --- słup przy narożniku, balkon, fasada ciemna, zielony pas
+    px0, px1 = -3.3, -2.3
+    M.box(px0, px1, BASE, 6.2, FZ - .7, FZ + .45, dk); M.box(px0 - .1, px1 + .15, 6.2, 6.35, FZ - .8, FZ + .55, dk)
+    bx0, bx1 = -2.9, L / 2 + .4
+    M.box(bx0, bx1, G1, G1 + .25, UZ1, FZ + .45, dk); M.box(bx0, bx1, G1 - .45, G1 + .25, FZ + .22, FZ + .45, dk)
+    M.box(.3, L / 2 + .45, 2.5, G1, FZ + .45, FZ + .62, green)                                                           # pas pod szyld (napis w grze)
+    M.box(bx0 + .02, bx1 - .02, G1 + .25, G1 + 1.3, FZ + .38, FZ + .41, bglass); M.box(bx0, bx1, G1 + 1.3, G1 + 1.35, FZ + .35, FZ + .43, steel)
+    x = bx0 + .05
+    while x < bx1: M.box(x - .025, x + .025, G1 + .25, G1 + 1.35, FZ + .33, FZ + .43, steel); x += 1.42
+    M.box(bx1 - .03, bx1 - .01, G1 + .25, G1 + 1.3, UZ1, FZ + .4, bglass); M.box(bx1 - .06, bx1 + .02, G1 + 1.3, G1 + 1.35, UZ1, FZ + .43, steel)
+    # --- wyższy prostopadłościan (płaski dach), duże okno, brązowa listwa
+    cx0, cx1, cz0, cz1, ct = -2.6, 2.2, -3.0, UZ1, G1 + .25 + 3.2
+    M.box(cx0, cx1, G1 + .25, ct, cz0, cz1, up); M.box(cx0 - .12, cx1 + .12, ct, ct + .14, cz0 - .12, cz1 + .12, dk)
+    wx0, wx1 = -1.45, .87
+    M.box(wx0, wx1, G1 + .35, G1 + 2.15, cz1, cz1 + .05, glass)
+    for x in (wx0, wx0 + (wx1 - wx0) / 3, wx0 + 2 * (wx1 - wx0) / 3, wx1): M.box(x - .05, x + .05, G1 + .3, G1 + 2.25, cz1 + .04, cz1 + .1, dk)
+    M.box(wx0 - .05, wx1 + .05, G1 + 2.15, G1 + 2.25, cz1 + .04, cz1 + .1, dk); M.box(wx0 - .05, wx1 + .05, G1 + .3, G1 + .4, cz1 + .04, cz1 + .1, dk)
+    M.cyl(1.4, G1 + 1.55, G1 + 1.6, cz1 + .04, .15, .15, 12, m['white'], axis='y') if False else M.box(1.2, 1.5, G1 + 1.6, G1 + 1.9, cz1, cz1 + .05, m['white'])
+    M.box(cx0 - .05, cx0, G1 + .4, ct - .3, 2.3, cz1 - .1, wood)
+    # --- dach dwuspadowy (kalenica z=0), skrzydło zachodnie niżej do okapu, wschodnie nad balkonem
+    Hr = 7.2; p = (Hr - (G1 + .35)) / (FZ + .35)
+    xa, xb = -L / 2 - .4, L / 2 + .4; zb = -FZ - .45; yb = Hr + p * zb
+    def plate(x0, x1, zf, yf):
+        M.prism([(x0, yf, zf), (x0, Hr, 0), (x0, yb, zb), (x0, yb - .2, zb), (x0, Hr - .2, 0), (x0, yf - .2, zf)], (x1 - x0, 0, 0), seam)
+    plate(xa, cx0, FZ + .35, G1 + .35); plate(cx1, xb, UZ1 + .6, Hr - p * (UZ1 + .6))
+    M.prism([(xa, Hr, 0), (xa, yb, zb), (xa, yb - .2, zb), (xa, Hr - .2, 0)], (cx0 - xa, 0, 0), seam)        # tył dachu (cała szerokość z klinami)
+    M.prism([(cx0, Hr, 0), (cx0, yb, zb), (cx0, yb - .2, zb), (cx0, Hr - .2, 0)], (cx1 - cx0, 0, 0), seam)
+    M.prism([(cx1, Hr, 0), (cx1, yb, zb), (cx1, yb - .2, zb), (cx1, Hr - .2, 0)], (xb - cx1, 0, 0), seam)
+    M.box(xa, xb, Hr - .05, Hr + .1, -.18, .18, dk)                                                                  # gąsior
+    for (x0, x1, zf) in ((xa, cx0, FZ + .35), (cx1, xb, UZ1 + .6)):                                                   # rynny okapowe
+        M.cyl(Hr - p * zf - .26, x0, x1, zf + .06, .07, .07, 8, dk, axis='x')
+    # skosy szczytowe (tynk) pod połaciami
+    def gable_wall(x, zf, yfront, col):
+        M.prism([(x, G1, -FZ + .1), (x, G1, zf), (x, yfront, zf), (x, Hr - .25, 0), (x, yb + .15, zb + .4)], (.02, 0, 0), col)
+    gable_wall(-L / 2 + .02, FZ + .1, G1 + .5, up); gable_wall(L / 2 - .04, UZ1 + .5, Hr - p * (UZ1 + .5) - .25, up)
+    # okna dachowe (Velux) na połaciach frontowych
+    def skylight(x0, x1, z0, z1):
+        pts = [(x0, Hr - p * z0 + .05, z0), (x1, Hr - p * z0 + .05, z0), (x1, Hr - p * z1 + .05, z1), (x0, Hr - p * z1 + .05, z1)]
+        M.prism(pts, (0, .08, 0), dk)
+        q = [(x0 + .12, Hr - p * (z0 + .12) + .14, z0 + .12), (x1 - .12, Hr - p * (z0 + .12) + .14, z0 + .12), (x1 - .12, Hr - p * (z1 - .12) + .14, z1 - .12), (x0 + .12, Hr - p * (z1 - .12) + .14, z1 - .12)]
+        M.prism(q, (0, .03, 0), sky)
+    skylight(-5.3, -4.0, 3.4, 4.9); skylight(3.1, 4.2, 1.6, 3.0)
+    # wentylacje na dachu
+    M.cyl(-1.2, Hr, Hr + .9, -.9, .07, .07, 8, dk); M.cyl(-.6, Hr, Hr + .7, -.9, .06, .06, 8, dk)
+    # --- ściana zachodnia: okna szczytu z balkonem, roleta, drzwi zaplecza, klimatyzatory
+    wx = -L / 2
+    for z in (-2.4, 1.6): M.box(wx - .05, wx, G1 + .35, G1 + 2.3, z - .55, z + .55, frame); M.box(wx - .06, wx - .04, G1 + .4, G1 + 2.25, z - .5, z + .5, glass)
+    M.box(wx - 1.0, wx, G1, G1 + .22, -4.2, 4.3, dk); M.box(wx - .98, wx - .95, G1 + .22, G1 + 1.27, -4.2, 4.3, bglass); M.box(wx - 1.0, wx - .93, G1 + 1.27, G1 + 1.32, -4.25, 4.35, steel)
+    M.box(wx - .05, wx, 1.4, 2.3, -.5, 2.5, m['dark']); M.box(wx - .08, wx, 1.35, 1.4, -.55, 2.55, m['sill'])
+    M.box(wx - .06, wx, 0, 2.2, -5.4, -4.4, m['dark']); M.box(wx - .08, wx, 2.2, 2.3, -5.5, -4.3, frame)
+    M.box(wx - .35, wx, 1.9, 2.4, -3.6, -3.0, white); M.box(wx - .3, wx, 1.85, 2.3, -2.9, -2.3, white)
+    # --- ściana wschodnia
+    for z in (-3.5, 0, 3.0): win(M, L / 2, 1.6, z, 1.0, 1.2, frame, glass, '+x', m['sill'])
     M.box(L / 2 - .02, L / 2 + .05, 0, 2.3, -5.5, -4.4, M.mat('sdoor', '#3a3e42'))
-    M.finish(res=512, quality=72, ao_dist=1.6)
+    win(M, L / 2, G1 + 1.4, -1.0, 1.0, 1.1, frame, glass, '+x')
+    M.finish(res=1024, quality=76, ao_dist=1.6)
 
 # ---------------- przedszkole (3 bryły wzdłuż Szkolnej) ----------------
 def przedszkole(i):

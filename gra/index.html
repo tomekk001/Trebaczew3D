@@ -1366,7 +1366,7 @@ async function boot(saved){
     // pylon z szyldem przy drodze
     const pole=new THREE.Group(); pole.position.set(L/2+4.5,0,FZ+6.5); g.add(pole); bx(pole,.12,5.2,.12,0,0,0,new THREE.MeshLambertMaterial({color:0x3c4146}));
     const pTex=tex(256,128,(x,w,h)=>{ x.fillStyle='#ffffff'; x.fillRect(0,0,w,h); x.fillStyle='#1d8f3e'; rr(x,6,6,w-12,h-12,46); x.fill(); x.fillStyle='#fff'; x.font='italic 800 64px Barlow, Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('żabka',w/2,h/2); });
-    { const keepZ=new Set([zSign]); swapIn(g,'zabka2',g.children.filter(c=>!keepZ.has(c)),{sx:L/14.5,sz:D/13.5,low,L,D,after:()=>{ zSign.position.set(-L*.125,3.175,FZ+.53); zSign.scale.set(.62/.82,.86,1); }}); }
+    { const keepZ=new Set([zSign]); swapIn(g,'zabka2',g.children.filter(c=>!keepZ.has(c)),{sx:L/14.5,sz:D/13.5,low,L,D,after:()=>{ zSign.position.set(4.0*L/14.5,2.9,FZ+.64); zSign.scale.set(.622,1.067,1); }}); }
     const pM=new THREE.MeshLambertMaterial({map:pTex,emissive:0x000000}); brandLights.push(pM); bx(pole,1.8,.9,.12,0,4.3,0,green); pl(pole,1.8,.9,0,4.75,.07,pM); pl(pole,1.8,.9,0,4.75,-.07,pM,Math.PI);
     bx(pole,1.6,.45,.06,0,3.3,0,new THREE.MeshLambertMaterial({color:0xf2f2f2}));
     g.traverse(o=>{ if(o.isMesh&&o.geometry.type!=='PlaneGeometry'&&o.geometry.type!=='ShapeGeometry')o.castShadow=true; });
@@ -1430,7 +1430,7 @@ async function boot(saved){
     addSolid({x,z,hw:W/2,hd:.45,c:Math.cos(-ry),s:Math.sin(-ry),r:2.3});
     // wg kolizji: obróć prostokąt zgodnie z orientacją
     LOCKERS.push({x,z,n}); }
-  DATA.N.filter(n=>n[0]==='parcel_locker').forEach(n=>{ const d=Math.hypot(n[2]-B_LEW.x,n[3]-B_LEW.z), dz=Math.hypot(n[2]-B_ZAB.x,n[3]-B_ZAB.z); if(d<40&&LEW_LOT.locker){ const k=LEW_LOT.locker; locker(k.x,k.z,'przy Lewiatanie',null,false,k.ry); return; } if(dz<40&&B_ZAB.front){ const f=B_ZAB.front, tx=-f.nz, tz=f.nx; /* z dala od drzwi Żabki - przy narożniku */ const x=f.x+f.nx*3.2+tx*(-f.len/2+1.2), z=f.z+f.nz*3.2+tz*(-f.len/2+1.2); locker(x,z,'ul. Wyzwolenia, przy Żabce',DK,true); return; } locker(n[2],n[3],d<40?'przy Lewiatanie':dz<40?'ul. Wyzwolenia, przy Żabce':'Trębaczew',dz<40?DK:null,dz<40); });
+  DATA.N.filter(n=>n[0]==='parcel_locker').forEach(n=>{ const d=Math.hypot(n[2]-B_LEW.x,n[3]-B_LEW.z), dz=Math.hypot(n[2]-B_ZAB.x,n[3]-B_ZAB.z); if(d<40&&LEW_LOT.locker){ const k=LEW_LOT.locker; locker(k.x,k.z,'przy Lewiatanie',null,false,k.ry); return; } if(dz<40&&B_ZAB.front){ const f=B_ZAB.front, tx=-f.nz, tz=f.nx; /* z dala od drzwi Żabki - przy narożniku */ const x=-76, z=43; const q0=nearestRoad(x,z,r=>r===DK), q1=q0.r.pts[q0.seg], q2=q0.r.pts[q0.seg+1]; const ddx=q2[0]-q1[0], ddz=q2[1]-q1[1], ll=Math.hypot(ddx,ddz)||1, tt=clamp(((x-q1[0])*ddx+(z-q1[1])*ddz)/(ll*ll),0,1); locker(x,z,'ul. Wyzwolenia, przy Żabce',DK,true,Math.atan2(q1[0]+ddx*tt-x,q1[1]+ddz*tt-z)+Math.PI/2); return; } locker(n[2],n[3],d<40?'przy Lewiatanie':dz<40?'ul. Wyzwolenia, przy Żabce':'Trębaczew',dz<40?DK:null,dz<40); });
 
   await LP(34);
   /* ---------- boiska ---------- */
@@ -2330,7 +2330,7 @@ async function boot(saved){
     {n:'Lewiatan',p:bc('Lewiatan'),c:'#2f8de4',ic:'$'},
     {n:'Żabka',p:bc('Żabka'),c:'#3fa34d',ic:'$'},
     {n:'Paczkomat przy Lewiatanie',p:[-121,7],c:'#ffcd00',h:4,ic:'P'},
-    {n:'Paczkomat · Wyzwolenia (Żabka)',p:[-75,46],c:'#ffcd00',h:4,ic:'P'},
+    {n:'Paczkomat · Wyzwolenia (Żabka)',p:[-76,43],c:'#ffcd00',h:4,ic:'P'},
     {n:'Euforia Trębaczew',p:[-151,-350],c:'#f07a1f',ic:'R'},
     {n:'Apteka Magnolia',p:[-94,-201],c:'#3fa34d',ic:'+'},
     {n:'Ośrodek zdrowia',p:[-99,-213],c:'#d0312d',ic:'+'},
@@ -3559,7 +3559,7 @@ async function boot(saved){
   function mietekMove(){ return; const n=NPC.find(q=>q.id==='mietek'); if(!n)return; n.sol.off=true; const f=B_LEW.front; const nx=n.x+f.nx*2.2, nz=n.z+f.nz*2.2; n.x=nx; n.z=nz; n.p.position.set(nx,H(nx,nz)+.1,nz); n.tag.position.set(nx,H(nx,nz)+2.35,nz); }
   if(NQ.mietek==='koniec') mietekMove();
   // ---------- punkt informacyjny przy starcie: cel gry, pierwsza misja, jak zarabiać ----------
-  const INFO=(()=>{ const fx=-Math.sin(SPAWN.yaw), fz=-Math.cos(SPAWN.yaw); const a=[SPAWN.x+fx*2.5+fz*4.5,SPAWN.z+fz*2.5-fx*4.5]; const p=npcFind(a[0],a[1],1.3,600); const g=new THREE.Group(); g.position.set(p[0],H(p[0],p[1]),p[1]); g.rotation.y=Math.atan2(SPAWN.x-p[0],SPAWN.z-p[1]); scene.add(g);
+  const INFO=(()=>{ const fx=-Math.sin(SPAWN.yaw), fz=-Math.cos(SPAWN.yaw); const a=[SPAWN.x+fx*2.5+fz*4.5,SPAWN.z+fz*2.5-fx*4.5]; const p=[-78,57]; const g=new THREE.Group(); g.position.set(p[0],H(p[0],p[1]),p[1]); g.rotation.y=Math.atan2(SPAWN.x-p[0],SPAWN.z-p[1]); scene.add(g);
     const blue=new THREE.MeshLambertMaterial({color:0x1d5fae}), wood=new THREE.MeshLambertMaterial({color:0x5b3e28}), roof=new THREE.MeshLambertMaterial({color:0x2a2c30});
     [-.9,.9].forEach(o=>bx(g,.12,2.6,.12,o,0,0,wood)); bx(g,2.1,1.3,.1,0,1.0,0,wood); bx(g,2.4,.08,.7,0,2.6,0,roof);
     pl(g,1.9,1.1,0,1.65,.06,new THREE.MeshLambertMaterial({map:tex(256,148,(x,w,h)=>{ x.fillStyle='#f4f1e6'; x.fillRect(0,0,w,h); x.fillStyle='#1d5fae'; x.fillRect(0,0,w,30); x.fillStyle='#fff'; x.font='700 20px Barlow, Arial'; x.fillText('INFORMACJA · TRĘBACZEW',10,22); x.fillStyle='#2a2c30'; x.font='15px Barlow, Arial'; ['Misje, mapa wsi, porady','Podejdź i naciśnij E'].forEach((t,i)=>x.fillText(t,12,58+i*24)); x.fillStyle='#6fa046'; x.fillRect(150,40,90,96); x.fillStyle='#d8d4c8'; x.fillRect(150,84,90,6); x.fillRect(190,40,6,96); x.fillStyle='#c0272c'; x.beginPath(); x.arc(176,70,5,0,7); x.fill(); }),emissive:0x202020}));
@@ -5991,5 +5991,5 @@ hot && hot.ready ? hot.ready(boot) : boot(hot && hot.data || {});
 })();
 
 </script>
-<script src="models_in.js?v=d74176d8" async></script>
+<script src="models_in.js?v=e31dbddf" async></script>
 </html>
