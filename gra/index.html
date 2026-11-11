@@ -923,7 +923,7 @@ async function boot(saved){
   const scene=new THREE.Scene();
   const SUNDIR=new THREE.Vector3(-0.62,0.42,0.66).normalize();
   const DAY={hor:0xc3daee,zen:0x2a63c4,fog:0xc2d4e4,hemiS:0xcfe2ff,hemiG:0x7a735c,hemi:0.62,sun:1.15,sunC:0xfff0d8,bloom:0.3,exp:0.95}; const HK=PBR?.62:1;
-  const NIGHT={hor:0x2a2f4a,zen:0x05070f,fog:0x141826,hemiS:0x40507a,hemiG:0x10121a,hemi:0.32,sun:0.18,sunC:0x9fb4ff,bloom:1.0,exp:1.25};
+  const NIGHT={hor:0x232a48,zen:0x04060e,fog:0x121726,hemiS:0x4a5c8c,hemiG:0x12141c,hemi:0.4,sun:0.18,sunC:0x9fb4ff,bloom:0.8,exp:1.02};
   scene.fog=new THREE.Fog(DAY.fog,190,1000);
   const camera=new THREE.PerspectiveCamera(60,1,0.25,4000);
   const hemi=new THREE.HemisphereLight(DAY.hemiS,DAY.hemiG,DAY.hemi); scene.add(hemi);
@@ -2388,6 +2388,10 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const headIM=new THREE.InstancedMesh(new THREE.BoxGeometry(.9,.18,.38),headMat,lamps.length);
   lamps.forEach((l,i)=>{ dum.rotation.set(0,-l.a,0); dum.position.set(l.x,l.y,l.z); dum.scale.set(1,1,1); dum.updateMatrix(); poleIM.setMatrixAt(i,dum.matrix); dum.position.y=l.y+8; dum.updateMatrix(); headIM.setMatrixAt(i,dum.matrix); addSolid({x:l.x,z:l.z,hw:.2,hd:.2,c:1,s:0,r:.4}); });
   scene.add(poleIM,headIM);
+  /* plamy światła pod latarniami (widoczne po zmroku na całej mapie, bez dodatkowych świateł) */
+  const LAMPGLOW=(()=>{ const t=tex(128,128,(x,w,h)=>{ const g=x.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2); g.addColorStop(0,'rgba(255,214,150,1)'); g.addColorStop(.35,'rgba(255,196,120,.5)'); g.addColorStop(1,'rgba(255,180,100,0)'); x.fillStyle=g; x.fillRect(0,0,w,h); }); t.__nonm=1;
+    const im=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:true,polygonOffset:true,polygonOffsetFactor:-6,polygonOffsetUnits:-12}),Math.max(1,lamps.length));
+    lamps.forEach((l,i)=>{ const ox=l.x+Math.sin(l.a)*1.2, oz=l.z-Math.cos(l.a)*1.2; dum.position.set(ox,H(ox,oz)+.22,oz); dum.rotation.set(0,0,0); dum.scale.set(19,1,19); dum.updateMatrix(); im.setMatrixAt(i,dum.matrix); }); im.count=lamps.length; im.renderOrder=3; im.visible=false; scene.add(im); return im; })();
   const lampPool=[]; for(let i=0;i<8;i++){ const pl=new THREE.PointLight(0xffc070,0,26,1.8); scene.add(pl); lampPool.push(pl); }
 
   /* ---------- etykiety ---------- */
@@ -2769,7 +2773,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   bCam.textContent='Kamera: '+MODES[st.mode]; bCam.addEventListener('click',cycleCam);
   function applyNight(){ const P=st.night?NIGHT:DAY; skyU.hor.value.set(P.hor); skyU.zen.value.set(P.zen); skyU.night.value=st.night?1:0; scene.fog.color.set(P.fog); hemi.color.set(P.hemiS); hemi.groundColor.set(P.hemiG); hemi.intensity=P.hemi*HK; sun.intensity=P.sun; sun.color.set(P.sunC);
     if(bloom)bloom.strength=P.bloom; if(grade){grade.uniforms.exposure.value=P.exp; grade.uniforms.night.value=st.night?1:0;}
-    headMat.emissive.set(st.night?0xffc070:0x000000); brandLights.forEach(m=>m.emissive.set(st.night?0x777777:0x000000)); PARK.globeMat.emissive.set(st.night?0xfff0c0:0x000000); playerLight.intensity=st.night?.9:0; winMat.emissive.set(st.night?0x553a12:0x000000); headM.emissive.set(st.night?0xfff2c0:0x000000); tailM.emissive.set(st.night?0x880000:0x220000);
+    headMat.emissive.set(st.night?0xffc070:0x000000); brandLights.forEach(m=>m.emissive.set(st.night?0x777777:0x000000)); PARK.globeMat.emissive.set(st.night?0xfff0c0:0x000000); playerLight.intensity=st.night?.22:0; winMat.emissive.set(st.night?0x553a12:0x000000); headM.emissive.set(st.night?0xfff2c0:0x000000); tailM.emissive.set(st.night?0x880000:0x220000);
     wins.forEach((w,i)=>winIM.setColorAt(i,col.set(st.night?(winLit[i]?'#ffcf7a':'#1a222c'):'#4a5866'))); winIM.instanceColor.needsUpdate=true;
     polyWinIMs.forEach(im=>{ for(let i=0;i<im.count;i++) im.setColorAt(i,col.set(st.night?(i%3?'#ffd98a':'#1a222c'):'#4a5866')); im.instanceColor.needsUpdate=true; });
     bNight.textContent=st.night?'Pora dnia: wieczór':'Pora dnia: dzień'; }
@@ -3206,13 +3210,13 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const pMat=new THREE.PointsMaterial({color:0xaabbcc,size:.12,map:flakeTex,transparent:true,opacity:.6,depthWrite:false}); const PARTS=new THREE.Points(pGeo,pMat); PARTS.frustumCulled=false; scene.add(PARTS);
   const cA=new THREE.Color(), cB=new THREE.Color();
   function lerpHex(a,b,t){ cA.set(a); cB.set(b); return cA.lerp(cB,t); }
-  function envUpdate(dt){ if(ENV.fixed) ENV.time=12; else ENV.time=(ENV.time+dt*ENV.speed+24)%24; if(ENV.time>18.2||ENV.time<6) ENV.time=6; /* tylko dzień i wieczór - bez nocy */ const a=(ENV.time-6)/12*Math.PI; const se=Math.sin(a); const k=clamp((se+0.08)/0.33,0,1); const dusk=se>-0.12?clamp(1-Math.abs(se)/0.32,0,1):0;
-    if(se>-0.05) SUNDIR.set(Math.cos(a)*0.75,Math.max(0.06,se*0.8),0.55).normalize(); else SUNDIR.set(-0.4,0.6,-0.5).normalize(); skyU.sunDir.value.copy(SUNDIR);
+  function envUpdate(dt){ /* pełna doba: w grze samotnej noc (22-4:30) płynie 2,5x szybciej; w wieloosobowej czas liczony ze wspólnego zegara, więc wszyscy mają tę samą porę */ if(ENV.fixed) ENV.time=((Date.now()/1000)*ENV.speed+14)%24; else ENV.time=(ENV.time+dt*ENV.speed*((ENV.time>22||ENV.time<4.5)?2.5:1)+24)%24; const a=(ENV.time-6)/12*Math.PI; const se=Math.sin(a); const k=clamp((se+0.08)/0.33,0,1); const dusk=se>-0.12?clamp(1-Math.abs(se)/0.32,0,1):0;
+    if(se>-0.05) SUNDIR.set(Math.cos(a)*0.75,Math.max(0.06,se*0.8),0.55).normalize(); else { const ma=a-Math.PI; SUNDIR.set(Math.cos(ma)*0.6,Math.max(0.22,Math.sin(ma)*0.7),-0.5).normalize(); } const moon=clamp((-0.05-se)/0.2,0,1); skyU.sunDir.value.copy(SUNDIR);
     const w=ENV.weather; if(!ENV.W){ ENV.W=[0,0,0,0]; ENV.W[w]=1; } for(let i=0;i<4;i++) ENV.W[i]+=((i===w?1:0)-ENV.W[i])*Math.min(1,dt/7); const Wt=ENV.W, wet=1-Wt[0]; const wl=Wt[0]+Wt[1]*.62+Wt[2]*.75+Wt[3]*.85;
     skyU.hor.value.copy(lerpHex(NIGHT.hor,DAY.hor,k)).lerp(cB.set(0xff8a4a),dusk*.55).lerp(cB.set(0x9aa3aa),(Wt[1]+Wt[2])*.6+Wt[3]*.5); skyU.zen.value.copy(lerpHex(NIGHT.zen,DAY.zen,k)).lerp(cB.set(0x7d868d),wet*.55*k); skyU.night.value=1-k;
     scene.fog.color.copy(lerpHex(NIGHT.fog,DAY.fog,k)).lerp(cB.set(0xe08a5a),dusk*.35).lerp(cB.set(0xa9b0b4),wet*.6*k);
     scene.fog.near=Wt[0]*190+Wt[1]*50+Wt[2]*12+Wt[3]*40; scene.fog.far=Wt[0]*1000+Wt[1]*380+Wt[2]*170+Wt[3]*320; if(st.inside){ scene.fog.near=80; scene.fog.far=600; } // w budynku bez mgły z pogody
-    hemi.intensity=(NIGHT.hemi+(DAY.hemi-NIGHT.hemi)*k)*wl*HK; skyU.t.value=tAll; skyU.cov.value=clamp(.4*Wt[0]+.9*Wt[1]+.97*Wt[2]+.85*Wt[3],0,1); if(tAll-envT>12){ envT=tAll; envRefresh(); } { const wr=clamp(Wt[1]*1.15,0,1); WETM.forEach(m=>{ if(m.roughness!==undefined){ m.roughness=.82-.62*wr; m.envMapIntensity=.38+1.3*wr; m.color.setScalar(1-.3*wr); } }); } sun.intensity=(se>-0.05?Math.max(0,se)*1.5*(1-dusk*.3):0.14)*wl*(1-.5*Wt[2]); sun.color.copy(lerpHex(0xff9a5a,DAY.sunC,clamp(se*3,0,1))); if(se<=-0.05) sun.color.set(0x9fb4ff);
+    hemi.intensity=(NIGHT.hemi+(DAY.hemi-NIGHT.hemi)*k)*wl*HK; skyU.t.value=tAll; skyU.cov.value=clamp(.4*Wt[0]+.9*Wt[1]+.97*Wt[2]+.85*Wt[3],0,1); if(tAll-envT>12){ envT=tAll; envRefresh(); } { const wr=clamp(Wt[1]*1.15,0,1); WETM.forEach(m=>{ if(m.roughness!==undefined){ m.roughness=.82-.62*wr; m.envMapIntensity=.38+1.3*wr; m.color.setScalar(1-.3*wr); } }); } sun.intensity=(se>-0.05?1.5*clamp(se/.42,0,1)*(1-dusk*.35):0.3*moon)*wl*(1-.5*Wt[2]); LAMPGLOW.material.opacity=.3*(1-k); LAMPGLOW.visible=k<.98&&!st.inside; sun.color.copy(lerpHex(0xff9a5a,DAY.sunC,clamp(se*3,0,1))); if(se<=-0.05) sun.color.set(0x9fb4ff);
     if(bloom) bloom.strength=NIGHT.bloom+(DAY.bloom-NIGHT.bloom)*k; if(grade){ grade.uniforms.exposure.value=NIGHT.exp+(DAY.exp-NIGHT.exp)*k; grade.uniforms.night.value=1-k; }
     const night=k<0.35; if(night!==ENV.lastNight){ ENV.lastNight=night; st.night=night; applyNight(); candleMat.emissive.set(0x000000); }
     flameIM.visible=k<0.75; flameMat.color.set(night?0xffc060:0xffb347);
@@ -3224,7 +3228,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     // rutyna mieszkańców: w nocy na ulicach mniej ludzi
     const frac=(ENV.time<5.5||ENV.time>22.5)?.15:(ENV.time<7||ENV.time>20.5)?.5:1; peds.forEach((p,i)=>{ p.g.visible=hash(i)<frac; });
     BUS.day=ENV.time>5&&ENV.time<23; }
-  toggleNight=function(){ if(ENV.fixed){ toast('W trybie wieloosobowym jest stale dzień',2); return; } ENV.time=(ENV.time>=6&&ENV.time<16.5)?17.6:11; toast(ENV.time>12?'Przewinięto do wieczora':'Przewinięto do południa',2); };
+  toggleNight=function(){ if(ENV.fixed){ toast('W trybie wieloosobowym pora dnia jest wspólna dla wszystkich',2); return; } ENV.time=(ENV.time>=6&&ENV.time<16.5)?17.6:11; toast(ENV.time>12?'Przewinięto do wieczora':'Przewinięto do południa',2); };
 
   /* ---------- dźwięk: otoczenie, silnik, radio ---------- */
   const AU={ctx:null,on:false,master:null,noise:null,rain:null,eng:null,engG:null,siren:null,sirG:null,radioG:null,station:0,next:0,step:0,amb:2};
@@ -6133,7 +6137,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     sky.position.copy(camera.position);
     sun.position.set(fx+SUNDIR.x*220,fy+SUNDIR.y*220,fz+SUNDIR.z*220); sun.target.position.set(fx,fy,fz); playerLight.position.set(fx,fy+7,fz);
     if(st.car&&st.night){ const c=st.car; carLight.intensity=2.2; carLight.position.set(c.x+Math.cos(c.h)*2.3,fy+1,c.z+Math.sin(c.h)*2.3); carLight.target.position.set(c.x+Math.cos(c.h)*20,H(c.x+Math.cos(c.h)*20,c.z+Math.sin(c.h)*20),c.z+Math.sin(c.h)*20); } else carLight.intensity=0;
-    if(st.night){ const ls=lamps.map(l=>[l,(l.x-fx)**2+(l.z-fz)**2]).sort((a,b)=>a[1]-b[1]); lampPool.forEach((pl,i)=>{ const l=ls[i]&&ls[i][0]; if(l){pl.position.set(l.x,l.y+7.6,l.z); pl.intensity=1.1;} }); } else lampPool.forEach(pl=>pl.intensity=0);
+    if(st.night){ const ls=lamps.map(l=>[l,(l.x-fx)**2+(l.z-fz)**2]).sort((a,b)=>a[1]-b[1]); lampPool.forEach((pl,i)=>{ const l=ls[i]&&ls[i][0]; if(l){pl.position.set(l.x,l.y+7.6,l.z); pl.intensity=.6;} }); } else lampPool.forEach(pl=>pl.intensity=0);
     trafficSpeeds(dt); cars.forEach(c=>{ const RR=c.r||DK; c.d+=c.dir*c.v*dt; if(c.r){ if(c.d>RR.L-5){ c.d=RR.L-5; c.dir=-1; } else if(c.d<5){ c.d=5; c.dir=1; } } else { if(c.d>DK.L)c.d-=DK.L; if(c.d<0)c.d+=DK.L; } const s=sampleLine(RR.pts,RR.len,c.d); const o=(c.r?1.7:2.2)*c.dir; c.x=s.x-s.tz*o; c.z=s.z+s.tx*o; c.h=Math.atan2(s.tz,s.tx)+(c.dir<0?Math.PI:0); seatCar(c.g,c.x,c.z,c.h,0.1); c.g.userData.wheels.forEach(w=>w.rotation.z-=c.v*dt/.36);
       if(!st.car&&Math.hypot(c.x-st.x,c.z-st.z)<2.2&&tAll-(st.hitT||-9)>1.5){ st.hitT=tAll; st.hp=Math.max(0,st.hp-30); shake=.8; const dx=st.x-c.x,dz=st.z-c.z,l=Math.hypot(dx,dz)||1; st.vx=dx/l*9; st.vz=dz/l*9; } });
     const TL=trainLen[trainLen.length-1], SP=TRAIN_SCHED.pas; SP.span=TL+6*22+10; SP.P=Math.max(SP.span/SP.v+150,300); const h0=(tAll%SP.P)*SP.v;
