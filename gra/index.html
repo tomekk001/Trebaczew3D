@@ -845,11 +845,11 @@ async function boot(saved){
   const PLAC=AREAS.find(a=>a.t==='am:parking'&&a.pts[0][0]===-40&&a.pts[0][1]===-278);
   const CHURCH=BPOLY.find(b=>b.name.startsWith('Kościół')); let CHURCH_DOOR=null;
   // boisko szkolne obok przedszkola: obrót o 90° wokół środka + równy plac z niebieską bieżnią wokół (bieżnia z OSM zastąpiona)
-  const TRK={lane:1.0,n:4,gap:.7};
+  const TRK={lane:1.0,n:5,gap:.5};
   { const m0=mar(PITCH2.pts), c=Math.cos(m0.an), s=Math.sin(m0.an), hw=m0.d/2, hd=m0.w/2;
     PITCH2.pts=[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]].map(([u,v])=>[m0.cx+u*c-v*s, m0.cz+u*s+v*c]);
     const m=mar(PITCH2.pts), hs=PITCH2.pts.map(v=>hRaw(v[0],v[1])), h=hs.reduce((a,v)=>a+v,0)/hs.length, cc=Math.cos(m.an), ss=Math.sin(m.an);
-    const ow=m.w/2+1+TRK.gap+TRK.lane*TRK.n+1.5, od=m.d/2+1+TRK.gap+TRK.lane*TRK.n+1.5;
+    const sw0=m.w>m.d, sh0=Math.min(m.w,m.d)/2+1, lg0=Math.max(m.w,m.d)/2+1, r00=sh0+TRK.gap, cz00=Math.max(0,lg0-Math.sqrt(Math.max(0,r00*r00-sh0*sh0))+.3), A0=r00+TRK.lane*TRK.n+1.5, B0=cz00+r00+TRK.lane*TRK.n+1.5, ow=sw0?B0:A0, od=sw0?A0:B0;
     const pad=[[-ow,-od],[ow,-od],[ow,od],[-ow,od]].map(([u,v])=>[m.cx+u*cc-v*ss, m.cz+u*ss+v*cc]);
     FLAT.push({p:PITCH2.pts,bb:bbox(PITCH2.pts),fe:0,h}); FLAT.unshift({p:pad,bb:bbox(pad),fe:0,h}); }
   [COURT].forEach(a=>{ const hs=a.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:a.pts,bb:bbox(a.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); });
@@ -1032,7 +1032,7 @@ async function boot(saved){
   const railMat=new THREE.MeshLambertMaterial({color:0x6d6e70,side:THREE.DoubleSide}), ballMat=po(new THREE.MeshLambertMaterial({color:0x8a7f72,side:THREE.DoubleSide}),1);
   const sleeperGeo=new THREE.BoxGeometry(2.4,0.16,0.24), sleeperMat=new THREE.MeshLambertMaterial({color:0x5b4a3c});
   const dum=new THREE.Object3D(), col=new THREE.Color();
-  RAILS.forEach(pts=>{ const len=lineLen(pts); scene.add(new THREE.Mesh(ribbon(pts,4.2,0.14,10,HC),ballMat));
+  RAILS.forEach(pts=>{ const len=lineLen(pts); splitFree(pts,null,.2).forEach(run=>scene.add(new THREE.Mesh(ribbon(run,4.2,0.14,10,HC),ballMat)));
     [-0.75,0.75].forEach(o=>scene.add(new THREE.Mesh(ribbon(offsetLine(pts,o),0.14,0.34,10,HC),railMat)));
     const L=len[len.length-1]; const n=Math.floor(Math.min(L,2600)/0.9); const im=new THREE.InstancedMesh(sleeperGeo,sleeperMat,n);
     for(let i=0;i<n;i++){ const s=sampleLine(pts,len,i*0.9); dum.position.set(s.x,HC(s.x,s.z)+0.22,s.z); dum.rotation.set(0,Math.atan2(-s.tz,s.tx)+Math.PI/2,0); dum.scale.set(1,1,1); dum.updateMatrix(); im.setMatrixAt(i,dum.matrix);} scene.add(im);
@@ -1052,7 +1052,7 @@ async function boot(saved){
   const inSchool=(x,z)=>inPoly(x,z,SCHOOL.pts), inKinder=(x,z)=>inPoly(x,z,KINDER.pts);
   const HALL_B=BLD.find(b=>b.isHall)||BLD.find(b=>b.code===5&&Math.max(b.w,b.d)>50);
   const houses=[];
-  const CB={}; [['komf',-2198,983],['manu',-2070,938],['tutti',-2048,921],['autop',-1136,686],['hgraf',-1125,695],['dstary',-1180,670],['dsolar',-1210,681],['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
+  const CB={}; [['komf',-2198,983],['manu',-2070,938],['tutti',-2048,921],['autop',-1136,686],['hgraf',-1125,695],['dstary',-1180,670],['dsolar',-1210,681],['zuh',-1310,625],['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
   if(CB.orlenRoof) CB.orlenRoof.skip=true;
   // domy nachodzące na jezdnię: odsuń od drogi (albo pomiń, gdy trzeba by przesunąć za daleko)
   { const RD=ROADS.filter(r=>!['track','path','footway','steps','cycleway','foot'].includes(r.t)); const nearPt=(r,x,z)=>{ let best=null,bd=1e9; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i],b=r.pts[i+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz||1; const t=clamp(((x-a[0])*dx+(z-a[1])*dz)/L,0,1); const px=a[0]+dx*t,pz=a[1]+dz*t; const d=Math.hypot(x-px,z-pz); if(d<bd){bd=d;best=[px,pz,d];} } return best; };
@@ -1463,14 +1463,14 @@ async function boot(saved){
       e.traverse(o=>o.castShadow=true); addSolid({x:qq[0],z:qq[1],hw:.6,hd:.5,c:1,s:0,r:.8}); } }
   // niebieska bieżnia lekkoatletyczna (4 tory) dookoła boiska szkolnego
   { const m=pitch2.m, g=new THREE.Group(); g.position.set(m.cx,flatH(PITCH2),m.cz); g.rotation.y=-m.an; scene.add(g);
-    const ihw=m.w/2+1+TRK.gap, ihd=m.d/2+1+TRK.gap, r0=Math.min(ihw,ihd)*.75, cw=ihw-r0, cd=ihd-r0, N=12;
-    const loop=o=>{ const pts=[]; for(let q=0;q<4;q++){ const sx=(q===0||q===3)?1:-1, sz=(q<2)?1:-1; for(let k=0;k<=N;k++){ const a=q*Math.PI/2+k/N*Math.PI/2; pts.push([sx*cw+(r0+o)*Math.cos(a), sz*cd+(r0+o)*Math.sin(a)]); } } return pts; };
+    const SW=m.w>m.d, hwF=Math.min(m.w,m.d)/2+1, hdF=Math.max(m.w,m.d)/2+1, r0=hwF+TRK.gap, cw=0, cz0=Math.max(0,hdF-Math.sqrt(Math.max(0,r0*r0-hwF*hwF))+.3), cd=cz0, ihw=r0, ihd=cz0+r0, N=16;
+    const loop=o=>{ const pts=[]; for(let q=0;q<4;q++){ const sx=(q===0||q===3)?1:-1, sz=(q<2)?1:-1; for(let k=0;k<=N;k++){ const a=q*Math.PI/2+k/N*Math.PI/2; const px=sx*cw+(r0+o)*Math.cos(a), pz=sz*cd+(r0+o)*Math.sin(a); pts.push(SW?[pz,px]:[px,pz]); } } return pts; };
     const ring=(o0,o1,y,mat)=>{ const A=loop(o0), B=loop(o1), pos=[]; for(let i=0;i<A.length;i++){ const j=(i+1)%A.length; [[A[i],B[i],B[j]],[A[i],B[j],A[j]]].forEach(t=>t.forEach(v=>pos.push(v[0],y,v[1]))); }
       const ge=new THREE.BufferGeometry(); ge.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); ge.computeVertexNormals(); const me=new THREE.Mesh(ge,mat); me.receiveShadow=true; g.add(me); };
-    const W=TRK.lane*TRK.n, blue=po(new THREE.MeshLambertMaterial({color:0x2b62b8,side:THREE.DoubleSide}),2), white=po(new THREE.MeshLambertMaterial({color:0xf2f2ea,side:THREE.DoubleSide}),3);
+    const W=TRK.lane*TRK.n, blue=po(new THREE.MeshLambertMaterial({color:0x3f7fb6,side:THREE.DoubleSide}),2), white=po(new THREE.MeshLambertMaterial({color:0xf2f2ea,side:THREE.DoubleSide}),3);
     ring(0,W,.05,blue); for(let i=0;i<=TRK.n;i++) ring(i*TRK.lane-.04,i*TRK.lane+.04,.06,white);
     // linia startu/mety na prostej
-    const sl=new THREE.Mesh(new THREE.PlaneGeometry(W,.12).rotateX(-Math.PI/2),white); sl.position.set(ihw+W/2,.065,0); sl.rotation.y=0; g.add(sl); }
+    const sl=new THREE.Mesh(new THREE.PlaneGeometry(W,.12).rotateX(-Math.PI/2),white); sl.position.set(SW?0:ihw+W/2,.065,SW?ihw+W/2:0); sl.rotation.y=SW?Math.PI/2:0; g.add(sl); }
 
   /* ---------- powierzchnie utwardzone (parkingi, plac przy parku) ---------- */
   // przycinanie nawierzchni do krawędzi dróg (żadna kostka ani plac nie wchodzi na jezdnię)
@@ -1721,7 +1721,6 @@ async function boot(saved){
   // --- przejazd kolejowy na DK42 (rogatki, sygnalizatory, żółte barierki, ekrany akustyczne) ---
   const CROSS=[];
   function buildCrossing(x,z){ const nr=nearestRoad(x,z,r=>r===DK); const a=DK.pts[nr.seg],b=DK.pts[nr.seg+1]; let dx=b[0]-a[0],dz=b[1]-a[1]; const l=Math.hypot(dx,dz); dx/=l; dz/=l; const nx=-dz,nz=dx; const hw=DK.w/2;
-    const rub=po(new THREE.MeshLambertMaterial({color:0x2a2c2e,map:detailTex}),6); const rp=new THREE.Mesh(new THREE.PlaneGeometry(DK.w+2,9).rotateX(-Math.PI/2),rub); rp.position.set(x,H(x,z)+.16,z); rp.rotation.y=Math.atan2(nx,nz); scene.add(rp);
     const redW=tex(16,128,(c)=>{ for(let i=0;i<8;i++){ c.fillStyle=i%2?'#d22':'#fff'; c.fillRect(0,i*16,16,16); } });
     const signalT=tex(64,64,(c)=>{ c.fillStyle='#111'; c.fillRect(0,0,64,64); c.fillStyle='#300'; c.beginPath(); c.arc(16,32,12,0,7); c.arc(48,32,12,0,7); c.fill(); });
     [[-1,1],[1,-1]].forEach(([side,along])=>{ const bx0=x+nx*side*(hw+1.2)+dx*along*6.5, bz0=z+nz*side*(hw+1.2)+dz*along*6.5; const g=new THREE.Group(); g.position.set(bx0,H(bx0,bz0),bz0); g.rotation.y=Math.atan2(dx*along,dz*along); scene.add(g);
@@ -1735,6 +1734,27 @@ async function boot(saved){
       sh(g); CROSS.push({arm,boom,lamps,x:bx0,z:bz0}); addSolid({x:bx0,z:bz0,hw:.3,hd:.3,c:1,s:0,r:.5}); });
   }
   buildCrossing(-1043,586);
+
+  // --- płot z szarych paneli wzdłuż torów przy przejeździe (wg zdjęcia) ---
+  { const wt=tex(64,64,(x,w,h)=>{ x.fillStyle='#a6abae'; x.fillRect(0,0,w,h); x.fillStyle='#8b9094'; for(let i=0;i<w;i+=8) x.fillRect(i,0,2,h); }), wm=new THREE.MeshLambertMaterial({map:wt}), pm=new THREE.MeshLambertMaterial({color:0x2a2d30});
+    const wallL=[]; const nearOther=(x,z,self)=>RAILS.some(q=>q!==self&&q.some((v,i)=>i<q.length-1&&segDist(x,z,v[0],v[1],q[i+1][0],q[i+1][1])<3.8));
+    RAILS.forEach(pts=>{ const len=lineLen(pts), L=len[len.length-1]; [1,-1].forEach(sd=>{ for(let d=0;d<L-4;d+=4){ const a=sampleLine(pts,len,d), b=sampleLine(pts,len,d+4); const da=Math.hypot(a.x+1043,a.z-586); if(da>140||da<15) continue; const o=5.4; const pa=[a.x-a.tz*sd*o,a.z+a.tx*sd*o], pb=[b.x-b.tz*sd*o,b.z+b.tx*sd*o]; const c=[(pa[0]+pb[0])/2,(pa[1]+pb[1])/2];
+        if([pa,pb,c].some(q=>nearOther(q[0],q[1],pts)||roadNearF(q[0],q[1],2)||blocked(q[0],q[1],.3,true))) continue; wallL.push([pa,pb,c]); } }); });
+    wallL.forEach(([pa,pb,c])=>{ const l=Math.hypot(pb[0]-pa[0],pb[1]-pa[1]), ang=Math.atan2(pb[1]-pa[1],pb[0]-pa[0]); const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); g.rotation.y=-ang; scene.add(g); bx(g,l,2.1,.07,0,.15,0,wm); bx(g,.12,2.5,.12,-l/2,0,0,pm,true);
+      addSolid({x:c[0],z:c[1],hw:l/2,hd:.1,c:Math.cos(ang),s:Math.sin(ang),r:l/2+.2}); }); }
+
+  // --- rozwidlenie ul. Kolejowej przy Wyzwolenia: trawiasta wyspa ze świerkami i znakiem (wg zdjęcia) ---
+  { const KR=ROADS.filter(r=>r.n==='Kolejowa'); const F=[-1099,656]; const arms=[]; KR.forEach(r=>r.pts.forEach((v,i)=>{ if(Math.hypot(v[0]-F[0],v[1]-F[1])>1.5) return; [i-1,i+1].forEach(j=>{ const q=r.pts[j]; if(!q) return; const l=Math.hypot(q[0]-F[0],q[1]-F[1]); if(l>3) arms.push({u:[(q[0]-F[0])/l,(q[1]-F[1])/l],w:r.w}); }); }));
+    let best=null; for(let i=0;i<arms.length;i++)for(let j=i+1;j<arms.length;j++){ const cs=arms[i].u[0]*arms[j].u[0]+arms[i].u[1]*arms[j].u[1]; if(cs>.2&&cs<.98&&(!best||cs>best.cs)) best={a:arms[i],b:arms[j],cs}; }
+    if(best){ const {a,b}=best; let bx0=a.u[0]+b.u[0], bz0=a.u[1]+b.u[1]; const bl=Math.hypot(bx0,bz0); bx0/=bl; bz0/=bl; const half=Math.acos(best.cs)/2, off=3+.9, ap=off/Math.sin(half);
+      const pt=(arm)=>{ let nx=bx0-(bx0*arm.u[0]+bz0*arm.u[1])*arm.u[0], nz=bz0-(bx0*arm.u[0]+bz0*arm.u[1])*arm.u[1]; const nl=Math.hypot(nx,nz)||1; nx/=nl; nz/=nl; return [F[0]+arm.u[0]*26+nx*off, F[1]+arm.u[1]*26+nz*off]; };
+      const apex=[F[0]+bx0*ap,F[1]+bz0*ap], P1=pt(a), P2=pt(b); const tri3=[apex,P1,P2]; const gm=po(new THREE.MeshLambertMaterial({color:0x6a9a42,map:detailTex}),4); drape(resample([...tri3,tri3[0]],3).slice(0,-1),gm,0.1,4);
+      const at=(f,g2)=>[apex[0]*(1-f-g2)+P1[0]*f+P2[0]*g2, apex[1]*(1-f-g2)+P1[1]*f+P2[1]*g2];
+      [[.30,.30,1.5],[.5,.18,1.25],[.18,.52,1.1]].forEach(([f,g2,sc])=>{ const q=at(f,g2); if(!blocked(q[0],q[1],.6,true)) EXTRA_TREES.push({x:q[0],z:q[1],s:sc,con:true,col:'#244a24'}); });
+      [[.45,.35],[.2,.2],[.6,.12]].forEach(([f,g2],i)=>{ const q=at(f,g2); EXTRA_TREES.push({x:q[0],z:q[1],s:.35+i*.05,con:false,col:['#6b8a3a','#7a9a42','#5f8238'][i]}); });
+      const q=at(.62,.62), g=new THREE.Group(); g.position.set(q[0],H(q[0],q[1]),q[1]); g.rotation.y=Math.atan2(-bx0,-bz0); scene.add(g); const cvT=tex(64,96,(x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.strokeStyle='#d22'; x.lineWidth=10; for(let k=0;k<2;k++){ x.beginPath(); x.moveTo(6,22+k*38); x.lineTo(w/2,54+k*38-30); x.lineTo(w-6,22+k*38); x.stroke(); } });
+      bx(g,.06,1.2,.06,0,0,0,new THREE.MeshLambertMaterial({color:0x777b7e})); const bd=new THREE.Mesh(new THREE.PlaneGeometry(.55,.85),new THREE.MeshLambertMaterial({map:cvT,side:THREE.DoubleSide})); bd.position.set(0,1.45,.05); g.add(bd); addSolid({x:q[0],z:q[1],hw:.2,hd:.2,c:1,s:0,r:.4});
+      [[.4,.5],[.55,.28]].forEach(([f,g2],i)=>{ const q2=at(f,g2); const st=new THREE.Mesh(new THREE.DodecahedronGeometry(.35+i*.1,0),new THREE.MeshLambertMaterial({color:0xb9b5aa})); st.position.set(q2[0],H(q2[0],q2[1])+.2,q2[1]); st.scale.y=.6; scene.add(st); }); } }
 
   // --- trakcja elektryczna nad torami: słupy z wysięgnikami i przewód jezdny ---
   { const masts=[], wires=[]; RAILS.forEach(pts=>{ const len=lineLen(pts), L=len[len.length-1]; let prev=null; for(let d=0;d<=L;d+=55){ const s=sampleLine(pts,len,d); if(s.x<X0||s.x>X1||s.z<Z0||s.z>Z1){ prev=null; continue; } const mx=s.x-s.tz*3.6, mz=s.z+s.tx*3.6; if(masts.some(m=>Math.hypot(m[0]-mx,m[1]-mz)<6)){ prev=null; continue; } if(blocked(mx,mz,.3)||roadNearF(mx,mz,1.5)){ prev=null; continue; }
@@ -1802,8 +1822,19 @@ async function boot(saved){
       sh(g); [[-3.5,-2.5,1.3],[-5,3.5,2.3]].forEach(([u,v,r2])=>addSolid({x:gx+u,z:gz+v,hw:r2,hd:r2,c:1,s:0,r:r2*1.5}));
       // iglaki i brzozy dookoła
       for(let k=0;k<7;k++){ const a=k/7*6.28, rr=7.5; const x=gx+Math.cos(a)*rr, z=gz+Math.sin(a)*rr; if(inPoly(x,z,KINDER.pts)&&!blocked(x,z,1)) EXTRA_TREES.push({x,z,s:R(.8,1.1),con:k%2===0,col:k%2?'#7a8a3a':'#2d5a2a'}); }
-      // zielona siatka panelowa z furtką od strony ulicy
-      const t=fenceT.clone(); t.needsUpdate=true; t.repeat.set(8,1); const net=new THREE.Mesh(new THREE.PlaneGeometry(16,1.5),new THREE.MeshLambertMaterial({map:t,transparent:true,alphaTest:.35,side:THREE.DoubleSide,color:0x3f8a4a})); net.position.set(0,.75,6.5); g.add(net); for(let x=-8;x<=8;x+=2.5) bx(g,.07,1.6,.07,x,0,6.5,new THREE.MeshLambertMaterial({color:0x2f7a3a}),true); addSolid({x:gx,z:gz+6.5,hw:8,hd:.1,c:1,s:0,r:8.5}); } }
+      // zielony płot panelowy od strony ulicy Zagrodowej (przy altance): panele na słupkach, brama dwuskrzydłowa i furtka - wg zdjęcia
+      { const ZG=ROADS.find(r=>r.n==='Zagrodowa'&&r.t!=='track'), P=KINDER.pts, kc=centroid(P); const fcol=0x2f6b3c, fmat=new THREE.MeshLambertMaterial({color:fcol}), fmesh=(()=>{ const t=fenceT.clone(); t.needsUpdate=true; t.repeat.set(1,1); return new THREE.MeshLambertMaterial({map:t,transparent:true,alphaTest:.35,side:THREE.DoubleSide,color:0x3f8a4a}); })();
+        const runs=[]; for(let q=0;q<P.length-1;q++){ const a=P[q], b=P[q+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]), mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2; if(!ZG||l<3||mx>-128||roadDist(ZG,mx,mz)>9) continue; const tx=(b[0]-a[0])/l, tz=(b[1]-a[1])/l; let nx=-tz, nz=tx; if((kc[0]-mx)*nx+(kc[1]-mz)*nz<0){ nx=-nx; nz=-nz; } runs.push({a:[a[0]+nx*.6,a[1]+nz*.6],tx,tz,l,ang:Math.atan2(tz,tx)}); }
+        const gp=[gx+3,gz-1.6]; let gr=null,gd=1e9,gu=0; runs.forEach(r=>{ const u=clamp((gp[0]-r.a[0])*r.tx+(gp[1]-r.a[1])*r.tz,3.5,r.l-3.5), d=Math.hypot(r.a[0]+r.tx*u-gp[0],r.a[1]+r.tz*u-gp[1]); if(d<gd){ gd=d; gr=r; gu=u; } });
+        const W2=(r,u)=>[r.a[0]+r.tx*u, r.a[1]+r.tz*u];
+        const piece=(r,u0,u1)=>{ const len=u1-u0; if(len<.2) return; const c=W2(r,(u0+u1)/2); if([u0,(u0+u1)/2,u1].some(u=>{ const q=W2(r,u); return blocked(q[0],q[1],0,true); })) return; const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); g.rotation.y=-r.ang; scene.add(g);
+          const m=new THREE.Mesh(new THREE.PlaneGeometry(len,1.4),fmesh.clone()); m.material.map=fmesh.map.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(len/1.6,1); m.position.y=.8; g.add(m); bx(g,len,.05,.05,0,1.5,0,fmat,true); bx(g,len,.05,.05,0,.08,0,fmat,true);
+          addSolid({x:c[0],z:c[1],hw:len/2,hd:.08,c:Math.cos(r.ang),s:Math.sin(r.ang),r:len/2+.2}); };
+        const post=(r,u,h2)=>{ const c=W2(r,u); const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); scene.add(g); bx(g,.09,h2||1.65,.09,0,0,0,fmat,true); };
+        runs.forEach(r=>{ const cuts=(r===gr)?[[gu-2.4,gu+2.4]]:[]; let u0=0; const seg=(a,b)=>{ const n=Math.max(1,Math.ceil((b-a)/2.5)); for(let k=0;k<n;k++){ piece(r,a+(b-a)*k/n,a+(b-a)*(k+1)/n); post(r,a+(b-a)*k/n); } post(r,b); }; cuts.forEach(([a,b])=>{ seg(u0,a); u0=b; }); seg(u0,r.l); });
+        if(gr){ const c=W2(gr,gu); const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); g.rotation.y=-gr.ang; scene.add(g);
+          const leaf=(x0,w0)=>{ const fr=new THREE.Group(); fr.position.set(x0,0,0); g.add(fr); [-w0/2,w0/2].forEach(o=>bx(fr,.06,1.55,.06,o,0,0,fmat,true)); [.1,.8,1.5].forEach(yy=>bx(fr,w0,.05,.05,0,yy,0,fmat,true)); const m=new THREE.Mesh(new THREE.PlaneGeometry(w0-.08,1.35),fmesh.clone()); m.material.map=fmesh.map.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(w0/1.6,1); m.position.y=.8; fr.add(m); };
+          leaf(-1.5,1.76); leaf(.3,1.76); leaf(1.8,1.16); [-2.4,-.6,1.2,2.4].forEach(o=>bx(g,.12,1.8,.12,o,0,0,fmat,true)); bx(g,.1,.12,.12,.9,.95,0,fmat,true); } } } }
   if(CB.delik) buildDelikatesy(CB.delik); if(CB.dworzec) buildDworzec(CB.dworzec); if(CB.mineral) buildMineral(CB.mineral); if(CB.swietl) buildSwietlica(CB.swietl); buildParkParkowa();
   // domy ze zdjęć (Wyzwolenia 159-163 naprzeciw kościoła, kwiaciarnia „Sas-Anka” przy Szkolnej 9, Szkolna 3) - modele z tools/blender/budynki2.py
   function buildPhotoHouse(b,name,re,ML,MD,col,roofCol,extra){ const {f,g,L,D,FZ,low,w}=groupAt(b,nearRoad(b,re)); const H0=5.8;
@@ -1823,9 +1854,38 @@ async function boot(saved){
   if(CB.manu) photoBld(CB.manu,'salon',29.5,14.5,0xefe4cf,0x5b3a2a,4.4,{text:'SALON ŁAZIENEK',bg:'#5a5d62',fg:'#ffffff',y:3.9,w:7.6,h:96,font:'700 56px Barlow, Arial',out:1.9});
   if(CB.tutti) photoBld(CB.tutti,'tutti',31,15.5,0xf0e6d2,0x6b4332,4.2,{text:'Tutti Flori',bg:'#f6f1e6',fg:'#7a2f7a',y:3.2,w:5.4,h:110,font:'italic 700 62px Barlow, Arial',out:2.35});
   if(CB.autop) photoBld(CB.autop,'autopart',12,10,0xa3a9ae,0x555a60,6.6,{text:'AUTOPART',bg:'#2e3134',fg:'#ffffff',y:5.4,w:7.5,h:100,font:'800 64px Barlow, Arial',out:.12});
-  if(CB.hgraf) photoBld(CB.hgraf,'hala_grafit',18.5,13.5,0x41464c,0x3a3f45,5.2,null);
+  if(CB.hgraf) photoBld(CB.hgraf,'autopart_hala',18.5,14,0x9da3a8,0x6b7075,5.6,null);
+  if(CB.zuh) photoBld(CB.zuh,'zuh',16,40,0x464a50,0x3c4046,6.4,null);
   if(CB.dstary) photoBld(CB.dstary,'dom_stary',10,9.5,0xc8ab8d,0x6d7378,5.4,null);
   if(CB.dsolar) photoBld(CB.dsolar,'dom_solar',12.5,10,0xe6dcc4,0x4b3b34,5.2,null);
+
+  // --- firmy za torami (Wyzwolenia): powierzchnie wg OSM/ortofotomapy, ogrodzenia i żywopłoty, szczegóły wg Street View ---
+  { const pav=po(new THREE.MeshLambertMaterial({color:0x7e8184,map:detailTex}),4), grv=po(new THREE.MeshLambertMaterial({color:0xa9a497,map:detailTex}),4), lawn=po(new THREE.MeshLambertMaterial({color:0x5f9a3e,map:detailTex}),5);
+    const ZUH=[[-1341,579],[-1302,565],[-1296,664],[-1335,678]];
+    const ABP=[[-1195,652],[-1187,648],[-1183,647],[-1098,697],[-1095,707],[-1090,707],[-1084,732],[-1088,730],[-1107,718],[-1147,692],[-1174,675],[-1170,670]];
+    drape(resample([...ZUH,ZUH[0]],4).slice(0,-1),pav,0.08,3); drape(resample([...ABP,ABP[0]],4).slice(0,-1),grv,0.08,3);
+    // F.H. Weltsamen i IKAR: place utwardzone wokół zabudowy
+    { const bs=BLD.filter(b=>b.x<-1540&&b.x>-1600&&b.z>610&&b.z<750&&!b.skip); if(bs.length){ const x0=Math.min(...bs.map(b=>b.x))-14, x1=Math.max(...bs.map(b=>b.x))+14, z0=Math.min(...bs.map(b=>b.z))-14, z1=Math.max(...bs.map(b=>b.z))+14; const yd=[[x0,z0],[x1,z0],[x1,z1],[x0,z1]]; drape(resample([...yd,yd[0]],4).slice(0,-1),grv,0.08,3); } }
+    { const c=Math.cos(32*Math.PI/180), sn=Math.sin(32*Math.PI/180); const yd=[[-34,-24],[34,-24],[34,26],[-34,26]].map(([u,v])=>[-1357+u*c-v*sn,758+u*sn+v*c]); drape(resample([...yd,yd[0]],4).slice(0,-1),pav,0.08,3); }
+    // Z.U.H. ZBYSZKO: trawnik od ulicy z żywopłotem tui, ciemne ogrodzenie, brama, 4 flagi
+    const A=[-1335,678], B=[-1296,664], eL=Math.hypot(B[0]-A[0],B[1]-A[1]), eT=[(B[0]-A[0])/eL,(B[1]-A[1])/eL], eN=[eT[1]*-1*-1,-eT[0]]; // eN: w głąb działki (na północ)
+    const nrm=(eN[1]>0)?[-eN[0],-eN[1]]:eN; const at=(u,v)=>[A[0]+eT[0]*u+nrm[0]*v, A[1]+eT[1]*u+nrm[1]*v]; const gu=eL*.55, gw=6;
+    [[0,gu-gw/2],[gu+gw/2,eL]].forEach(([u0,u1])=>{ const pg=[at(u0,0),at(u1,0),at(u1,6),at(u0,6)]; drape(pg,lawn,0.1,4); });
+    // żywopłot tui wzdłuż ulicy i boków
+    const thuja=[]; const edge=(a,b,skip)=>{ const L=Math.hypot(b[0]-a[0],b[1]-a[1]), n=Math.floor(L/.85); for(let k=0;k<=n;k++){ const u=k/n*L; if(skip&&u>skip[0]&&u<skip[1]) continue; thuja.push([a[0]+(b[0]-a[0])*k/n, a[1]+(b[1]-a[1])*k/n]); } };
+    edge(at(0,1.2),at(eL,1.2),[gu-gw/2,gu+gw/2]); edge(ZUH[0],ZUH[3]); edge(ZUH[1],ZUH[2]);
+    { const ge=new THREE.ConeGeometry(.5,2.6,7).translate(0,1.3,0), im=new THREE.InstancedMesh(ge,new THREE.MeshLambertMaterial({color:0x2f5d31}),thuja.length), dm=new THREE.Object3D(); thuja.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,i*1.7,0); dm.scale.set(1,.85+((i*37)%10)/40,1); dm.updateMatrix(); im.setMatrixAt(i,dm.matrix); }); im.castShadow=true; scene.add(im); }
+    // ogrodzenie panelowe (grafit) za żywopłotem
+    { const segs=[]; const ed=(a,b,skip)=>{ const L=Math.hypot(b[0]-a[0],b[1]-a[1]), n=Math.max(1,Math.round(L/2.5)); for(let k=0;k<n;k++){ const u0=k/n*L, u1=(k+1)/n*L, um=(u0+u1)/2; if(skip&&um>skip[0]-.5&&um<skip[1]+.5) continue; const m=[a[0]+(b[0]-a[0])*(k+.5)/n,a[1]+(b[1]-a[1])*(k+.5)/n]; segs.push([m[0],m[1],Math.atan2(b[1]-a[1],b[0]-a[0]),L/n]); } };
+      ed(at(0,.3),at(eL,.3),[gu-gw/2,gu+gw/2]); ed(ZUH[0],ZUH[3]); ed(ZUH[1],ZUH[2]); ed(ZUH[0],ZUH[1]);
+      const t=fenceT.clone(); t.needsUpdate=true; t.repeat.set(1.25,1); const fm=new THREE.MeshLambertMaterial({map:t,transparent:true,alphaTest:.35,side:THREE.DoubleSide,color:0x30343a}); const im=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1.8).translate(0,.9,0),fm,segs.length), dm=new THREE.Object3D();
+      segs.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,-q[2],0); dm.scale.set(q[3],1,1); dm.updateMatrix(); im.setMatrixAt(i,dm.matrix); addSolid({x:q[0],z:q[1],hw:q[3]/2,hd:.1,c:Math.cos(q[2]),s:Math.sin(q[2]),r:q[3]/2+.3}); }); scene.add(im); }
+    // flagi przy bramie
+    { const poleM=new THREE.MeshLambertMaterial({color:0xd8dadc}); [0,1,2,3].forEach(i=>{ const q=at(gu-gw/2-1.2-i*1.7,3.4); const g=new THREE.Group(); g.position.set(q[0],H(q[0],q[1]),q[1]); g.rotation.y=-Math.atan2(eT[1],eT[0]); scene.add(g); bx(g,.07,7,.07,0,0,0,poleM,true); const fl=new THREE.Mesh(new THREE.PlaneGeometry(.9,2.3),new THREE.MeshLambertMaterial({color:i%2?0xb12a30:0x55595e,side:THREE.DoubleSide})); fl.position.set(.5,5.3,0); fl.rotation.y=Math.PI/2; g.add(fl); }); }
+    // AUTOPART: stosy opon, żółty kontener i naczepy na placu (wg zdjęcia z Kolejowej)
+    { const tg=new THREE.TorusGeometry(.5,.2,6,12), tm=new THREE.MeshLambertMaterial({color:0x1d1e20}); const tires=[]; [[-1108,706],[-1103,714],[-1112,718]].forEach(([cx,cz],pi)=>{ for(let k=0;k<26;k++){ const a=k*2.4, r=Math.sqrt(k/26)*3.2, x=cx+Math.cos(a)*r, z=cz+Math.sin(a)*r; if(blocked(x,z,.3,true)||roadNearF(x,z,1.5)) continue; tires.push([x,z,Math.floor(k/9)*.32+.2,(k*1.3)%3.1,(k*.7)%1.2]); } });
+      const im=new THREE.InstancedMesh(tg,tm,Math.max(1,tires.length)), dm=new THREE.Object3D(); tires.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1])+q[2],q[1]); dm.rotation.set(Math.PI/2-q[4]*.2,q[3],q[4]*.3); dm.scale.set(1,1,1); dm.updateMatrix(); im.setMatrixAt(i,dm.matrix); }); im.count=tires.length; im.castShadow=true; scene.add(im);
+      const cq=[-1121,714]; if(!blocked(cq[0],cq[1],2,true)){ const g=new THREE.Group(); g.position.set(cq[0],H(cq[0],cq[1]),cq[1]); g.rotation.y=.5; scene.add(g); bx(g,6,2.5,2.4,0,0,0,new THREE.MeshLambertMaterial({color:0xc9a53a,map:detailTex})); addSolid({x:cq[0],z:cq[1],hw:3,hd:1.2,c:Math.cos(-.5),s:Math.sin(-.5),r:3.4}); } } }
   if(CB.kwiac) buildPhotoHouse(CB.kwiac,'kwiaciarnia',/Szkolna/,12.5,11,0xecd2b4,0x5e3a2b,({f,g,L,D,FZ,w})=>{
     // tablica „Kwiaciarnia Sas-Anka” na ogrodzeniu i ceglasto-czerwony płot z drewnianych sztachet na podmurówce
     const kT=tex(512,192,(c,W,Hh)=>{ c.fillStyle='#f6f8f2'; c.fillRect(0,0,W,Hh); const gr=c.createLinearGradient(0,0,W*.4,0); gr.addColorStop(0,'#f2b6d0'); gr.addColorStop(1,'#f6f8f2'); c.fillStyle=gr; c.fillRect(0,0,W*.45,Hh);
@@ -1859,7 +1919,7 @@ async function boot(saved){
         const isFront=roadNear(mx,mz,4.5); const n=Math.max(1,Math.round(L/2.5)); const tx=(b[0]-a[0])/L, tz=(b[1]-a[1])/L; const ang=Math.atan2(tz,tx);
         for(let k=0;k<n;k++){ const t0=k/n, t1=(k+1)/n; const cx=a[0]+(b[0]-a[0])*(t0+t1)/2, cz=a[1]+(b[1]-a[1])*(t0+t1)/2;
           if(isFront&&n>3&&Math.abs((t0+t1)/2-.5)<1.6/L+.5/n){ (pc.gaps=pc.gaps||[]).push([a,b,t0,t1,i]); continue; }           // brama
-          if(roadNear(cx,cz,isFront?0.4:1.2))continue; { const ex=a[0]+(b[0]-a[0])*t0, ez=a[1]+(b[1]-a[1])*t0, fx=a[0]+(b[0]-a[0])*t1, fz=a[1]+(b[1]-a[1])*t1; if(roadNear(ex,ez,.25)||roadNear(fx,fz,.25))continue; } if(blocked(cx,cz,.15)||noFence(cx,cz))continue;
+          if(roadNear(cx,cz,isFront?0.4:1.2))continue; { const ex=a[0]+(b[0]-a[0])*t0, ez=a[1]+(b[1]-a[1])*t0, fx=a[0]+(b[0]-a[0])*t1, fz=a[1]+(b[1]-a[1])*t1; if(roadNear(ex,ez,.25)||roadNear(fx,fz,.25))continue; } if(blocked(cx,cz,.15)||noFence(cx,cz))continue; if([-.5,-.25,.25,.5].some(k=>blocked(cx+Math.cos(ang)*k*L/n,cz+Math.sin(ang)*k*L/n,0,true)))continue;
           (isFront?front:side).push([cx,cz,ang,L/n]); } } });
     [...front,...side].forEach(p=>addSolid({x:p[0],z:p[1],hw:p[3]/2+.05,hd:.07,c:Math.cos(p[2]),s:Math.sin(p[2]),r:p[3]/2+.2}));
     // przerwy w płotach od ulicy -> furtka i brama
@@ -2138,6 +2198,9 @@ async function boot(saved){
     {n:'Euforia Trębaczew',p:[-151,-350],c:'#f07a1f',ic:'R'},
     {n:'Apteka Magnolia',p:[-94,-201],c:'#3fa34d',ic:'+'},
     {n:'Ośrodek zdrowia',p:[-99,-213],c:'#d0312d',ic:'+'},
+    {n:'AUTOPART · serwis samochodów ciężarowych',p:[-1136,687],c:'#2e3134',h:7,ic:'R'},
+    {n:'Z.U.H. ZBYSZKO',p:[-1319,621],c:'#d1262e',h:7,ic:'$'},
+    {n:'IKAR · materiały budowlane',p:[-1357,758],c:'#e0a020',h:7,ic:'$'},
     {n:'Biblioteka',p:[-136,-125],c:'#7d5ab5',ic:'B'},
     {n:'Park w Trębaczewie',p:centroid(PARK.pts),c:'#3fa34d',h:4,ic:'♣'},
     {n:'Plac zabaw',p:centroid(PLAYS[0].pts),c:'#c0392b',h:4,ic:'☺'},
@@ -5668,5 +5731,5 @@ hot && hot.ready ? hot.ready(boot) : boot(hot && hot.data || {});
 })();
 
 </script>
-<script src="models_in.js?v=314f8b67" async></script>
+<script src="models_in.js?v=c0130aa6" async></script>
 </html>
