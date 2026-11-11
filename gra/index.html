@@ -969,7 +969,11 @@ async function boot(saved){
   g.strokeStyle='rgba(70,85,40,.45)'; g.lineWidth=.6; PARCELS.forEach(pc=>{ path(pc.p,true); g.stroke(); });
   // ortofotomapa: pełna poza wsią, delikatnie pod stylizowanym centrum (miękkie przejście)
   if(ORTO_IMG){ const oc=document.createElement('canvas'); oc.width=gc.width; oc.height=gc.height; const o=oc.getContext('2d'); o.setTransform(K,0,0,K,-X0*K,-Z0*K);
-    o.filter='saturate(1.45) contrast(1.06) brightness(0.74)'; o.drawImage(ORTO_IMG,ORTO.x0,ORTO.z0,ORTO_IMG.width*ORTO.mpp,ORTO_IMG.height*ORTO.mpp);
+    o.filter='saturate(1.45) contrast(1.06) brightness(0.74)'; { const ozB=ORTO.z0+ORTO_IMG.height*ORTO.mpp; if(ozB<Z1){ /* poza ortofotem na południu: rozciągnięty dolny pas (rozmyty), by nie było twardej krawędzi i innego koloru */
+      const sh=Math.min(60,ORTO_IMG.height); o.save(); o.filter='saturate(1.45) contrast(1.06) brightness(0.74) blur('+Math.round(40*K)+'px)'; o.drawImage(ORTO_IMG,0,ORTO_IMG.height-sh,ORTO_IMG.width,sh,ORTO.x0,ozB-2,ORTO_IMG.width*ORTO.mpp,Z1-ozB+60); o.restore();
+      o.filter='saturate(1.45) contrast(1.06) brightness(0.74)'; }
+    if(ORTO.x0>X0||ORTO.x0+ORTO_IMG.width*ORTO.mpp<X1){ } }
+    o.drawImage(ORTO_IMG,ORTO.x0,ORTO.z0,ORTO_IMG.width*ORTO.mpp,ORTO_IMG.height*ORTO.mpp);
     o.filter='blur('+Math.round(70*K)+'px)'; o.globalCompositeOperation='destination-out'; o.fillStyle='rgba(0,0,0,.72)'; o.fillRect(-1100,-800,2000,1800);
     g.save(); g.setTransform(1,0,0,1,0,0); g.drawImage(oc,0,0); g.restore(); }
   if(NM){ const mc=document.createElement('canvas'); mc.width=NM.nx; mc.height=NM.nz; const mg=mc.getContext('2d'); const id=mg.createImageData(NM.nx,NM.nz);
