@@ -1195,6 +1195,39 @@ async function boot(saved){
   }
 
   await LP(54);
+  /* ---------- ROD „Borowik” (Działoszyn): działki z domkami i ogrodzeniami, układ z OSM (tools/gen_rod.py) ---------- */
+  if(typeof DATA_ROD!=='undefined'){ const D=DATA_ROD;
+    const okP=(x,z)=>!blocked(x,z,.25)&&!roadNearF(x,z,.15);
+    const plots=D.p.filter(p=>{ const [cx,cz,rot,,,,,,,ww,dd]=p; const w=L2W(cx,cz,rot); return [[0,0],[-1,-1],[1,-1],[1,1],[-1,1],[0,-1],[0,1],[-1,0],[1,0]].every(([a,b])=>{ const q=w(a*ww/2*.96,b*dd/2*.96); return okP(q[0],q[1]); }); });
+    const WALLC=['#c9b48a','#9fb6c2','#b8c2a0','#d9d2c0','#a65e48','#7d8c6a','#e0c78d'], ROOFC=['#7a3226','#5a5f66','#3f4a3a','#8a6a3a','#4a5668'];
+    const n=plots.length, bodyIM=mkIM(boxGeo,n,plasterTex), roofIM=mkIM(gabGeo,n,tileTex), doorIM=mkIM(boxGeo,n), winIM=mkIM(boxGeo,n);
+    const m4=new THREE.Matrix4(), q4=new THREE.Quaternion(), e4=new THREE.Euler(), p3=new THREE.Vector3(), s3=new THREE.Vector3(), col=new THREE.Color();
+    const put=(im,k,x,y,z,rot,sx,sy,sz,c)=>{ e4.set(0,rot,0); q4.setFromEuler(e4); p3.set(x,y,z); s3.set(sx,sy,sz); m4.compose(p3,q4,s3); im.setMatrixAt(k,m4); im.setColorAt(k,col.set(c)); };
+    const fpos=[], fuv=[], fidx=[]; let fv=0; const FH=1.4; const posts=[];
+    const panel=(x0,z0,x1,z1)=>{ const L=Math.hypot(x1-x0,z1-z0); const nseg=Math.max(1,Math.round(L/2.6)); for(let i=0;i<nseg;i++){ const a=i/nseg, b=(i+1)/nseg; const ax=x0+(x1-x0)*a, az=z0+(z1-z0)*a, bx2=x0+(x1-x0)*b, bz=z0+(z1-z0)*b; const ha=H(ax,az), hb=H(bx2,bz);
+        fpos.push(ax,ha,az, bx2,hb,bz, bx2,hb+FH,bz, ax,ha+FH,az); fuv.push(0,0, L/nseg/1.4,0, L/nseg/1.4,1, 0,1); fidx.push(fv,fv+1,fv+2,fv,fv+2,fv+3); fv+=4; posts.push([ax,ha,az]); } posts.push([x1,H(x1,z1),z1]); };
+    plots.forEach((p,k)=>{ const [cx,cz,rot,sw,sd,wi,ri,rtp,off,ww,dd]=p; const w=L2W(cx,cz,rot), c=Math.cos(rot), s=Math.sin(rot);
+      const C=[w(-ww/2,-dd/2),w(ww/2,-dd/2),w(ww/2,dd/2),w(-ww/2,dd/2)];
+      // ogrodzenie dookoła, z furtką od strony alejki (front = +z lokalnie)
+      const gx=Math.max(-ww/2+1.5,Math.min(ww/2-1.5,off*.8)), G=1.0, gw1=w(gx-G/2,dd/2), gw2=w(gx+G/2,dd/2);
+      panel(C[0][0],C[0][1],C[1][0],C[1][1]); panel(C[1][0],C[1][1],C[2][0],C[2][1]); panel(C[2][0],C[2][1],gw2[0],gw2[1]); panel(gw1[0],gw1[1],C[3][0],C[3][1]); panel(C[3][0],C[3][1],C[0][0],C[0][1]);
+      [[C[0],C[1]],[C[1],C[2]],[C[3],C[0]]].forEach(([a,b])=>{ const dx=b[0]-a[0], dz=b[1]-a[1], L=Math.hypot(dx,dz); addSolid({x:(a[0]+b[0])/2,z:(a[1]+b[1])/2,hw:L/2,hd:.1,c:dx/L,s:dz/L,r:L/2+.3}); });
+      [[C[2],gw2],[gw1,C[3]]].forEach(([a,b])=>{ const dx=b[0]-a[0], dz=b[1]-a[1], L=Math.hypot(dx,dz)||1; addSolid({x:(a[0]+b[0])/2,z:(a[1]+b[1])/2,hw:L/2,hd:.1,c:dx/L,s:dz/L,r:L/2+.3}); });
+      // domek w głębi działki (drzwi w stronę alejki)
+      const sx=off*.5, sz=-dd/2+sd/2+1.0, q=w(sx,sz), base=Math.min(H(q[0],q[1]),H(...w(sx-sw/2,sz+sd/2)),H(...w(sx+sw/2,sz-sd/2)))-.25, hh=2.3+(k%3)*.12;
+      put(bodyIM,k,q[0],base,q[1],rot,sw,hh+.25,sd,WALLC[wi]);
+      put(roofIM,k,q[0],base+hh+.25,q[1],rot+(rtp===2?Math.PI/2:0),(rtp===2?sd:sw)+.5,.9+rtp*.12,(rtp===2?sw:sd)+.5,ROOFC[ri]);
+      const dq=w(sx+sw*.18,sz+sd/2+.03); put(doorIM,k,dq[0],base+.25,dq[1],rot,.8,1.85,.06,'#4a3a2c');
+      const wq=w(sx-sw*.25,sz+sd/2+.03); put(winIM,k,wq[0],base+1.0,wq[1],rot,.7,.6,.06,'#9fb7c6');
+      addSolid({x:q[0],z:q[1],hw:sw/2,hd:sd/2,c,s:-s,r:Math.hypot(sw,sd)/2});
+      // drzewko owocowe / rabata
+      if(k%5<3){ const t=w(ww*.28*(k%2?1:-1),dd*.12); if(!blocked(t[0],t[1],.8)) EXTRA_TREES.push({x:t[0],z:t[1],s:.5+((k*7)%5)*.08,con:false,col:['#6b8a3a','#7a9a42','#8aa04a','#5f8238'][k%4]}); }
+    });
+    [bodyIM,roofIM,doorIM,winIM].forEach(im=>{ im.count=n; im.instanceMatrix.needsUpdate=true; if(im.instanceColor) im.instanceColor.needsUpdate=true; im.castShadow=false; });
+    if(fv){ const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(fpos,3)); geo.setAttribute('uv',new THREE.Float32BufferAttribute(fuv,2)); geo.setIndex(fidx); geo.computeVertexNormals();
+      const mt=fenceT.clone(); mt.needsUpdate=true; mt.wrapS=mt.wrapT=THREE.RepeatWrapping; const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:mt,transparent:true,alphaTest:.35,side:THREE.DoubleSide,color:0x4a8a4a})); scene.add(mesh);
+      const pm=mkIM(boxGeo,posts.length,null); posts.forEach(([x,y,z],i)=>put(pm,i,x,y,z,0,.07,FH+.1,.07,'#59624f')); pm.castShadow=false; pm.instanceMatrix.needsUpdate=true; pm.instanceColor.needsUpdate=true; }
+    window.__rodPlots=n; }
   /* ---------- drzewa ---------- */
   // ---- dane z OSM (tools/osm_extras.py): prawdziwe drzewa, szpalery, ścieżki piesze, ławki; do tego szpalery przy ulicach z chodnikami ----
   if(typeof DATA_OSM!=='undefined'){ const D=DATA_OSM;
