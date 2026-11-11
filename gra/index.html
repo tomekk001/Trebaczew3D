@@ -1854,19 +1854,19 @@ async function boot(saved){
   // --- ogrodzenie szkoły (wg zdjęcia): czarny kuty płot z łukami na cokole, tuje, ceglane słupki bramy ---
   { const P=SCHOOL.pts, kc=centroid(P); const ironT=tex(128,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='#15171a'; x.lineWidth=2.4; for(let i=4;i<w;i+=8){ x.beginPath(); x.moveTo(i,h*.2); x.lineTo(i,h-4); x.stroke(); } x.lineWidth=3.5; x.beginPath(); x.moveTo(0,h*.3); x.quadraticCurveTo(w/2,-h*.08,w,h*.3); x.stroke(); x.beginPath(); x.moveTo(0,h-6); x.lineTo(w,h-6); x.stroke(); x.beginPath(); x.moveTo(0,h*.55); x.lineTo(w,h*.55); x.stroke(); });
     const im=new THREE.MeshLambertMaterial({map:ironT,transparent:true,alphaTest:.3,side:THREE.DoubleSide,color:0x25272a}), blk=new THREE.MeshLambertMaterial({color:0x1c1e20}), plm=new THREE.MeshLambertMaterial({color:0x9a968c,map:detailTex}), brk=new THREE.MeshLambertMaterial({color:0xa94a2e,map:detailTex}), cap=new THREE.MeshLambertMaterial({color:0x8d8a82});
-    const segs=[], posts=[], thuja=[], gates=[]; let gDone=false;
+    const segs=[], posts=[], thuja=[], gates=[]; let gDone=false, g2Done=false; const G2P=[-183.3,-26];
     for(let q=0;q<P.length-1;q++){ const a=P[q], b=P[q+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]); if(l<4) continue; const mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2; if(!roadNearF(mx,mz,6)) continue; const tx=(b[0]-a[0])/l, tz=(b[1]-a[1])/l; let nx=-tz, nz=tx; if((kc[0]-mx)*nx+(kc[1]-mz)*nz<0){ nx=-nx; nz=-nz; }
-      const A=[a[0]+nx*.8,a[1]+nz*.8]; const ang=Math.atan2(tz,tx); const gu=(!gDone&&l>25)?l*.5:-99; if(gu>0) gDone=true; const n=Math.max(1,Math.round(l/2.5));
-      for(let k=0;k<n;k++){ const u0=k/n*l, u1=(k+1)/n*l, um=(u0+u1)/2, c=[A[0]+tx*um,A[1]+tz*um]; if(gu>0&&Math.abs(um-gu)<2.6){ if(!gates.length) gates.push({x:A[0]+tx*gu,z:A[1]+tz*gu,ang,tx,tz,nx,nz}); continue; } if([u0,um,u1].some(u=>blocked(A[0]+tx*u,A[1]+tz*u,0,true)||roadNearF(A[0]+tx*u,A[1]+tz*u,.3))) continue; segs.push([c[0],c[1],ang,(u1-u0)]); posts.push([A[0]+tx*u0,A[1]+tz*u0,ang]);
-        if(k%2===0){ const tq=[c[0]+nx*.9,c[1]+nz*.9]; if(!blocked(tq[0],tq[1],.2,true)) thuja.push(tq); } } }
+      const A=[a[0]+nx*.8,a[1]+nz*.8]; const ang=Math.atan2(tz,tx); const gu=(!gDone&&l>25)?l*.5:-99; if(gu>0) gDone=true; const gu2=(l>100&&!g2Done)?((G2P[0]-a[0])*tx+(G2P[1]-a[1])*tz):-99; if(gu2>0) g2Done=true; const n=Math.max(1,Math.round(l/2.5));
+      for(let k=0;k<n;k++){ const u0=k/n*l, u1=(k+1)/n*l, um=(u0+u1)/2, c=[A[0]+tx*um,A[1]+tz*um]; if(gu>0&&Math.abs(um-gu)<2.6){ if(!gates.length) gates.push({x:A[0]+tx*gu,z:A[1]+tz*gu,ang,tx,tz,nx,nz}); continue; } if(gu2>0&&Math.abs(um-gu2)<3.3){ if(!gates.some(q=>q.open)){ const sg=(nx*-tz+nz*tx)>0?1:-1; gates.push({x:A[0]+tx*gu2,z:A[1]+tz*gu2,ang,tx,tz,nx,nz,open:1,sg}); } continue; } if([u0,um,u1].some(u=>blocked(A[0]+tx*u,A[1]+tz*u,0,true)||roadNearF(A[0]+tx*u,A[1]+tz*u,.3))) continue; segs.push([c[0],c[1],ang,(u1-u0)]); posts.push([A[0]+tx*u0,A[1]+tz*u0,ang]);
+        if(k%2===0&&!(gu2>0&&Math.abs(um-gu2)<4.6)){ const tq=[c[0]+nx*.9,c[1]+nz*.9]; if(!blocked(tq[0],tq[1],.2,true)) thuja.push(tq); } } }
     const dm=new THREE.Object3D();
     { const ip=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1.5).translate(0,.25+.75,0),im,Math.max(1,segs.length)), pl=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.3,.22).translate(0,.15,0),plm,Math.max(1,segs.length));
       segs.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,-q[2],0); dm.scale.set(q[3]+.04,1,1); dm.updateMatrix(); ip.setMatrixAt(i,dm.matrix); pl.setMatrixAt(i,dm.matrix); addSolid({x:q[0],z:q[1],hw:q[3]/2,hd:.1,c:Math.cos(q[2]),s:Math.sin(q[2]),r:q[3]/2+.3}); }); ip.count=pl.count=segs.length; scene.add(ip,pl);
       const sp=new THREE.InstancedMesh(new THREE.BoxGeometry(.09,1.85,.09).translate(0,.92,0),blk,Math.max(1,posts.length)); posts.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,0,0); dm.scale.set(1,1,1); dm.updateMatrix(); sp.setMatrixAt(i,dm.matrix); }); sp.count=posts.length; sp.castShadow=true; scene.add(sp);
       const tm=new THREE.InstancedMesh(new THREE.ConeGeometry(.42,2.7,7).translate(0,1.35,0),new THREE.MeshLambertMaterial({color:0x2c5a33}),Math.max(1,thuja.length)); thuja.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,i*1.9,0); dm.scale.set(1,.85+((i*29)%10)/35,1); dm.updateMatrix(); tm.setMatrixAt(i,dm.matrix); }); tm.count=thuja.length; tm.castShadow=true; scene.add(tm); }
-    gates.forEach(G=>{ const g=new THREE.Group(); g.position.set(G.x,H(G.x,G.z),G.z); g.rotation.y=-G.ang; scene.add(g); [-2.5,2.5].forEach(o=>{ bx(g,.55,2.1,.55,o,0,0,brk); bx(g,.7,.12,.7,o,2.1,0,cap); });
+    gates.forEach(G=>{ const g=new THREE.Group(); g.position.set(G.x,H(G.x,G.z),G.z); g.rotation.y=-G.ang; scene.add(g); const po2=G.open?3.4:2.5; [-po2,po2].forEach(o=>{ bx(g,.55,2.1,.55,o,0,0,brk); bx(g,.7,.12,.7,o,2.1,0,cap); });
       const leaf=(x0,w0,open)=>{ const f=new THREE.Group(); f.position.set(x0,0,0); f.rotation.y=open; g.add(f); const m=new THREE.Mesh(new THREE.PlaneGeometry(w0,1.5),im.clone()); m.material.map=ironT.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(w0/2.5,1); m.position.set(-x0*0+ (x0<0?w0/2:-w0/2)*0,1.1,0); m.position.x=x0<0?w0/2:-w0/2; f.add(m); bx(f,w0,.06,.06,x0<0?w0/2:-w0/2,.3,0,blk,true); };
-      leaf(-2.2,2.0,0); leaf(2.2,2.0,-1.1); });
+      if(G.open){ leaf(-3.1,2.3,-G.sg*1.45); leaf(3.1,2.3,G.sg*1.45); } else { leaf(-2.2,2.0,0); leaf(2.2,2.0,-1.1); } });
   }
 
   // --- ogródek skalny przy narożniku przedszkola od Szkolnej (wg zdjęcia): żwir z głazami, tuje, świerk, znaki ---
@@ -2467,6 +2467,25 @@ async function boot(saved){
     const L=van?5:spec?4.67:4.4, me={x,z,h,L,W:1.95}; if(parked.some(p=>Math.abs(p.x-x)<14&&Math.abs(p.z-z)<14&&obb(me,box(p),.4)))return false;
     const c={g:spec?spec.g:makeCar(pick(CARCOL),van?'van':''),x,z,h,v:0,steer:0,L,W:1.95,kind:van?'van':'car'}; if(spec&&spec.name)c.name=spec.name; c.k0=Math.round(x)+','+Math.round(z); seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); if(spec){ PASSAT=c; c.cap=62; c.ftype='pb95'; c.fuel=8; c.lowWarn=false; } return true; }
   let PASSAT=null;
+  // --- alejka do szkoły (Zacisze): parking z kostki po prawej, drugie wejście do szkoły od strony bramy + 2 auta ---
+  { const GP=[-183.3,-29.2]; const sb=BLD.reduce((q,b)=>Math.hypot(b.x+189,b.z+45)<Math.hypot(q.x+189,q.z+45)?b:q,BLD[0]);
+    if(Math.hypot(sb.x+189,sb.z+45)<8){ const c=Math.cos(sb.a), sn=Math.sin(sb.a), xh=[c,sn], zh=[-sn,c]; let sg=((GP[0]-sb.x)*xh[0]+(GP[1]-sb.z)*xh[1])>0?1:-1; const nrm=[xh[0]*sg,xh[1]*sg];
+      const t0=(GP[0]-sb.x)*zh[0]+(GP[1]-sb.z)*zh[1]; const W=(u,v)=>[sb.x+nrm[0]*(sb.w/2+u)+zh[0]*(t0+v), sb.z+nrm[1]*(sb.w/2+u)+zh[1]*(t0+v)];
+      const pad=[[.2,-13],[6.2,-13],[6.2,13],[.2,13]].map(([u,v])=>W(u,v)); drape(pad,matPaver,.13,2.2,true);
+      const pth=[W(6,0),[GP[0],GP[1]]]; const pm=new THREE.Mesh(ribbon(pth,3,.13,2.2),matPaver); pm.receiveShadow=true; scene.add(pm);
+      // drzwi dwuskrzydłowe z daszkiem i schodkami
+      const d0=W(.04,0), dg=new THREE.Group(); dg.position.set(d0[0],H(d0[0],d0[1]),d0[1]); dg.rotation.y=Math.atan2(nrm[0],nrm[1]); scene.add(dg);
+      const frm=new THREE.MeshLambertMaterial({color:0x4a2f22}), gls=new THREE.MeshLambertMaterial({color:0x27333d}), cn=new THREE.MeshLambertMaterial({color:0x6b3a26}), stp=new THREE.MeshLambertMaterial({color:0x9a968c,map:detailTex});
+      bx(dg,2.1,2.5,.12,0,0,0,frm); [-.52,.52].forEach(o=>bx(dg,.92,2.2,.05,o,.05,.07,gls)); bx(dg,.05,2.3,.07,0,.05,.09,frm);
+      bx(dg,3.4,.14,1.8,0,2.75,.9,cn); [-1.5,1.5].forEach(o=>bx(dg,.1,2.75,.1,o,0,1.65,frm)); bx(dg,3.0,.18,1.2,0,0,.6,stp); bx(dg,2.6,.18,.5,0,.0,1.45,stp);
+      addSolid({x:d0[0]+nrm[0]*1.2,z:d0[1]+nrm[1]*1.2,hw:.1,hd:.1,c:1,s:0,r:.2});
+      const hh=Math.atan2(zh[1],zh[0]); [[-9,0xb8bcc2],[8.5,0x2c3e55]].forEach(([v,col])=>{ const q=W(3.6,v); const car=makeCar(col,'car'); seatCar(car,q[0],q[1],hh+(v<0?0:Math.PI)); scene.add(car); const cc=Math.cos(hh), ss=Math.sin(hh); addSolid({x:q[0],z:q[1],hw:2.2,hd:.95,c:cc,s:ss,r:2.5}); });
+    }
+    // parking z kostki po prawej stronie alejki (jak na zdjęciu) - przy asfalcie, od bramy w stronę Wyzwolenia
+    const AL=[-182,-26], BL=[-161,99], ul=Math.hypot(BL[0]-AL[0],BL[1]-AL[1]), ux=(BL[0]-AL[0])/ul, uz=(BL[1]-AL[1])/ul, ex=uz, ez=-ux;
+    const strip=[[5,5.6],[5,38]].map(([t,o])=>0); const sp=[]; for(let t=6;t<=40;t+=4) sp.push([AL[0]+ux*t+ex*3.9, AL[1]+uz*t+ez*3.9]);
+    if(!sp.some(q=>blocked(q[0],q[1],.5,true))){ const sm=new THREE.Mesh(ribbon(sp,3.6,.13,2.2),matPaver); sm.receiveShadow=true; scene.add(sm); }
+  }
   /* szary VW Passat B5 FL 2.0 benzyna, sedan, tablica EPJ 03338 */
   function makePassat(){ const g=makeCar(0x6f7378,'passat'); const cv=document.createElement('canvas'); cv.width=256; cv.height=64; const x=cv.getContext('2d'); x.fillStyle='#f4f4f0'; x.fillRect(0,0,256,64); x.fillStyle='#1f4fa3'; x.fillRect(0,0,26,64); x.fillStyle='#fff'; x.font='700 14px Arial'; x.textAlign='center'; x.fillText('PL',13,56); x.fillStyle='#111'; x.font='700 44px "Barlow Condensed", Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('EPJ 03338',143,34); x.strokeStyle='#111'; x.lineWidth=3; x.strokeRect(1.5,1.5,253,61);
     const t=new THREE.CanvasTexture(cv); const pm=new THREE.MeshBasicMaterial({map:t}); const HL=2.335; [[HL+.13,Math.PI/2],[-HL-.14,-Math.PI/2]].forEach(([px,ry])=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(.52,.13),pm); m.position.set(px,px>0?.4:.6,0); m.rotation.y=ry; g.add(m); });
