@@ -150,6 +150,9 @@ async function boot(saved){
   /* ---------- tekstura terenu ---------- */
   const WB=typeof DATA_X!=='undefined'?DATA_X.W:[-1150,950,-850,1050];
   const X0=WB[0],X1=WB[1],Z0=WB[2],Z1=WB[3], GW=X1-X0, GH=Z1-Z0;
+  /* maska przejścia w pasie północnym (Sadowiec): 1 = da się przejść, 0 = pola/lasy bez dróg - wyszarzone i zablokowane */
+  const NM=(typeof DATA_X!=='undefined'&&DATA_X.N)||null, NMB=NM?Uint8Array.from(atob(NM.s),c=>c.charCodeAt(0)):null;
+  function noWalk(x,z){ if(!NM)return false; const cx=Math.floor((x-NM.x0)/NM.c), cz=Math.floor((z-NM.z0)/NM.c); if(cx<0||cz<0||cx>=NM.nx||cz>=NM.nz)return false; const i=cz*NM.nx+cx; return !((NMB[i>>3]>>(i&7))&1); }
   const GTW=GW>3000?4096:2048; const gc=document.createElement('canvas'); const K=GTW/GW; gc.width=GTW; gc.height=Math.round(GH*K);
   let ORTO_IMG=null; if(typeof ORTO!=='undefined'){ try{ const im=new Image(); im.src=ORTO.src; await im.decode(); ORTO_IMG=im; }catch(e){} }
   const g=gc.getContext('2d'); g.setTransform(K,0,0,K,-X0*K,-Z0*K);
@@ -179,6 +182,11 @@ async function boot(saved){
     o.filter='saturate(1.45) contrast(1.06) brightness(0.74)'; o.drawImage(ORTO_IMG,ORTO.x0,ORTO.z0,ORTO_IMG.width*ORTO.mpp,ORTO_IMG.height*ORTO.mpp);
     o.filter='blur('+Math.round(70*K)+'px)'; o.globalCompositeOperation='destination-out'; o.fillStyle='rgba(0,0,0,.72)'; o.fillRect(-1100,-800,2000,1800);
     g.save(); g.setTransform(1,0,0,1,0,0); g.drawImage(oc,0,0); g.restore(); }
+  if(NM){ const mc=document.createElement('canvas'); mc.width=NM.nx; mc.height=NM.nz; const mg=mc.getContext('2d'); const id=mg.createImageData(NM.nx,NM.nz);
+    for(let i=0;i<NM.nx*NM.nz;i++){ const w=(NMB[i>>3]>>(i&7))&1; id.data[i*4]=128; id.data[i*4+1]=130; id.data[i*4+2]=136; id.data[i*4+3]=w?0:255; } mg.putImageData(id,0,0);
+    const gl=document.createElement('canvas'); gl.width=gc.width; gl.height=gc.height; const gx=gl.getContext('2d'); gx.imageSmoothingEnabled=true; gx.filter='blur('+Math.max(1,Math.round(NM.c*K*.5))+'px)';
+    gx.drawImage(mc,(NM.x0-X0)*K,(NM.z0-Z0)*K,NM.nx*NM.c*K,NM.nz*NM.c*K); gx.filter='none';
+    g.save(); g.setTransform(1,0,0,1,0,0); g.globalCompositeOperation='saturation'; g.globalAlpha=.92; g.drawImage(gl,0,0); g.globalCompositeOperation='source-over'; g.globalAlpha=.38; g.drawImage(gl,0,0); g.restore(); }
   const AREA_COL={'lu:cemetery':'#7d8c68','lei:park':'#6fa046','am:parking':'#7f7f7c','lei:playground':'#b8513f','lu:commercial':'#a8a291','lu:industrial':'#a39d8e','am:fire_station':'#99968d','am:school':'#86ad5c','am:kindergarten':'#8eb662','lu:construction':'#a19a8a','lei:track':'#b4553e'};
   ['lu:industrial','lu:commercial','am:school','am:kindergarten','lei:park','lu:cemetery','am:fire_station','lu:construction','am:parking','lei:playground','lei:track'].forEach(t=>AREAS.filter(a=>a.t===t).forEach(a=>{ path(a.pts,true); g.fillStyle=AREA_COL[t]; g.globalAlpha=ORTO_IMG&&(a.ext||['am:school','am:kindergarten','lei:park','lu:cemetery','lu:industrial','lu:commercial'].includes(t))?.45:1; g.fill(); g.globalAlpha=1; }));
   { g.save(); path(CEM.pts,true); g.clip(); for(let x=-260;x<60;x+=3.2)for(let z=280;z<480;z+=4.5){ g.fillStyle=rnd()<.5?'#cfcbc2':'#9e9a92'; g.fillRect(x,z,1.6,2.6);} g.restore(); }
@@ -278,7 +286,7 @@ async function boot(saved){
   const inSchool=(x,z)=>inPoly(x,z,SCHOOL.pts), inKinder=(x,z)=>inPoly(x,z,KINDER.pts);
   const HALL_B=BLD.find(b=>b.isHall)||BLD.find(b=>b.code===5&&Math.max(b.w,b.d)>50);
   const houses=[];
-  const CB={}; [['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
+  const CB={}; [['komf',-2198,983],['manu',-2070,938],['tutti',-2048,921],['autop',-1136,686],['hgraf',-1125,695],['dstary',-1180,670],['dsolar',-1210,681],['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
   if(CB.orlenRoof) CB.orlenRoof.skip=true;
   // domy nachodzące na jezdnię: odsuń od drogi (albo pomiń, gdy trzeba by przesunąć za daleko)
   { const RD=ROADS.filter(r=>!['track','path','footway','steps','cycleway','foot'].includes(r.t)); const nearPt=(r,x,z)=>{ let best=null,bd=1e9; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i],b=r.pts[i+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz||1; const t=clamp(((x-a[0])*dx+(z-a[1])*dz)/L,0,1); const px=a[0]+dx*t,pz=a[1]+dz*t; const d=Math.hypot(x-px,z-pz); if(d<bd){bd=d;best=[px,pz,d];} } return best; };
@@ -1031,6 +1039,19 @@ async function boot(saved){
   if(CB.w161) buildPhotoHouse(CB.w161,'dom_w161',/Wyzwolenia/,8.5,11,0xefe2c9,0x3e7a3a);
   if(CB.w163) buildPhotoHouse(CB.w163,'dom_w163',/Wyzwolenia/,10,11,0xf1e9d6,0x5b3b2d);
   if(CB.szk3) buildPhotoHouse(CB.szk3,'dom_szk3',/Szkolna/,11.5,11,0xe8dcc4,0x4f545a);
+  // budynki ze zdjęć Street View przy DK42 / Wyzwolenia / Piłsudskiego (modele: tools/blender/foto_dk42.py) + szyldy
+  function photoBld(b,name,ML,MD,col,roofCol,H0,sign){ const nr=nearestRoad(b.x,b.z,r=>r.t!=='track'&&r.t!=='srv'&&r.t!=='path'); const {f,g,L,D,FZ,low,w}=groupAt(b,nr.r);
+    const ph=[bx(g,L,H0-low,D,0,low,0,new THREE.MeshLambertMaterial({color:col,map:plasterTex})), gableRoof(g,L+1,D+1,3.2,H0,new THREE.MeshLambertMaterial({color:roofCol,map:tileTex}))];
+    swapIn(g,name,ph,{sx:L/ML,sz:D/MD,low,L,D});
+    if(sign){ const sm=new THREE.MeshLambertMaterial({map:signTex(sign.text,sign.bg,sign.fg,512,sign.h||112,sign.font||'800 66px Barlow, Arial',sign.stripe)}); const pl=frontPlane(f,sign.y,sign.w,sign.w*(sign.h||112)/512,sm,.1+(sign.out||0)); if(sign.dx){ pl.position.x+=-f.nz*sign.dx; pl.position.z+=f.nx*sign.dx; } }
+    return {f,g,L,D,w}; }
+  if(CB.komf) photoBld(CB.komf,'komfort',31.5,29,0xc9c2b3,0x4d555d,5.4,{text:'komfort',bg:'#f2f0ea',fg:'#1f4aa8',y:5.6,w:9,h:128,font:'italic 800 84px Barlow, Arial',stripe:'#1f4aa8',out:.1});
+  if(CB.manu) photoBld(CB.manu,'salon',29.5,14.5,0xefe4cf,0x5b3a2a,4.4,{text:'SALON ŁAZIENEK',bg:'#5a5d62',fg:'#ffffff',y:3.9,w:7.6,h:96,font:'700 56px Barlow, Arial',out:1.9});
+  if(CB.tutti) photoBld(CB.tutti,'tutti',31,15.5,0xf0e6d2,0x6b4332,4.2,{text:'Tutti Flori',bg:'#f6f1e6',fg:'#7a2f7a',y:3.2,w:5.4,h:110,font:'italic 700 62px Barlow, Arial',out:2.35});
+  if(CB.autop) photoBld(CB.autop,'autopart',12,10,0xa3a9ae,0x555a60,6.6,{text:'AUTOPART',bg:'#2e3134',fg:'#ffffff',y:5.4,w:7.5,h:100,font:'800 64px Barlow, Arial',out:.12});
+  if(CB.hgraf) photoBld(CB.hgraf,'hala_grafit',18.5,13.5,0x41464c,0x3a3f45,5.2,null);
+  if(CB.dstary) photoBld(CB.dstary,'dom_stary',10,9.5,0xc8ab8d,0x6d7378,5.4,null);
+  if(CB.dsolar) photoBld(CB.dsolar,'dom_solar',12.5,10,0xe6dcc4,0x4b3b34,5.2,null);
   if(CB.kwiac) buildPhotoHouse(CB.kwiac,'kwiaciarnia',/Szkolna/,12.5,11,0xecd2b4,0x5e3a2b,({f,g,L,D,FZ,w})=>{
     // tablica „Kwiaciarnia Sas-Anka” na ogrodzeniu i ceglasto-czerwony płot z drewnianych sztachet na podmurówce
     const kT=tex(512,192,(c,W,Hh)=>{ c.fillStyle='#f6f8f2'; c.fillRect(0,0,W,Hh); const gr=c.createLinearGradient(0,0,W*.4,0); gr.addColorStop(0,'#f2b6d0'); gr.addColorStop(1,'#f6f8f2'); c.fillStyle=gr; c.fillRect(0,0,W*.45,Hh);
@@ -1269,8 +1290,8 @@ async function boot(saved){
   trees.forEach(t=>addSolid({x:t.x,z:t.z,hw:.35*t.s,hd:.35*t.s,c:1,s:0,r:.6,tree:true}));
 
   /* ---------- lasy z OSM (poza wsią): lekkie drzewa instancjonowane ---------- */
-  { const W=AREAS.filter(a=>a.t==='nat:wood'||a.t==='nat:scrub'); const F=[];
-    W.forEach(a=>{ const bb=bbox(a.pts), scrub=a.t==='nat:scrub', step=scrub?14:7.5; const ar=Math.abs(polyArea(a.pts));
+  { const W=AREAS.filter(a=>a.t==='nat:wood'||a.t==='nat:scrub').sort((a,b)=>(centroid(a.pts)[1]<-860)-(centroid(b.pts)[1]<-860)); const F=[];
+    W.forEach(a=>{ const bb=bbox(a.pts), scrub=a.t==='nat:scrub', step=scrub?14:(centroid(a.pts)[1]<-860?15:7.5); const ar=Math.abs(polyArea(a.pts));
       for(let x=bb[0];x<bb[2];x+=step)for(let z=bb[1];z<bb[3];z+=step){ if(F.length>14000)return; const jx=x+R(-step*.4,step*.4), jz=z+R(-step*.4,step*.4); if(jx<X0||jx>X1||jz<Z0||jz>Z1)continue; if(!inPoly(jx,jz,a.pts))continue; if(scrub&&rnd()<.5)continue; if(roadNear(jx,jz,4)||blocked(jx,jz,1.5)||orlik.grp.userData.inside(jx,jz)||nearBuilding(jx,jz,3.4))continue; F.push([jx,jz,scrub?R(.5,.9):R(.85,1.35),scrub?0:rnd()<.72?1:0]); } });
     const pine=mergeParts([[new THREE.CylinderGeometry(.18,.28,9,5).translate(0,4.5,0),0x6b4a32],[new THREE.ConeGeometry(2.1,5,7).translate(0,9,0),0xffffff],[new THREE.ConeGeometry(1.6,4,7).translate(0,11.2,0),0xffffff],[new THREE.ConeGeometry(1.0,3,7).translate(0,13.2,0),0xffffff]]);
     const leaf=mergeParts([[new THREE.CylinderGeometry(.2,.3,4.5,5).translate(0,2.25,0),0x6b4a32],[new THREE.IcosahedronGeometry(2.8,0).scale(1,.85,1).translate(0,6.2,0),0xffffff],[new THREE.IcosahedronGeometry(2,0).translate(1.4,5.2,.8),0xffffff],[new THREE.IcosahedronGeometry(2,0).translate(-1.3,5.4,-.9),0xffffff]]);
@@ -1647,7 +1668,7 @@ async function boot(saved){
   function exitCar(force){ const c=st.car; if(!c)return; const lx=c.x+Math.sin(c.h)*1.9, lz=c.z-Math.cos(c.h)*1.9; const rx=c.x-Math.sin(c.h)*1.9, rz=c.z+Math.cos(c.h)*1.9;
     if(!blocked(lx,lz,.4)){st.x=lx;st.z=lz;} else if(!blocked(rx,rz,.4)){st.x=rx;st.z=rz;} else if(!force) return; else {st.x=lx;st.z=lz;}
     c.v=0; st.car=null; player.visible=st.mode!==1; vehEl.hidden=true; }
-  function carBlocked(x,z,h){ const c=st.car, [L,W]=dimsOf(c); const fx=Math.cos(h),fz=Math.sin(h), half=Math.max(0,L/2-W/2); for(const k of [-half,0,half]){ if(blocked(x+fx*k,z+fz*k,W/2*.95,true))return true; }
+  function carBlocked(x,z,h){ if(noWalk(x,z))return true; const c=st.car, [L,W]=dimsOf(c); const fx=Math.cos(h),fz=Math.sin(h), half=Math.max(0,L/2-W/2); for(const k of [-half,0,half]){ if(blocked(x+fx*k,z+fz*k,W/2*.95,true))return true; }
     const me={x,z,h,L,W}; for(const p of parked){ if(p!==c&&Math.abs(p.x-x)<15&&Math.abs(p.z-z)<15&&obb(me,box(p),0))return true; } return false; }
   function carHits(c){ const me=box(c); const hit=[]; cars.forEach(t=>{ if(t.h!==undefined&&Math.abs(t.x-c.x)<15&&Math.abs(t.z-c.z)<15&&obb(me,{x:t.x,z:t.z,h:t.h,L:4.4,W:1.9},0)) hit.push(t); });
     if(typeof COPS!=='undefined') COPS.forEach(t=>{ if(Math.abs(t.x-c.x)<15&&Math.abs(t.z-c.z)<15&&obb(me,{x:t.x,z:t.z,h:t.h,L:4.4,W:1.9},0)) hit.push(t); });
@@ -4150,8 +4171,8 @@ async function boot(saved){
     if(id==='pOpt'){ renderKeys(); renderQ(); } if(id==='pChar'){ renderChar(); MENU.ca=st.yaw; MENU.t=0; } if(id==='pBug') $('bSend').href=bugHref(); WAITKEY=null; }
   menuEl.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>openPanel('')));
   let HAS_SAVE=false; try{ HAS_SAVE=!!localStorage.getItem('trebaczew-gra'); }catch(e){}
-  function playSub(){ const has=st.xp>0||DONE.size>0||HAS_SAVE; $('mPlaySub').textContent=GAME.started?'':has?`kontynuuj · poziom ${st.level}`:'nowa gra'; $('mPlay').firstChild.textContent=GAME.started?'Wznów grę ':'Tryb jednoosobowy '; $('mNew').hidden=!has; $('mLog').hidden=!GAME.started; $('mLogSub').textContent=`fabuła ${DONE.size}/20`; }
-  function showMenu(v){ GAME.paused=v; if(AU.ctx){ try{ v?AU.ctx.suspend():AU.ctx.resume(); }catch(e){} } menuEl.hidden=!v; document.body.classList.toggle('inmenu',v); keys.clear(); resetJoy(); if(v){ menuEl.classList.toggle('pause',GAME.started); playSub(); openPanel(''); if(!IS_TOUCH) setTimeout(()=>$('mPlay').focus(),30); } else { if(MENU.view==='creator') MENU.view=''; if(MENU.vo){ camera.clearViewOffset(); MENU.vo=false; } canvas.focus(); clock.getDelta(); } }
+  function playSub(){ const has=st.xp>0||DONE.size>0||HAS_SAVE; $('mPlaySub').textContent=GAME.started?'':has?`kontynuuj · poziom ${st.level}`:'nowa gra'; $('mPlay').firstChild.textContent=GAME.started?'Wznów grę ':'Tryb jednoosobowy '; $('mNew').hidden=true; $('mMulti').firstChild.textContent=GAME.started?'Wznów grę ':'Graj '; $('mMultiSub').textContent=GAME.started?'':'z innymi mieszkańcami'; $('mLog').hidden=!GAME.started; $('mLogSub').textContent=`fabuła ${DONE.size}/20`; }
+  function showMenu(v){ GAME.paused=v; if(AU.ctx){ try{ v?AU.ctx.suspend():AU.ctx.resume(); }catch(e){} } menuEl.hidden=!v; document.body.classList.toggle('inmenu',v); keys.clear(); resetJoy(); if(v){ menuEl.classList.toggle('pause',GAME.started); playSub(); openPanel(''); if(!IS_TOUCH) setTimeout(()=>$('mMulti').focus(),30); } else { if(MENU.view==='creator') MENU.view=''; if(MENU.vo){ camera.clearViewOffset(); MENU.vo=false; } canvas.focus(); clock.getDelta(); } }
   $('mPlay').addEventListener('click',()=>{ if(!GAME.started){ GAME.started=true; statEvent('start',{mob:IS_TOUCH?1:0}); if(!AU.ctx) try{ audioStart(); }catch(e){} { const how=IS_TOUCH?'Menu → Misje: lista zadań':`<kbd>${keyName(KEYMAP.q)}</kbd> dziennik misji`; if(!DONE.size&&INFO){ WAYPOINT=INFO.front.slice(); toast(`Witaj w Trębaczewie${CHAR.name?', '+CHAR.name:''}!<br>Podejdź do niebieskiego punktu informacyjnego „i” obok - tam zaczyna się pierwsza misja.<br>${how}`,7); } else toast(`Witaj w Trębaczewie${CHAR.name?', '+CHAR.name:''}!<br>${how} · żółte znaczniki to misje fabularne`,6); } } showMenu(false); });
   $('mOpt').addEventListener('click',()=>openPanel($('pOpt').hidden?'pOpt':''));
   /* ---------- konto (opcjonalne): synchronizacja zapisu między urządzeniami ---------- */
@@ -4784,7 +4805,7 @@ async function boot(saved){
       if(mag===0&&Math.hypot(st.vx,st.vz)<0.15){ st.vx=0; st.vz=0; }
       const vel=Math.hypot(st.vx,st.vz); moving=vel>0.1; mag=Math.min(1,vel/4.2);
       if(moving){ const dx=st.vx, dz=st.vz;
-        const nx=st.x+st.vx*dt, nz=st.z+st.vz*dt; const feet=(st.gy||0)+(st.jy||0); const pb=st.inside?((x,z)=>curBlocked(x,z,.35)):(x,z)=>blocked(x,z,.35)||parked.some(c=>{ if(c===st.car)return false; const lx=(x-c.x)*Math.cos(c.h)+(z-c.z)*Math.sin(c.h), lz=-(x-c.x)*Math.sin(c.h)+(z-c.z)*Math.cos(c.h); const [L2,W2]=roofBox(c); return Math.abs(lx)<L2+.35&&Math.abs(lz)<W2+.35&&feet<roofH(c)-.12; });
+        const nx=st.x+st.vx*dt, nz=st.z+st.vz*dt; const feet=(st.gy||0)+(st.jy||0); const pb=st.inside?((x,z)=>curBlocked(x,z,.35)):(x,z)=>blocked(x,z,.35)||noWalk(x,z)||parked.some(c=>{ if(c===st.car)return false; const lx=(x-c.x)*Math.cos(c.h)+(z-c.z)*Math.sin(c.h), lz=-(x-c.x)*Math.sin(c.h)+(z-c.z)*Math.cos(c.h); const [L2,W2]=roofBox(c); return Math.abs(lx)<L2+.35&&Math.abs(lz)<W2+.35&&feet<roofH(c)-.12; });
         if(!pb(nx,nz)){st.x=nx;st.z=nz;} else if(!pb(nx,st.z)) st.x=nx; else if(!pb(st.x,nz)) st.z=nz;
         const tf=Math.atan2(dx,dz); let df=tf-st.face; df=Math.atan2(Math.sin(df),Math.cos(df)); st.face+=df*Math.min(1,dt*12); st.walk+=dt*vel*1.6; }
       if(!st.inside){ st.x=clamp(st.x,X0+30,X1-30); st.z=clamp(st.z,Z0+30,Z1-30); }

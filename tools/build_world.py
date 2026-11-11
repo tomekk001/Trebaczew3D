@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "tools" / "raw"; SRC = ROOT / "src"
 LAT0, LON0 = 51.1301965, 18.9215954
 KX = 111320 * math.cos(math.radians(LAT0)); KZ = 110574
-WX0, WX1, WZ0, WZ1 = -3100, 2560, -860, 3400          # granice świata
+WX0, WX1, WZ0, WZ1 = -3100, 2560, -2860, 3400         # granice świata (pas północny z<-860: Sadowiec, tools/raw/*north*)
+ZS = -860                                               # południowa granica pasa północnego
 OLD = (-1150, 950, -850, 1050)                          # stary obszar (dane ręcznie dopracowane)
 ORTO_MPP = 2.5
 loc = lambda lat, lon: ((lon - LON0) * KX, -(lat - LAT0) * KZ)
@@ -48,15 +49,26 @@ def in_old(x, z): return OLD[0] < x < OLD[1] and OLD[2] < z < OLD[3]
 
 def main():
     osm = json.load(gzip.open(RAW / "osm_area.json.gz"))
+    if (RAW / "osm_north.json.gz").exists():                 # pas północny (Sadowiec-Niwy/Wieś/Wrzosy): API OSM 0.6 /map w kafelkach
+        have = {(e["type"], e["id"]) for e in osm["elements"]}
+        osm["elements"] += [e for e in json.load(gzip.open(RAW / "osm_north.json.gz"))["elements"] if (e["type"], e["id"]) not in have]
     E = osm["elements"]; nodes = {e["id"]: e for e in E if e["type"] == "node"}
     ways = {e["id"]: e for e in E if e["type"] == "way"}
     def wpts(w): return [loc(nodes[n]["lat"], nodes[n]["lon"]) for n in w["nodes"] if n in nodes]
-    orto = Image.open(RAW / "orto.jpg").convert("RGB"); OW, OH = orto.size
+    orto = Image.open(RAW / "orto.jpg").convert("RGB")
+    if (RAW / "orto_north_a.jpg").exists():                   # ortofoto pasa północnego (GUGiK WMS) doklejone od góry
+        na = Image.open(RAW / "orto_north_a.jpg").convert("RGB"); nb = Image.open(RAW / "orto_north_b.jpg").convert("RGB")
+        full = Image.new("RGB", (orto.width, orto.height + na.height)); full.paste(na, (0, 0)); full.paste(nb, (na.width, 0)); full.paste(orto, (0, na.height))
+        orto = full; orto.save(RAW / "orto_full.jpg", quality=80)
+    OW, OH = orto.size
 
     # ---------- wysokości ----------
     head, body = (RAW / "nmt.txt").read_text().split("\n", 1)
     hp = dict(kv.split("=") for kv in head.split()); vals = [float(v) for v in body.strip().split(",")]
     base = 175
+    if (RAW / "nmt_north.txt").exists():                       # wysokości pasa północnego (GUGiK NMT, 20 m): 100 wierszy z=-2860..-880
+        nv = [float(v) for v in (RAW / "nmt_north.txt").read_text().split(",")]; assert len(nv) == 100 * int(hp["nx"])
+        vals = nv + vals; hp["nz"] = str(int(hp["nz"]) + 100); hp["z0"] = str(int(hp["z0"]) - 2000)
     # NMT sięga tylko do z=2020: dalej na południe (Cementownia, dolina Warty) wysokości dopełniamy trendem z ostatnich wierszy (bez danych publicznych w tym pliku)
     nx0, nz0 = int(hp["nx"]), int(hp["nz"]); step0 = int(hp["step"]); nzn = int((WZ1 + 40 - int(hp["z0"])) // step0) + 1
     import statistics
@@ -254,10 +266,35 @@ def main():
         if not p: continue
         x = sum(q[0] for q in p)/len(p); z = sum(q[1] for q in p)/len(p)
         if in_world(x, z) and not in_old(x, z): places.append([t["name"], t.get("landuse") or t.get("leisure") or t.get("amenity"), round(x), round(z)])
-    X = {"DK": enc_delta(chain), "R": roads, "A": areas, "P": places, "W": [WX0, WX1, WZ0, WZ1]}
+    # ---------- maska przejścia w pasie północnym: poza drogami/zabudową/ogrodami teren jest nieprzejezdny (wyszarzony w grze) ----------
+    from PIL import ImageDraw, ImageFilter
+    CELL = 10; mx0, mz0 = WX0, WZ0; mnx = (WX1 - WX0) // CELL; mnz = (ZS - WZ0) // CELL
+    lines = Image.new("L", (mnx, mnz), 0); dl = ImageDraw.Draw(lines); blobs = Image.new("L", (mnx, mnz), 0); db = ImageDraw.Draw(blobs)
+    toc = lambda q: ((q[0]-mx0)/CELL, (q[1]-mz0)/CELL)
+    for e in E:
+        if e["type"] != "way": continue
+        t = e.get("tags", {}); w_ = wpts(e)
+        if len(w_) < 2: continue
+        if t.get("highway") and t.get("highway") not in ("proposed", "construction"):
+            dl.line([toc(q) for q in w_], fill=255, width=max(1, round(2 * 26 / CELL)))
+        elif "building" in t:
+            if len(w_) >= 3: db.polygon([toc(q) for q in w_], fill=255)
+        elif t.get("landuse") in ("residential", "allotments", "commercial", "industrial", "retail") or t.get("leisure") in ("park", "pitch", "playground", "garden") or t.get("amenity") in ("school", "parking", "kindergarten"):
+            if len(w_) >= 3: db.polygon([toc(q) for q in w_], fill=255)
+    blobs = blobs.filter(ImageFilter.MaxFilter(7))         # ~ +30 m wokół zabudowy
+    walk = Image.eval(Image.merge("L", [lines])  , lambda v: v)
+    from PIL import ImageChops
+    walk = ImageChops.lighter(lines, blobs)
+    # nad wiaduktem/torami nie wolno chodzić po samej linii kolejowej (przejścia tylko przez drogi)
+    wb = walk.tobytes(); bits = bytearray((mnx * mnz + 7) // 8)
+    for i, v in enumerate(wb):
+        if v > 127: bits[i >> 3] |= 1 << (i & 7)
+    NMASK = {"x0": mx0, "z0": mz0, "c": CELL, "nx": mnx, "nz": mnz, "s": base64.b64encode(bytes(bits)).decode()}
+    print("maska pasa północnego: przejście", round(sum(1 for v in wb if v > 127) / len(wb) * 100, 1), "% komórek")
+    X = {"DK": enc_delta(chain), "R": roads, "A": areas, "P": places, "W": [WX0, WX1, WZ0, WZ1], "N": NMASK}
     (SRC / "data_x.js").write_text("const DATA_X=" + json.dumps(X, ensure_ascii=False, separators=(",", ":")) + ";\n", encoding="utf-8")
     # ---------- ortofotomapa ----------
-    b64 = base64.b64encode((RAW / "orto.jpg").read_bytes()).decode()
+    b64 = base64.b64encode(((RAW / "orto_full.jpg") if (RAW / "orto_full.jpg").exists() else (RAW / "orto.jpg")).read_bytes()).decode()
     (SRC / "data_o.js").write_text(f'const ORTO={{src:"data:image/jpeg;base64,{b64}",x0:{WX0},z0:{WZ0},mpp:{ORTO_MPP}}};\n')
     print(json.dumps(dict(buildings=len(recs), from_osm=n_osm, from_bdot_only=len(recs)-n_osm, bdot_matched=len(used_bdot), old_matched=len(used_old),
                           parts=sum(1 for r in recs if r[1]), roads=len(roads), dk_pts=len(chain), areas=len(areas), places=len(places))))
