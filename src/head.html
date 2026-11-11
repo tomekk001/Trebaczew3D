@@ -298,7 +298,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 #bMic:not([hidden]){display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
 #bMic.on{background:#47b04b;color:#111}#bMic.talk{background:#f2c230;color:#111}#bMic.off{opacity:.75}
 @media (pointer:coarse){
-  #lvlBox{display:none!important} #radar{width:132px!important;height:88px!important}
+  .radarBox #radar,#lvlBox{display:none!important}
   .radarBox{top:calc(66px + env(safe-area-inset-top,0px))!important;left:max(12px,env(safe-area-inset-left,0px))!important;width:132px!important;background:none!important;border:0!important;padding:0!important}
   .radarBox .bars{margin:0}
   .tl{left:max(12px,env(safe-area-inset-left,0px))!important;max-width:calc(100vw - 200px)!important;flex-wrap:nowrap}
