@@ -1536,7 +1536,7 @@ async function boot(saved){
   function labelSprite(text,color){ const c=document.createElement('canvas'),x=c.getContext('2d'); x.font='600 44px "Barlow Condensed", Arial'; const tw=x.measureText(text).width; c.width=Math.ceil(tw+90); c.height=72;
     x.font='600 44px "Barlow Condensed", Arial'; rr(x,2,2,c.width-4,c.height-4,6); x.fillStyle='rgba(8,10,12,.82)'; x.fill();
     x.fillStyle=color; x.fillRect(2,2,10,c.height-4); x.fillStyle='#fff'; x.textBaseline='middle'; x.fillText(text,30,38);
-    const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter; const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,fog:false})); const h=1.55; sp.scale.set(h*c.width/c.height,h,1); return sp; }
+    const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter; const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,fog:false})); const h=.8; sp.scale.set(h*c.width/c.height,h,1); return sp; }
   function plateSprite(text){ const c=document.createElement('canvas'),x=c.getContext('2d'); x.font='600 40px "Barlow Condensed", Arial'; const tw=x.measureText(text).width; c.width=Math.ceil(tw+50); c.height=64;
     x.fillStyle='#1f4fa3'; x.fillRect(0,0,c.width,c.height); x.strokeStyle='#fff'; x.lineWidth=4; x.strokeRect(6,6,c.width-12,c.height-12); x.font='600 40px "Barlow Condensed", Arial'; x.fillStyle='#fff'; x.textBaseline='middle'; x.fillText(text,25,34);
     const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter; const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t})); const h=0.9; sp.scale.set(h*c.width/c.height,h,1); return sp; }
@@ -1965,14 +1965,14 @@ async function boot(saved){
   const poiList=document.getElementById('poiList');
   POIS.forEach(p=>{ const b=document.createElement('button'); b.innerHTML=`<i style="background:${p.c}"></i>`; b.append(p.n); b.addEventListener('click',()=>{ goTo(p); toggleMap(false); }); poiList.append(b); });
   function goTo(p){ if(st.car)exitCar(true);
-    { const TPX=[[/^Szkoła Podstawowa/,-141,-46],[/^Apteka Magnolia/,-112,-206],[/^Biblioteka/,-125,-127],[/^AUTOPART/,-1146,678],[/^Biedronka/,-2326,1001],[/^Euforia/,-135,-340]]; const e=TPX.find(t=>t[0].test(p.n)); if(e){ const [,x,z]=e; let sp=null; for(let r=0;r<30&&!sp;r+=1){ for(let k=0;k<(r?12:1);k++){ const an=k*.5236, tx=x+Math.cos(an)*r, tz=z+Math.sin(an)*r; if(!blocked(tx,tz,.5)){ sp=[tx,tz]; break; } } } sp=sp||[x,z]; st.x=sp[0]; st.z=sp[1]; st.vx=st.vz=0; st.yaw=Math.atan2(sp[0]-p.x,sp[1]-p.z); st.face=st.yaw+Math.PI; st.pitch=.2; return; } }
+    { const TPX=[[/^Szkoła Podstawowa/,-141,-46],[/^Apteka Magnolia/,-112,-206],[/^Biblioteka/,-125,-127],[/^AUTOPART/,-1146,678],[/^Biedronka/,-2326,1001],[/^Euforia/,-135,-340],[/^Dworzec PKP/,-564,1461],[/^Hotel V\.I\.P/,-3033,1378],[/^Ośrodek zdrowia/,-112,-206],[/^Kwiaciarnia/,-132,-234],[/^Żabka$/,-77,43],[/^Paczkomat · Wyzwolenia/,-77,43]]; const e=TPX.find(t=>t[0].test(p.n)); if(e){ const [,x,z]=e; let sp=null; for(let r=0;r<30&&!sp;r+=1){ for(let k=0;k<(r?12:1);k++){ const an=k*.5236, tx=x+Math.cos(an)*r, tz=z+Math.sin(an)*r; if(!blocked(tx,tz,.5)){ sp=[tx,tz]; break; } } } sp=sp||[x,z]; st.x=sp[0]; st.z=sp[1]; st.vx=st.vz=0; st.yaw=Math.atan2(sp[0]-p.x,sp[1]-p.z); st.face=st.yaw+Math.PI; st.pitch=.2; return; } }
     const bb=p.n==='Lewiatan'?B_LEW:p.n==='Żabka'?B_ZAB:null; if(bb&&bb.front){ const f=bb.front; st.x=f.x+f.nx*11; st.z=f.z+f.nz*11; st.vx=st.vz=0; st.yaw=Math.atan2(f.nx,f.nz); st.face=st.yaw+Math.PI; st.pitch=0.2; return; } const nr=nearestRoad(p.x,p.z,r=>r.t!=='track'); let dir=[0,1];
     if(nr.r){ const a=nr.r.pts[nr.seg],b=nr.r.pts[nr.seg+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz; const t=clamp(((p.x-a[0])*dx+(p.z-a[1])*dz)/L,0,1); const qx=a[0]+dx*t-p.x, qz=a[1]+dz*t-p.z, l=Math.hypot(qx,qz)||1; dir=[qx/l,qz/l]; }
     let best=null; for(let r=6;r<40&&!best;r+=2){ for(let k=0;k<16;k++){ const an=Math.atan2(dir[1],dir[0])+(k%2?1:-1)*Math.ceil(k/2)*0.35; const x=p.x+Math.cos(an)*r, z=p.z+Math.sin(an)*r; if(!blocked(x,z,.6)){ best=[x,z]; break; } } }
     if(!best){ teleport(p.x,p.z); return; } st.x=best[0]; st.z=best[1]; st.vx=st.vz=0; st.yaw=Math.atan2(st.x-p.x,st.z-p.z); st.face=st.yaw+Math.PI; st.pitch=0.22; }
   let poiBuilt=false;
   function buildPoiList(){ poiBuilt=true; if(CB.orlenShop&&!POIS.some(q=>/orlen/i.test(q.n))){ const S=CB.orlenShop, pp=[S.x,S.z]; POIS.push({n:'ORLEN · stacja paliw (Działoszyn)',x:pp[0],z:pp[1],p:pp,c:'#d8141c',ic:'O',sp:labelSprite('ORLEN','#d8141c')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(pp[0],H(pp[0],pp[1])+9,pp[1]); lp.sp.visible=false; scene.add(lp.sp); }
-    poiList.innerHTML=''; const seen=new Set(); const skip=/^(Przystanek|Plac zabaw|Park w|Boisko|Orlik|Górka|Stadion|Paczkomat|Cmentarz)/;
+    poiList.innerHTML=''; const seen=new Set(); const skip=/^(Przystanek|Plac zabaw|Park w|Boisko|Orlik|Górka|Stadion|Paczkomat(?! ·)|Cmentarz)/;
     POIS.filter(q=>!q.npcTag&&!skip.test(q.n)&&!seen.has(q.n)&&seen.add(q.n)).sort((a,b)=>a.n.localeCompare(b.n,'pl')).forEach(q=>{ const b=document.createElement('button'); b.innerHTML=`<i style="background:${q.c}"></i>`; b.append(q.n); b.dataset.k=q.n.toLowerCase(); b.addEventListener('click',()=>{ goTo(q); toggleMap(false); }); poiList.append(b); });
     const si=document.getElementById('poiSearch'); if(si){ const fl=()=>{ const v=si.value.trim().toLowerCase(); [...poiList.children].forEach(b=>{ b.style.display=(!v||b.dataset.k.includes(v))?'':'none'; }); }; si.addEventListener('input',fl); si.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter'){ const f=[...poiList.children].find(b=>b.style.display!=='none'); if(f) f.click(); } }); si.addEventListener('keyup',e=>e.stopPropagation()); } }
   function toggleMap(v){ keys.clear(); resetJoy(); mapView.hidden=v===undefined?!mapView.hidden:!v; if(!mapView.hidden&&!poiBuilt) buildPoiList(); if(!mapView.hidden){ mvCenter(st.x,st.z,2.2); drawBig(); } else canvas.focus(); }
@@ -2022,7 +2022,7 @@ async function boot(saved){
     hpb.style.width=st.hp+'%';
     let hint=extHint()||''; if(!hint&&!st.car){ const c=nearestParked(); if(c) hint=`Naciśnij <kbd>${keyName(KEYMAP.f)}</kbd>, aby wsiąść do auta`; else { const pk=LOCKERS.find(l=>Math.hypot(l.x-st.x,l.z-st.z)<4); if(pk) hint='Paczkomat · '+pk.n; } } hintEl.innerHTML=hint; hintEl.classList.toggle('on',!!hint); if(IS_TOUCH) actLabel();
     if(st.car) vehEl.textContent=vehEl.textContent.split(' · ')[0]+' · '+(vehEl.dataset.kmh||0)+' km/h'; fuelHud();
-    const far=st.mode===2?600:70; POIS.forEach(p=>{ const d=Math.hypot(p.x-st.x,p.z-st.z); p.sp.visible=d<far&&!(p.npcTag&&d<26); }); }
+    const far=st.mode===2?600:17; POIS.forEach(p=>{ const d=Math.hypot(p.x-st.x,p.z-st.z); p.sp.visible=d<far&&!(p.npcTag&&d<26); }); }
 
   /* ======================= ROZSZERZENIA ======================= */
   const EXT_UPD=[];
