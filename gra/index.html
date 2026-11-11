@@ -3510,7 +3510,7 @@ async function boot(saved){
   addEventListener('keyup',e=>{ if(e.target&&e.target.tagName==='INPUT') e.stopPropagation(); },true);
   document.getElementById('bChat').addEventListener('click',()=>chatBox(document.getElementById('chatRow').hidden));
   document.getElementById('chatSend').addEventListener('click',sendChat);
-  nickIn.addEventListener('change',()=>{ const [v]=nickCheck(nickIn.value); if(!v){ nickIn.value=myNick; toast('Nazwa musi mieć od 2 do 16 znaków',2); return; } myNick=v; try{ localStorage.setItem('trebaczew-nick',myNick); }catch(e){} renderList(); MP.last=''; });
+  nickIn.addEventListener('change',()=>{ const [v]=nickCheck(nickIn.value); if(!v){ nickIn.value=myNick; toast('Wpisz dowolną nazwę (1-16 znaków)',2); return; } nickSave(v); renderList(); MP.last=''; });
   /* ---------- multiplayer: emotki i wyzwanie na wyścig ---------- */
   const EMO=['👋','👍','😂','⚽'];
   function sendEmote(i){ if(!MP.room||!MP.room.connected()) return; if(tAll-(MP.lastEmo||-9)<1) return; MP.lastEmo=tAll; MP.room.emit('emote',{e:i}).catch(()=>{}); }
@@ -4875,7 +4875,7 @@ async function boot(saved){
     if(cleanSave>30){ cleanSave=0; ownSave(); } rankTick(); }
   // ranking: najwięcej pieniędzy i najszybszy „Wyścig dookoła wsi” (nazwa z trybu wieloosobowego)
   function rankNick(){ let n=''; try{ n=(typeof myNick!=='undefined'&&myNick)||localStorage.getItem('trebaczew-nick')||''; }catch(e){} return cleanTxt(n,18); }
-  function rankTick(force,race){ const n=rankNick(); if(!n||n.length<2) return; const now=Date.now(); if(!force&&now-OWN.rank<120000) return; OWN.rank=now; ownSave(); try{ statEvent('rank',{n,money:st.money,race:race||0,lvl:st.level,xp:st.xp}); }catch(e){} }
+  function rankTick(force,race){ const n=rankNick(); if(!n) return; const now=Date.now(); if(!force&&now-OWN.rank<120000) return; OWN.rank=now; ownSave(); try{ let o=''; try{ o=localStorage.getItem('trebaczew-nick-prev')||''; }catch(e){} statEvent('rank',{n,o:o!==n?o:'',money:st.money,race:race||0,lvl:st.level,xp:st.xp}); }catch(e){} }
   let RANK_CACHE=null;
   function rankLoad(cb){ if(!/^https?:$/.test(location.protocol)){ cb(null); return; } fetch(STAT_URL+'/ranking').then(r=>r.json()).then(j=>{ RANK_CACHE={t:Date.now(),kasa:[],wyscig:[],poziom:Array.isArray(j)?j.slice(0,5):[]}; cb(RANK_CACHE); }).catch(()=>cb(null)); }
   // haki misji: zlecenia dnia, ranking wyścigu, dom
@@ -4996,8 +4996,9 @@ async function boot(saved){
   if(/[?&]admin(=|&|$)/.test(location.search)&&!sessionStorage.getItem('trebaczew-adm')){ location.href=ADM_URL+'/auth/game?return='+encodeURIComponent('https://trebaczew.io/gra/'); }
   { let t=''; try{ const m=/[#&]adm=([A-Za-z0-9_.-]{20,400})/.exec(location.hash); if(m){ t=m[1]; history.replaceState(null,'',location.pathname+location.search); } else t=sessionStorage.getItem('trebaczew-adm')||''; }catch(e){} if(t) admVerify(t); }
   $('mAdm').addEventListener('click',()=>{ if(ADM.on){ ADM.on=false; try{ sessionStorage.removeItem('trebaczew-adm'); }catch(e){} admRender(); return; } location.href=ADM_URL+'/auth/game?return='+encodeURIComponent('https://trebaczew.io/gra/'); });
+  function nickSave(v){ try{ const pv=localStorage.getItem('trebaczew-nick'); if(pv&&pv!==v) localStorage.setItem('trebaczew-nick-prev',pv); localStorage.setItem('trebaczew-nick',v); }catch(e){} myNick=v; if(typeof rankTick==='function') setTimeout(()=>{ try{ rankTick(true); }catch(e){} },300); }
   function nickCheck(v){ v=cleanTxt(v,16).replace(/\s+/g,' ').trim(); if(v.length<1) return [null,'Wpisz dowolny nick, żeby zagrać.']; if(/^(gracz|ty|admin|moderator|serwer|system)$/i.test(v)) return [null,'Ta nazwa jest zajęta - wybierz inną.']; return [v,'']; }
-  function nickGo(){ const [v,err]=nickCheck($('nickStart').value); if(!v){ $('nickErr').textContent=err; $('nickStart').focus(); return; } myNick=v; nickIn.value=v; try{ localStorage.setItem('trebaczew-nick',v); }catch(e){} openPanel(''); if(!MP.on) mpInit(true); $('mPlay').click(); }
+  function nickGo(){ const [v,err]=nickCheck($('nickStart').value); if(!v){ $('nickErr').textContent=err; $('nickStart').focus(); return; } nickSave(v); nickIn.value=v; openPanel(''); if(!MP.on) mpInit(true); $('mPlay').click(); }
   $('mMulti').addEventListener('click',()=>{ if(MP.on){ $('mPlay').click(); return; } openPanel('pNick'); $('nickStart').value=myNick||''; $('nickErr').textContent=''; setTimeout(()=>{ try{ $('nickStart').focus(); }catch(e){} },60); });
   $('nickGo').addEventListener('click',nickGo); $('nickStart').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); nickGo(); } });
   let newArm=0; $('mNew').addEventListener('click',()=>{ if(Date.now()-newArm>3000){ newArm=Date.now(); $('mNew').firstChild.textContent='Na pewno? Kliknij jeszcze raz '; setTimeout(()=>{ $('mNew').firstChild.textContent='Nowa gra'; },3000); return; }

@@ -339,6 +339,11 @@ export default {
       response.headers.append('set-cookie', `${STATS_SESSION_COOKIE}=${await statsSessionToken(env.STATS_SESSION_SECRET, expires)}; Path=/; Max-Age=${STATS_SESSION_SECONDS}; HttpOnly; Secure; SameSite=Lax`);
       return response;
     }
+    if (url.pathname === '/ranking-merge' && req.method === 'GET') {
+      if (!await hasStatsSession(req, env)) return new Response(null, { status: 302, headers: { location: `${url.origin}/auth/login`, 'cache-control': 'no-store' } });
+      const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/ranking-merge' + url.search);
+      return new Response(await r.text(), { status: r.status, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+    }
     if (url.pathname === '/logins' && req.method === 'GET') {
       if (!await hasStatsSession(req, env)) return new Response('{"error":"unauthorized"}', { status: 401, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
       const r = await env.STATS.get(env.STATS.idFromName('main')).fetch('https://do/logins');
@@ -487,6 +492,7 @@ export class Stats extends DurableObject {
             CREATE TABLE IF NOT EXISTS scores(g TEXT, nick TEXT, s INTEGER, t INTEGER);
             CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v INTEGER);
             CREATE TABLE IF NOT EXISTS rkfirst(nick TEXT PRIMARY KEY, t INTEGER);
+            CREATE TABLE IF NOT EXISTS rkid(id TEXT PRIMARY KEY, nick TEXT);
             CREATE TABLE IF NOT EXISTS accounts(name TEXT PRIMARY KEY, salt TEXT, hash TEXT, tok TEXT, save TEXT, t INTEGER);
             CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, kat TEXT, opis TEXT, kontakt TEXT, info TEXT);
             CREATE TABLE IF NOT EXISTS online(fc TEXT PRIMARY KEY, room TEXT, nick TEXT, ts INTEGER);
@@ -559,6 +565,12 @@ export class Stats extends DurableObject {
       const tot = (q.exec('SELECT v FROM daily WHERE day=? AND k=?', day, 'npc').toArray()[0] || { v: 0 }).v;
       if (++r.n > 12 || ++r.dn > 80 || tot >= 900) { this.nrl.set(ip, r); return new Response('limit', { status: 429 }); }
       this.nrl.set(ip, r); if (this.nrl.size > 5000) this.nrl.clear(); this.add(day, 'npc', 1); return new Response(String(tot + 1)); }
+    if (url.pathname === '/ranking-merge') { // jednorazowe scalenie dwóch nazw w rankingu (tylko po zalogowaniu GitHub)
+      const from = censor(clean(url.searchParams.get('from'), 18)), to = censor(clean(url.searchParams.get('to'), 18)); if (!from || !to || from === to) return new Response('podaj from i to', { status: 400 });
+      const now = Date.now(); let n = 0; for (const gg of ['kasa', 'poziom', 'wyscig']) { const a = (q.exec('SELECT MAX(s) AS s FROM scores WHERE g=? AND nick=?', gg, from).toArray()[0] || {}).s, b = (q.exec('SELECT MAX(s) AS s FROM scores WHERE g=? AND nick=?', gg, to).toArray()[0] || {}).s; if (a == null) continue; q.exec('DELETE FROM scores WHERE g=? AND nick IN (?,?)', gg, from, to); q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', gg, to, Math.max(a, b == null ? a : b), now); n++; }
+      const f = (q.exec('SELECT t FROM rkfirst WHERE nick=?', from).toArray()[0] || {}).t, f2 = (q.exec('SELECT t FROM rkfirst WHERE nick=?', to).toArray()[0] || {}).t; if (f != null) { q.exec('DELETE FROM rkfirst WHERE nick IN (?,?)', from, to); q.exec('INSERT INTO rkfirst(nick,t) VALUES(?,?)', to, f2 != null ? Math.min(f, f2) : f); }
+      this.cache = null; return new Response(`scalono "${from}" -> "${to}" (kategorii: ${n})`, { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+    }
     if (url.pathname === '/ranking') {
       const rows = q.exec("SELECT nick,s FROM scores WHERE g='poziom' ORDER BY s DESC, t ASC LIMIT 5").toArray();
       return new Response(JSON.stringify(rows.map(r => ({ n: r.nick, l: Math.floor(r.s / 100000), xp: r.s % 100000 }))));
@@ -603,7 +615,12 @@ export class Stats extends DurableObject {
         if (s > 0 && d.w) { q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', g, nick, s, now); q.exec('DELETE FROM scores WHERE g=? AND rowid NOT IN (SELECT rowid FROM scores WHERE g=? ORDER BY s DESC, t ASC LIMIT 25)', g, g); }
       }
       if (m.ev === 'rank') { // ranking graczy: najwięcej pieniędzy (najlepszy wynik danej nazwy) i najszybszy „Wyścig dookoła wsi”
-        const nick = censor(clean(d.n, 18)); if (!nick || nick.length < 2) return new Response('bez nazwy', { status: 400 });
+        const nick = censor(clean(d.n, 18)); if (!nick) return new Response('bez nazwy', { status: 400 });
+        // jeden gracz = jedno urządzenie (id): po zmianie nazwy wynik przechodzi na nową nazwę, bez duplikatu w rankingu
+        const merge = (from, to) => { if (!from || from === to) return; for (const gg of ['kasa', 'poziom', 'wyscig']) { const a = (q.exec('SELECT MAX(s) AS s FROM scores WHERE g=? AND nick=?', gg, from).toArray()[0] || {}).s, b = (q.exec('SELECT MAX(s) AS s FROM scores WHERE g=? AND nick=?', gg, to).toArray()[0] || {}).s; if (a == null) continue; q.exec('DELETE FROM scores WHERE g=? AND nick IN (?,?)', gg, from, to); q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', gg, to, Math.max(a, b == null ? a : b), now); } const f = (q.exec('SELECT t FROM rkfirst WHERE nick=?', from).toArray()[0] || {}).t, f2 = (q.exec('SELECT t FROM rkfirst WHERE nick=?', to).toArray()[0] || {}).t; if (f != null) { q.exec('DELETE FROM rkfirst WHERE nick IN (?,?)', from, to); q.exec('INSERT INTO rkfirst(nick,t) VALUES(?,?)', to, f2 != null ? Math.min(f, f2) : f); } };
+        const prev = (q.exec('SELECT nick FROM rkid WHERE id=?', id).toArray()[0] || {}).nick;
+        if (prev) merge(prev, nick); else { const o = censor(clean(d.o, 18)); if (o && o !== nick && !q.exec('SELECT 1 FROM rkid WHERE nick=?', o).toArray().length) merge(o, nick); }
+        q.exec('INSERT INTO rkid(id,nick) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET nick=excluded.nick', id, nick);
         const put = (g, s) => { const best = (q.exec('SELECT MAX(s) AS s FROM scores WHERE g=? AND nick=?', g, nick).toArray()[0] || {}).s; if (best != null && best >= s) return; q.exec('DELETE FROM scores WHERE g=? AND nick=?', g, nick); q.exec('INSERT INTO scores(g,nick,s,t) VALUES(?,?,?,?)', g, nick, s, now); q.exec('DELETE FROM scores WHERE g=? AND rowid NOT IN (SELECT rowid FROM scores WHERE g=? ORDER BY s DESC, t ASC LIMIT 25)', g, g); };
         // wiarygodność: nazwa w rankingu może mieć tylko tyle pieniędzy, ile da się realnie zarobić od jej pierwszego zgłoszenia (20 000 zł + 3000 zł na minutę); wyższe wartości są obcinane, więc podrobiony wynik z zewnątrz nie wskoczy na szczyt
         q.exec('INSERT OR IGNORE INTO rkfirst(nick,t) VALUES(?,?)', nick, now); if (Math.random() < 0.02) q.exec('DELETE FROM rkfirst WHERE t<?', now - 90 * 864e5); const fst = (q.exec('SELECT t FROM rkfirst WHERE nick=?', nick).toArray()[0] || {}).t || now; const cap = 20000 + 3000 * Math.max(0, (now - fst) / 60000);
