@@ -4,21 +4,22 @@ import os, json, html
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SITE = 'https://trebaczew.io'
 NAV = [('poradnik', 'Poradnik'), ('misje', 'Misje'), ('multiplayer', 'Multiplayer'), ('faq', 'FAQ')]
-CSS = """:root{--bg:#0d1217;--card:#17212a;--ink:#ece8de;--mut:#9aa8b3;--acc:#f2b705;--line:#273441}
-@media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--card:#fff;--ink:#1b242b;--mut:#5a6772;--acc:#a87600;--line:#ddd5c1}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--acc)}header{border-bottom:1px solid var(--line);padding:12px 20px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
-header .logo{font-weight:800;letter-spacing:.04em;text-decoration:none;color:var(--ink);margin-right:auto}
-header nav{display:flex;flex-wrap:wrap;gap:4px 14px}header nav a{text-decoration:none;color:var(--mut);font-weight:600;font-size:15px}header nav a.on{color:var(--acc)}
-.play{background:var(--acc);color:#141414;font-weight:800;text-decoration:none;padding:8px 18px;border-radius:999px;font-size:14px}
-main{max-width:780px;margin:0 auto;padding:28px 20px 60px}h1{font-size:clamp(28px,5vw,40px);line-height:1.15;margin:.2em 0 .4em}
-h2{margin:1.6em 0 .3em;font-size:24px}h3{margin:1.2em 0 .2em;font-size:19px}.lead{color:var(--mut);font-size:19px}
-table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}th{background:var(--card)}
-kbd{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:.9em}
-.cta{margin:36px 0;padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--card);text-align:center}
-.cta a.b{display:inline-block;margin-top:8px;background:var(--acc);color:#141414;font-weight:800;text-decoration:none;padding:13px 30px;border-radius:999px}
-details{border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:10px 0;background:var(--card)}summary{cursor:pointer;font-weight:700}
-footer{border-top:1px solid var(--line);padding:20px;text-align:center;color:var(--mut);font-size:14px}.crumb{font-size:14px;color:var(--mut)}"""
+CSS = """:root{--bg:#f4f1ea;--bg2:#ebe6da;--card:#fbfaf6;--ink:#1c2321;--mut:#5d6964;--grn:#0f5a3c;--acc:#f0c419;--line:#d6d0c1;--dark:#161c1a}
+@media (prefers-color-scheme:dark){:root{--bg:#111614;--bg2:#161c1a;--card:#181f1c;--ink:#e9e6dd;--mut:#96a29c;--grn:#49b083;--line:#28312d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 "Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.logo{font-family:Bahnschrift,"DIN Alternate","Roboto Condensed","Arial Narrow",system-ui,sans-serif;font-stretch:85%}
+a{color:var(--grn);text-underline-offset:3px}header{background:var(--dark);color:#fff;padding:0 24px;min-height:60px;display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center}
+header .logo{font-weight:700;font-size:19px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:#fff;margin-right:auto}
+header nav{display:flex;flex-wrap:wrap;gap:4px 22px}header nav a{text-decoration:none;color:rgba(255,255,255,.8);font-size:15px;padding:6px 0;border-bottom:2px solid transparent}header nav a:hover{color:#fff}header nav a.on{color:#fff;border-bottom-color:var(--acc)}
+.play{background:var(--acc);color:#16160f;font-weight:700;text-decoration:none;padding:8px 18px;border-radius:4px;font-size:15px}
+main{max-width:760px;margin:0 auto;padding:36px 24px 70px}h1{font-size:clamp(32px,5vw,48px);line-height:1.08;margin:.3em 0 .35em}
+h2{margin:1.8em 0 .3em;font-size:28px;line-height:1.15}h3{margin:1.3em 0 .2em;font-size:21px}.lead{color:var(--mut);font-size:19px}
+table{border-collapse:collapse;width:100%;margin:14px 0}th,td{border-bottom:1px solid var(--line);padding:10px 10px 10px 0;text-align:left}th{color:var(--mut);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+kbd{background:var(--card);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-size:.9em}
+.cta{margin:48px 0 0;padding:26px 0 0;border-top:1px solid var(--line)}.cta b{font-size:20px}
+.cta a.b{display:inline-block;margin-top:14px;background:var(--acc);color:#16160f;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:4px}
+details{border-bottom:1px solid var(--line);padding:14px 0}summary{cursor:pointer;font-weight:600}
+footer{background:var(--dark);padding:22px 24px 30px;color:rgba(255,255,255,.6);font-size:14px}footer a{color:rgba(255,255,255,.82)}.crumb{font-size:14px;color:var(--mut)}.crumb a{color:var(--mut)}"""
 
 def page(slug, title, desc, h1, lead, body, extra_ld=None):
     url = f'{SITE}/{slug}/'
@@ -34,11 +35,11 @@ def page(slug, title, desc, h1, lead, body, extra_ld=None):
 <link rel="canonical" href="{url}"><meta name="robots" content="index,follow,max-image-preview:large">
 <meta property="og:title" content="{html.escape(title)}"><meta property="og:description" content="{html.escape(desc)}"><meta property="og:image" content="{SITE}/og.jpg"><meta property="og:type" content="article"><meta property="og:url" content="{url}">
 <link rel="icon" href="../src/icon-192.png">{ld}<style>{CSS}</style></head><body>
-<header><a class="logo" href="../">TRĘBACZEW</a><nav>{nav}</nav><a class="play" href="../gra/">Zagraj ▶</a></header>
+<header><a class="logo" href="../">Trębaczew</a><nav>{nav}</nav><a class="play" href="../gra/">Zagraj</a></header>
 <main><p class="crumb"><a href="../">Strona główna</a> › {html.escape(h1)}</p><h1>{html.escape(h1)}</h1><p class="lead">{lead}</p>
 {body}
-<div class="cta"><b>Gotowy na spacer po Trębaczewie?</b><br>Wchodzisz od razu, bez konta i bez instalacji.<br><a class="b" href="../gra/">▶ Zagraj teraz</a></div></main>
-<footer>Symulator życia w Trębaczewie · gra fanowska, postaci i wydarzenia są fikcyjne · dane: © OpenStreetMap, © GUGiK<br><a href="../">Strona główna</a> · <a href="../gra/">Zagraj</a> · <a href="../zglos.html">Zgłoś błąd</a></footer></body></html>"""
+<div class="cta"><b>Gra uruchamia się od razu w przeglądarce.</b><br>Bez konta i bez instalacji.<br><a class="b" href="../gra/">Zagraj teraz</a></div></main>
+<footer>Symulator życia w Trębaczewie · dane: © OpenStreetMap, © GUGiK<br><a href="../">Strona główna</a> · <a href="../gra/">Zagraj</a> · <a href="../zglos.html">Zgłoś błąd</a></footer></body></html>"""
 
 PAGES = {}
 

@@ -14,158 +14,144 @@
 <link rel="icon" href="src/icon-192.png">
 <link rel="preload" as="image" href="img/hero.jpg">
 <style>
-:root{--bg:#0d1217;--bg2:#121a21;--card:#17212a;--ink:#ece8de;--mut:#9aa8b3;--acc:#f2b705;--acc2:#ff8a3d;--line:#273441;--grn:#46b36b}
-@media (prefers-color-scheme:light){:root{--bg:#f6f3ea;--bg2:#efe9da;--card:#fff;--ink:#1b242b;--mut:#5a6772;--acc:#c48a00;--acc2:#d9631a;--line:#ddd5c1;--grn:#2a8a4d}}
+:root{--bg:#f4f1ea;--bg2:#ebe6da;--card:#fbfaf6;--ink:#1c2321;--mut:#5d6964;--grn:#0f5a3c;--acc:#f0c419;--line:#d6d0c1;--dark:#161c1a}
+@media (prefers-color-scheme:dark){:root{--bg:#111614;--bg2:#161c1a;--card:#181f1c;--ink:#e9e6dd;--mut:#96a29c;--grn:#49b083;--line:#28312d}}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--acc)}
-.top{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;align-items:center;gap:6px;padding:12px max(18px,calc((100vw - 1180px)/2));transition:background .25s,box-shadow .25s,padding .25s;color:#fff;background:linear-gradient(180deg,rgba(6,10,14,.72),rgba(6,10,14,0))}
-.top.solid{padding-top:8px;padding-bottom:8px;background:rgba(13,18,23,.92);backdrop-filter:blur(8px);box-shadow:0 1px 0 var(--line)}
-@media (prefers-color-scheme:light){.top.solid{background:rgba(246,243,234,.93);color:var(--ink)}}
-.logo{font-weight:800;letter-spacing:.04em;margin-right:auto;font-size:18px;display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:0;color:inherit;font-family:inherit}
-.logo i{width:12px;height:12px;border-radius:3px;background:var(--acc);display:inline-block}
-.links{display:flex;gap:2px;align-items:center;position:relative}
-.links .more{position:relative}.links .dd{position:absolute;right:0;top:calc(100% + 8px);min-width:190px;background:rgba(18,24,30,.97);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:6px;display:none;flex-direction:column;box-shadow:0 16px 40px rgba(0,0,0,.45)}.links .more.open .dd{display:flex}.links .dd button{text-align:left;color:#fff}
-.links button{white-space:nowrap;background:none;border:0;color:inherit;font:inherit;font-size:14.5px;font-weight:600;padding:8px 12px;border-radius:999px;cursor:pointer;opacity:.9;transition:background .15s,opacity .15s}
-.links button:hover,.links button.on{opacity:1;background:rgba(255,255,255,.12)}
-.links button.on{background:rgba(242,183,5,.18);color:var(--acc);opacity:1}
-.play{background:var(--acc);color:#141414;font-weight:800;text-decoration:none;padding:10px 22px;box-shadow:0 4px 18px rgba(242,183,5,.35);border-radius:999px;font-size:14px;margin-left:8px}
-.burger{display:none;background:none;border:1px solid rgba(255,255,255,.4);color:inherit;border-radius:8px;width:40px;height:38px;font-size:20px;cursor:pointer}
-@media (max-width:980px){.burger{display:block}.links .more{display:contents}.links .more>button{display:none}.links .dd{position:static;display:flex;background:none;border:0;box-shadow:none;padding:0;min-width:0}.links{position:fixed;inset:58px 0 auto 0;background:var(--bg);color:var(--ink);flex-direction:column;align-items:stretch;padding:10px 16px 18px;border-bottom:1px solid var(--line);display:none;max-height:calc(100vh - 58px);overflow:auto}.links.open{display:flex}.links button{text-align:left;padding:12px}}
-.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:flex-end;color:#fff;background:#0b3d2a url(img/hero.jpg) center/cover no-repeat}
-.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,12,16,.78) 0,rgba(7,12,16,.35) 46%,rgba(7,12,16,0) 75%),linear-gradient(180deg,rgba(7,12,16,.5) 0,rgba(7,12,16,0) 22%,rgba(7,12,16,.15) 60%,rgba(7,12,16,.9) 100%)}
-.hero .in{position:relative;width:100%;max-width:1180px;margin:0 auto;padding:0 24px 72px}
-.hero small{display:inline-block;letter-spacing:.2em;text-transform:uppercase;font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px)}
-.hero h1 span{color:var(--acc)}.hero .pcnote{font-size:14.5px;margin:0 0 20px;opacity:.92;max-width:34em;padding-left:12px;border-left:3px solid var(--acc)}
-.hero h1{margin:10px 0 16px;font-size:clamp(40px,7.2vw,92px);line-height:.98;font-weight:800;letter-spacing:.01em;text-shadow:0 3px 24px rgba(0,0,0,.6)}
-.hero p{max-width:36em;font-size:clamp(16px,2.2vw,20px);margin:0 0 24px;text-shadow:0 1px 10px #000}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.logo,.num,.facts dt,.sign,.kb button{font-family:Bahnschrift,"DIN Alternate","Roboto Condensed","Arial Narrow",system-ui,sans-serif;font-stretch:85%}
+a{color:var(--grn);text-underline-offset:3px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.top{position:fixed;inset:0 0 auto 0;z-index:20;color:#fff;transition:background .2s}
+.top .wrap{display:flex;align-items:center;gap:20px;height:60px}
+.top.solid{background:var(--dark);box-shadow:0 1px 0 rgba(255,255,255,.08)}
+.logo{font-weight:700;font-size:19px;letter-spacing:.06em;text-transform:uppercase;background:none;border:0;color:inherit;cursor:pointer;padding:0;margin-right:auto}
+.links{display:flex;gap:22px;align-items:center}
+.links button{background:none;border:0;color:inherit;font:inherit;font-size:15px;padding:6px 0;cursor:pointer;opacity:.82;border-bottom:2px solid transparent}
+.links button:hover{opacity:1}.links button.on{opacity:1;border-bottom-color:var(--acc)}
+.play,.btn{display:inline-block;background:var(--acc);color:#16160f;font-weight:700;text-decoration:none;border:0;border-radius:4px;font:inherit;font-weight:700;cursor:pointer}
+.play{padding:8px 18px;font-size:15px}
+.btn{padding:14px 30px;font-size:18px}.btn:hover,.play:hover{background:#ffd53a}
+.btn.alt{background:none;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.65)}.btn.alt:hover{background:rgba(255,255,255,.12)}
+.burger{display:none;background:none;border:0;color:inherit;width:40px;height:40px;font-size:22px;cursor:pointer}
+@media (max-width:900px){.burger{display:block}.links{position:fixed;inset:60px 0 auto 0;background:var(--dark);flex-direction:column;align-items:stretch;gap:0;padding:6px 24px 16px;display:none}.links.open{display:flex}.links button{text-align:left;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.1)}}
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:flex-end;color:#fff;background:#12251d url(img/hero.jpg) center/cover no-repeat}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,14,12,.55) 0,rgba(10,14,12,0) 24%,rgba(10,14,12,.2) 55%,rgba(10,14,12,.88) 100%)}
+.hero .wrap{position:relative;width:100%;padding-bottom:64px}
+.sign{display:inline-block;background:#0f6b3f;color:#fff;border:3px solid #fff;border-radius:6px;padding:4px 16px 5px;font-size:22px;font-weight:700;letter-spacing:.03em;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.hero h1{margin:18px 0 12px;font-size:clamp(40px,6.6vw,84px);line-height:1;font-weight:700;letter-spacing:-.005em;max-width:12em}
+.hero p{max-width:33em;font-size:clamp(17px,2vw,20px);margin:0 0 26px;color:rgba(255,255,255,.9)}
 .cta{display:flex;gap:12px;flex-wrap:wrap}
-.btn{display:inline-block;padding:13px 28px;border-radius:999px;background:var(--acc);color:#141414;font-weight:800;text-decoration:none;border:0;font:inherit;font-weight:800;cursor:pointer;transition:transform .15s}
-.btn:hover{transform:translateY(-2px)}.btn.big{padding:16px 38px;font-size:19px;box-shadow:0 8px 30px rgba(242,183,5,.35)}
-.btn.alt{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);backdrop-filter:blur(4px)}
-.stats{max-width:1040px;margin:-34px auto 0;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;position:relative}
-.stats div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px;text-align:center}
-.stats b{display:block;font-size:30px;color:var(--acc);line-height:1.1}.stats span{color:var(--mut);font-size:14px}
-.why{max-width:1040px;margin:44px auto 0;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
-.why div{background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid var(--line);border-radius:16px;padding:20px}
-.why em{font-style:normal;font-size:30px;display:block;margin-bottom:6px}.why b{font-size:18px}.why p{margin:6px 0 0;color:var(--mut)}
-main{max-width:1040px;margin:0 auto;padding:8px 20px 40px}
-section{padding-top:56px;scroll-margin-top:70px}
-h2{font-size:clamp(26px,4vw,36px);margin:0 0 14px;letter-spacing:.01em}
-h2::after{content:"";display:block;width:54px;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--acc),var(--acc2));margin-top:8px}
-h3{margin:22px 0 6px;font-size:18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
-.card b{display:block;margin-bottom:2px}
+.coords{position:absolute;right:24px;bottom:68px;font-size:13px;letter-spacing:.08em;color:rgba(255,255,255,.75);text-align:right;line-height:1.5}
+@media (max-width:760px){.coords{display:none}}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);margin:0;border-bottom:1px solid var(--line)}
+.facts div{padding:26px 0 24px;border-left:1px solid var(--line);padding-left:22px}.facts div:first-child{border-left:0;padding-left:0}
+.facts dt{font-size:38px;font-weight:700;line-height:1}.facts dd{margin:6px 0 0;color:var(--mut);font-size:15px}
+@media (max-width:700px){.facts{grid-template-columns:1fr 1fr}.facts div:nth-child(3){border-left:0;padding-left:0}.facts div:nth-child(n+3){border-top:1px solid var(--line)}}
+section{padding-top:84px;scroll-margin-top:20px}
+h2{font-size:clamp(30px,4vw,44px);line-height:1.08;margin:0 0 10px;font-weight:700}
+.lead{color:var(--mut);max-width:40em;margin:0 0 30px;font-size:18px}
+.feat{display:grid;grid-template-columns:1.1fr 1fr;gap:44px;align-items:center;padding:30px 0;border-top:1px solid var(--line)}
+.feat:nth-of-type(even) img{order:2}
+.feat img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:4px;background:var(--bg2)}
+.num{font-size:14px;letter-spacing:.14em;color:var(--grn);font-weight:700}
+.feat h3{font-size:28px;margin:6px 0 8px;line-height:1.1}.feat p{margin:0 0 12px}
+.feat ul{margin:0;padding:0;list-style:none;color:var(--mut);font-size:16px}.feat li{padding:5px 0 5px 18px;position:relative}.feat li::before{content:"";position:absolute;left:0;top:15px;width:8px;height:2px;background:var(--grn)}
+@media (max-width:780px){.feat{grid-template-columns:1fr;gap:16px}.feat:nth-of-type(even) img{order:0}}
+.sim{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:24px}
+.bar{height:10px;background:var(--bg2);border-radius:2px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--grn);transition:width .4s}
+.simInfo{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 18px;flex-wrap:wrap;gap:6px}.simInfo b{font-size:32px;font-family:Bahnschrift,"DIN Alternate","Arial Narrow",sans-serif}.simInfo span{color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chips button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:9px 14px;font:inherit;font-size:15px;cursor:pointer}.chips button:hover{border-color:var(--ink)}.chips button b{color:var(--grn);font-weight:600;margin-left:6px}
+.simWin{margin:16px 0 0;padding:12px 16px;border-left:3px solid var(--grn);background:var(--bg2)}
+.lnk{background:none;border:0;color:var(--mut);font:inherit;font-size:15px;text-decoration:underline;cursor:pointer;margin-top:14px;padding:0}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.gal figure{margin:0;position:relative;cursor:zoom-in;overflow:hidden;border-radius:4px;background:var(--bg2)}
+.gal figure{aspect-ratio:16/9}.gal figure:first-child{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}.gal figure:last-child{grid-column:span 2;aspect-ratio:auto;max-height:260px}
+.gal img{display:block;width:100%;height:100%;object-fit:cover}
+.gal figcaption{position:absolute;inset:auto 0 0 0;padding:26px 14px 10px;font-size:14px;color:#fff;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.7));opacity:0;transition:opacity .2s}.gal figure:hover figcaption,.gal figure:focus-within figcaption{opacity:1}
+@media (max-width:700px){.gal{grid-template-columns:1fr 1fr}.gal figcaption{opacity:1}.gal figure:last-child{grid-column:auto;aspect-ratio:16/9}}
+.vids{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vid video{display:block;width:100%;height:auto;border-radius:4px;background:#000}
+@media (max-width:780px){.vids{grid-template-columns:1fr}}
+.kb{display:flex;flex-wrap:wrap;gap:8px}.kb button{min-width:52px;height:52px;border-radius:5px;border:1px solid var(--line);border-bottom-width:3px;background:var(--card);color:var(--ink);font-weight:700;font-size:17px;cursor:pointer;padding:0 14px}.kb button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.kbInfo{margin-top:14px;padding:14px 0;border-top:1px solid var(--line);min-height:54px;font-size:18px}
+table{width:100%;border-collapse:collapse}th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--mut);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}td:first-child,th:first-child{width:3em;color:var(--mut)}td:nth-child(n+3),th:nth-child(n+3){text-align:right;font-variant-numeric:tabular-nums}
 .mut{color:var(--mut)}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--mut);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
-kbd{background:var(--bg2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:.9em}
-.gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
-.gal figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.gal img{display:block;width:100%;height:auto;transition:transform .5s}.gal figure:hover img{transform:scale(1.04)}.gal figure{overflow:hidden}
-.gal figcaption{padding:10px 14px;font-size:14px;color:var(--mut)}
-.vids{display:grid;gap:16px}.vid{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#000}.vid video{display:block;width:100%;height:auto}
-.band{margin:60px auto 0;max-width:1040px;padding:0 20px}
-.band div{border-radius:22px;padding:44px 24px;text-align:center;background:linear-gradient(135deg,#0b3d2a,#14604a 55%,#c48a00);color:#fff}
-.band h2{border:0;margin:0 0 8px}.band h2::after{margin:8px auto 0}.band p{max-width:34em;margin:0 auto 20px;opacity:.92}
-footer{max-width:1040px;margin:50px auto 0;padding:26px 20px 40px;border-top:1px solid var(--line);color:var(--mut);font-size:14px;text-align:center}
-.rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}.rv.on{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
-.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer;transition:.15s}.tabs button:hover{border-color:var(--acc)}.tabs button.on{background:var(--acc);color:#141414;border-color:var(--acc)}
-.tabp{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:260px}.tabp .tx{padding:22px}.tabp .tx p{margin:0 0 12px;font-size:19px}.tabp img{display:block;width:100%;height:100%;object-fit:cover;min-height:240px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}.chips span,.chips button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:14.5px}.chips button{cursor:pointer;font-weight:600;transition:.15s}.chips button:hover{border-color:var(--acc);transform:translateY(-2px)}.chips button:active{transform:scale(.96)}
-@media (max-width:720px){.tabp{grid-template-columns:1fr}.tabp img{height:200px;min-height:0;order:-1}}
-.sim{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}.bar{height:22px;border-radius:12px;background:var(--bg2);overflow:hidden;border:1px solid var(--line)}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .5s cubic-bezier(.2,.8,.2,1)}
-.simInfo{display:flex;justify-content:space-between;margin:10px 0 14px;flex-wrap:wrap;gap:4px}.simInfo b{font-size:26px;color:var(--acc)}.simInfo span{color:var(--mut)}.simWin{margin:14px 0 0;padding:12px 16px;border-radius:12px;background:rgba(70,179,107,.15);border:1px solid var(--grn)}
-.lnk{background:none;border:0;color:var(--mut);font:inherit;text-decoration:underline;cursor:pointer;margin-top:10px;padding:0}
-.kb{display:flex;flex-wrap:wrap;gap:8px}.kb button{min-width:54px;height:54px;border-radius:10px;border:1px solid var(--line);border-bottom-width:4px;background:var(--card);color:var(--ink);font:inherit;font-weight:800;font-size:17px;cursor:pointer;transition:.08s;padding:0 12px}.kb button.on{background:var(--acc);color:#141414;border-color:var(--acc);transform:translateY(3px);border-bottom-width:1px}
-.kbInfo{margin-top:12px;padding:14px 18px;border-radius:12px;background:var(--card);border:1px solid var(--line);min-height:52px;font-size:17px}
-details{border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:8px 0;background:var(--card)}summary{cursor:pointer;font-weight:700}details p{margin:8px 0 2px;color:var(--mut)}
-.lb{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px}.lb.on{display:flex}.lb img{max-width:min(1100px,94vw);max-height:78vh;border-radius:12px}.lb p{color:#fff;margin:0}.lb button{position:absolute;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:50%;width:46px;height:46px;font-size:22px;cursor:pointer}.lb .x{top:16px;right:16px}.lb .pv{left:14px;top:50%}.lb .nx{right:14px;top:50%}
-.gal figure{cursor:zoom-in}
+details{border-bottom:1px solid var(--line);padding:16px 0}details:first-of-type{border-top:1px solid var(--line)}summary{cursor:pointer;font-weight:600;font-size:18px}details p{margin:10px 0 0;color:var(--mut);max-width:44em}
+.band{margin-top:90px;background:var(--dark);color:#fff}.band .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-top:54px;padding-bottom:54px}.band h2{margin:0 0 6px}.band p{margin:0;color:rgba(255,255,255,.72)}
+footer{background:var(--dark);color:rgba(255,255,255,.6);font-size:14px;border-top:1px solid rgba(255,255,255,.1)}footer .wrap{display:flex;justify-content:space-between;gap:16px 30px;flex-wrap:wrap;padding-top:22px;padding-bottom:30px}footer a{color:rgba(255,255,255,.82);text-decoration:none;margin-right:18px}footer a:hover{text-decoration:underline}
+.lb{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:20px}.lb.on{display:flex}.lb img{max-width:min(1200px,94vw);max-height:80vh;border-radius:3px}.lb p{color:#fff;margin:0}.lb button{position:absolute;background:none;color:#fff;border:0;width:48px;height:48px;font-size:28px;cursor:pointer}.lb .x{top:12px;right:12px}.lb .pv{left:8px;top:50%}.lb .nx{right:8px;top:50%}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 </style>
 </head>
 <body>
-<div class="top" id="top"><button class="logo" type="button" data-go="start"><i></i>TRĘBACZEW</button><nav class="links" id="nav"></nav><a class="play" href="gra/">Zagraj ▶</a><button class="burger" id="burger" type="button" aria-label="Menu">☰</button></div>
-<header class="hero" id="start"><div class="in">
-  <small>gm. Działoszyn · pow. pajęczański</small>
-  <h1>Symulator życia<br>w <span>Trębaczewie</span></h1>
-  <p>Gra 3D w przeglądarce, osadzona w prawdziwej wsi. Bez instalacji.</p>
-  <div class="cta"><a class="btn big" href="gra/">▶ Zagraj teraz</a><button class="btn alt" type="button" data-go="galeria">Zobacz galerię</button></div>
+<div class="top" id="top"><div class="wrap"><button class="logo" type="button" data-go="start">Trębaczew</button><nav class="links" id="nav"></nav><a class="play" href="gra/">Zagraj</a><button class="burger" id="burger" type="button" aria-label="Menu">☰</button></div></div>
+<header class="hero" id="start"><div class="wrap">
+  <span class="sign">Trębaczew</span>
+  <h1>Symulator życia w&nbsp;Trębaczewie</h1>
+  <p>Gra 3D, w której chodzisz i jeździsz po prawdziwej wsi w gminie Działoszyn. Działa w przeglądarce, za darmo, bez instalacji.</p>
+  <div class="cta"><a class="btn" href="gra/">Zagraj teraz</a><button class="btn alt" type="button" data-go="galeria">Zobacz zrzuty</button></div>
+  <div class="coords">51°07′49″N 18°55′18″E<br>gm. Działoszyn, pow. pajęczański</div>
 </div></header>
-<div class="stats rv"><div><b>20+</b><span>misji fabularnych</span></div><div><b>3D</b><span>prawdziwa mapa wsi</span></div><div><b>0 zł</b><span>bez instalacji</span></div><div><b>online</b><span>tryb wieloosobowy</span></div></div>
-<main>
-<section id="poznaj" data-s="Poznaj grę"><h2>Poznaj grę</h2>
-<div class="tabs" id="tabs" role="tablist"></div><div class="tabp" id="tabp" aria-live="polite"></div></section>
+<div class="wrap"><dl class="facts"><div><dt>20</dt><dd>misji fabularnych</dd></div><div><dt>13</dt><dd>osiągnięć do zdobycia</dd></div><div><dt>4</dt><dd>pory roku ze zmienną pogodą</dd></div><div><dt>0 zł</dt><dd>bez konta i bez instalacji</dd></div></dl></div>
+<main class="wrap">
+<section id="poznaj" data-s="O grze"><h2>Co jest w grze</h2>
+<p class="lead">Mapa powstała z danych geodezyjnych, a najważniejsze budynki ze zdjęć. Jeśli znasz Trębaczew, trafisz pod Lewiatan bez mapy.</p>
+<article class="feat"><img loading="lazy" src="img/lewiatan.jpg" alt="Parking przed Lewiatanem w grze" width="900" height="504"><div><span class="num">01</span><h3>Świat</h3><p>Wieś odwzorowana z map OpenStreetMap i danych GUGiK: te same ulice, te same budynki, ten sam układ terenu.</p><ul><li>Szkoła, kościół, remiza OSP</li><li>Lewiatan i Żabka</li><li>Stadion LZS i orlik</li><li>DK42 z przejazdem kolejowym</li></ul></div></article>
+<article class="feat"><img loading="lazy" src="img/szkola.jpg" alt="Szkoła podstawowa w grze" width="900" height="504"><div><span class="num">02</span><h3>Misje</h3><p>Dwadzieścia misji fabularnych, zadania od mieszkańców i codzienne zlecenia. Zaczynasz z 200 zł w kieszeni.</p><ul><li>Nagrody od 250 do 25 000 zł</li><li>13 osiągnięć</li><li>Rozmowy z mieszkańcami</li></ul></div></article>
+<article class="feat"><img loading="lazy" src="img/komis.jpg" alt="Komis samochodowy w grze" width="900" height="504"><div><span class="num">03</span><h3>Pojazdy</h3><p>Auto kupisz w komisie przy myjni, zatankujesz na stacji, a jak zabraknie pieniędzy, zostaje autobus.</p><ul><li>Auta, motocykle, ciągniki</li><li>Tankowanie na stacji</li><li>Własny parking przy komisie</li></ul></div></article>
+<article class="feat"><img loading="lazy" src="img/remiza.jpg" alt="Remiza OSP w grze" width="900" height="504"><div><span class="num">04</span><h3>Gra ze znajomymi</h3><p>Prywatny pokój zakładasz jednym kliknięciem. Możecie się ścigać, handlować i razem pracować w cementowni.</p><ul><li>Wyścigi po wsi</li><li>Wspólne akcje OSP</li><li>Czat głosowy</li></ul></div></article>
+<article class="feat"><img loading="lazy" src="img/passat.jpg" alt="Parking przy Lewiatanie o innej porze" width="900" height="504"><div><span class="num">05</span><h3>Pory roku i pogoda</h3><p>Wieś zmienia się z porą roku: deszcz, mgła, śnieg i wieczorne światło. Do wielu budynków można wejść.</p><ul><li>Cztery pory roku</li><li>Zmienna pogoda</li><li>Wnętrza sklepów i szkoły</li></ul></div></article>
+</section>
 
-<section id="dom" data-s="Droga do domu"><h2>Droga do domu: 450 000 zł</h2>
-<p class="mut">Kliknij zajęcia i zobacz, jak szybko uzbierasz na własny dom.</p>
+<section id="dom" data-s="Dom"><h2>Cel: własny dom za 450 000 zł</h2>
+<p class="lead">Tyle kosztuje dom w grze. Sprawdź, ile zleceń trzeba, żeby na niego uzbierać.</p>
 <div class="sim"><div class="bar"><i id="simBar"></i></div><div class="simInfo"><b id="simMoney">200 zł</b><span id="simLeft"></span></div>
-<div class="chips" id="simBtns"></div><div class="simWin" id="simWin" hidden>🏠 Masz dom! W prawdziwej grze to kwestia kilku godzin. <a href="gra/">Zagraj</a></div><button class="lnk" type="button" id="simReset">Zacznij od nowa</button></div></section>
+<div class="chips" id="simBtns"></div><div class="simWin" id="simWin" hidden>Masz dom. W grze zajmuje to kilka godzin. <a href="gra/">Zagraj</a></div><button class="lnk" type="button" id="simReset">Zacznij od nowa</button></div></section>
 
-<section id="galeria" data-s="Galeria"><h2>Galeria</h2>
+<section id="galeria" data-s="Galeria"><h2>Zrzuty z gry</h2>
+<p class="lead">Kliknij zdjęcie, żeby je powiększyć.</p>
 <div class="gal" id="gal">
 <figure><img loading="lazy" src="img/lewiatan.jpg" alt="Parking przed Lewiatanem" width="900" height="504"><figcaption>Parking przed Lewiatanem</figcaption></figure>
 <figure><img loading="lazy" src="img/szkola.jpg" alt="Szkoła podstawowa" width="900" height="504"><figcaption>Szkoła podstawowa</figcaption></figure>
 <figure><img loading="lazy" src="img/komis.jpg" alt="Komis przy myjni" width="900" height="504"><figcaption>Komis przy myjni</figcaption></figure>
 <figure><img loading="lazy" src="img/remiza.jpg" alt="Remiza OSP" width="900" height="504"><figcaption>Remiza OSP</figcaption></figure>
-<figure><img loading="lazy" src="img/passat.jpg" alt="Parking przy Lewiatanie" width="900" height="504"><figcaption>Pierwsza misja zaczyna się na parkingu przy Lewiatanie</figcaption></figure>
+<figure><img loading="lazy" src="img/passat.jpg" alt="Parking przy Lewiatanie" width="900" height="504"><figcaption>Tu zaczyna się pierwsza misja</figcaption></figure>
 <figure><img loading="lazy" src="img/zbyszko.jpg" alt="Z.U.H. Zbyszko przy Wyzwolenia" width="900" height="504"><figcaption>Z.U.H. Zbyszko przy Wyzwolenia</figcaption></figure>
 <figure><img loading="lazy" src="img/autopart.jpg" alt="AUTOPART przy Kolejowej" width="900" height="504"><figcaption>AUTOPART przy ul. Kolejowej</figcaption></figure>
 </div></section>
 
-<section id="przelot" data-s="Film"><h2>Jak wygląda gra</h2>
+<section id="przelot" data-s="Film"><h2>Gra w ruchu</h2>
 <div class="vids"><div class="vid"><video id="filmv" controls muted loop playsinline preload="metadata" poster="img/poster1.jpg"><source src="img/film.mp4" type="video/mp4"></video></div>
 <div class="vid"><video id="filmv2" controls muted loop playsinline preload="metadata" poster="img/poster2.jpg"><source src="img/film2.mp4" type="video/mp4"></video></div></div></section>
 
-<section id="klawisze" data-s="Sterowanie"><h2>Wypróbuj sterowanie</h2>
-<p class="mut">Naciskaj klawisze na swojej klawiaturze albo klikaj poniżej.</p>
+<section id="klawisze" data-s="Sterowanie"><h2>Sterowanie</h2>
+<p class="lead">Naciśnij klawisz na klawiaturze albo kliknij go poniżej.</p>
 <div class="kb" id="kb"></div><div class="kbInfo" id="kbInfo">Wybierz klawisz</div></section>
 
-<section id="ranking" data-s="Ranking"><h2>Ranking: top 5</h2>
+<section id="ranking" data-s="Ranking"><h2>Najlepsi gracze</h2>
 <table id="rk"><tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr><tr><td colspan="4" class="mut">Ładowanie…</td></tr></table></section>
 
-<section id="faq" data-s="FAQ"><h2>Najczęstsze pytania</h2>
-<details><summary>Czy gra jest darmowa i czy trzeba konta?</summary><p>Tak, jest darmowa. Konto jest opcjonalne (sama nazwa i hasło) i służy do synchronizacji zapisu oraz wspólnego domu.</p></details>
-<details><summary>Czy zagram na telefonie?</summary><p>Tak, ale najlepiej na komputerze, bo klawiatura i mysz dają pełną kontrolę.</p></details>
-<p class="mut"><a href="poradnik/">Poradnik</a> · <a href="faq/">Pełne FAQ</a></p></section>
+<section id="faq" data-s="Pytania"><h2>Pytania</h2>
+<details><summary>Czy gra jest darmowa i czy trzeba konta?</summary><p>Jest darmowa. Konto jest opcjonalne (sama nazwa i hasło) i służy do synchronizacji zapisu oraz wspólnego domu.</p></details>
+<details><summary>Czy zagram na telefonie?</summary><p>Tak, ale wygodniej na komputerze: klawiatura i mysz dają pełną kontrolę, a grafika jest pełniejsza.</p></details>
+<p class="mut" style="margin-top:18px"><a href="faq/">Wszystkie pytania</a> · <a href="poradnik/">Poradnik dla początkujących</a></p></section>
 </main>
-<div class="band rv"><div><h2>Gotowy na spacer po Trębaczewie?</h2><p>Wchodzisz od razu, bez konta i bez instalacji.</p><a class="btn big" href="gra/">▶ Zagraj teraz</a></div></div>
-<footer>Symulator życia w Trębaczewie · dane: © OpenStreetMap, © GUGiK<br><a href="gra/">Zagraj</a> · <a href="poradnik/">Poradnik</a> · <a href="misje/">Misje</a> · <a href="multiplayer/">Multiplayer</a> · <a href="faq/">FAQ</a> · <a href="zglos.html">Zgłoś błąd</a></footer>
+<div class="band"><div class="wrap"><div><h2>Wejdź do wsi</h2><p>Gra uruchamia się od razu w przeglądarce.</p></div><a class="btn" href="gra/">Zagraj teraz</a></div></div>
+<footer><div class="wrap"><div><a href="gra/">Gra</a><a href="poradnik/">Poradnik</a><a href="misje/">Misje</a><a href="multiplayer/">Multiplayer</a><a href="faq/">FAQ</a><a href="zglos.html">Zgłoś błąd</a></div><div>Dane mapy: © OpenStreetMap, © GUGiK</div></div></footer>
 <script>
 (function(){
-  var secs=[].slice.call(document.querySelectorAll('main section[data-s]:not([hidden])')),nav=document.getElementById('nav'),top=document.getElementById('top'),bg=document.getElementById('burger');
-  var PRI=['poznaj','dom','galeria','przelot','klawisze','ranking'],bt=function(s){return '<button type="button" data-go="'+s.id+'">'+s.getAttribute('data-s')+'</button>';};
-  var prim=secs.filter(function(s){return PRI.indexOf(s.id)>=0;}),rest=secs.filter(function(s){return PRI.indexOf(s.id)<0;});
-  if(prim.length<4){prim=secs.slice(0,6);rest=secs.slice(6);}
-  nav.innerHTML=prim.map(bt).join('')+(rest.length?'<div class="more" id="more"><button type="button" id="moreBtn" aria-haspopup="true">Więcej ▾</button><div class="dd">'+rest.map(bt).join('')+'</div></div>':'');
-  var mb=document.getElementById('moreBtn');if(mb){mb.addEventListener('click',function(e){e.stopPropagation();document.getElementById('more').classList.toggle('open');});document.addEventListener('click',function(){document.getElementById('more').classList.remove('open');});}
+  var secs=[].slice.call(document.querySelectorAll('main section[data-s]')),nav=document.getElementById('nav'),top=document.getElementById('top'),bg=document.getElementById('burger');
+  nav.innerHTML=secs.map(function(s){return '<button type="button" data-go="'+s.id+'">'+s.getAttribute('data-s')+'</button>';}).join('');
   function go(id){var e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'start'});nav.classList.remove('open');}
   document.addEventListener('click',function(ev){var b=ev.target.closest('[data-go]');if(b)go(b.getAttribute('data-go'));});
   bg.addEventListener('click',function(){nav.classList.toggle('open');});
-  function spy(){top.classList.toggle('solid',scrollY>40);var cur=null;secs.forEach(function(s){if(s.getBoundingClientRect().top<140)cur=s.id;});[].forEach.call(nav.querySelectorAll('button'),function(b){b.classList.toggle('on',b.getAttribute('data-go')===cur);});}
-  addEventListener('scroll',spy,{passive:true});spy();
-  var rv=document.querySelectorAll('.rv,main section');[].forEach.call(rv,function(e){e.classList.add('rv');});
-  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('on');io.unobserve(x.target);}});},{threshold:.08});[].forEach.call(document.querySelectorAll('.rv'),function(e){io.observe(e);});}else{[].forEach.call(document.querySelectorAll('.rv'),function(e){e.classList.add('on');});}
-  ['filmv','filmv2'].forEach(function(id){var fv=document.getElementById(id);if(fv&&'IntersectionObserver' in window){var vo=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){fv.play().catch(function(){});}else{fv.pause();}});},{threshold:.5});vo.observe(fv);}});
-
-  /* zakładki "Poznaj grę" */
-  var TABS=[['🏘️ Świat','Prawdziwy Trębaczew z map OpenStreetMap i GUGiK.',['Szkoła i kościół','Żabka i Lewiatan','Stadion i orlik','Schronisko','DK42 z przejazdem'],'img/lewiatan.jpg'],
-   ['🎯 Misje','20 misji fabularnych, zadania poboczne i zlecenia dnia.',['Nagrody 250-25 000 zł','13 osiągnięć','Zlecenia dnia','Rozmowy z mieszkańcami'],'img/szkola.jpg'],
-   ['🚗 Pojazdy','Jedź, tankuj i kup własne auto w komisie.',['Auta i motocykle','Tankowanie na ORLEN','Komis przy myjni','Autobus Gepard'],'img/komis.jpg'],
-   ['👥 Multiplayer','Pokoje prywatne, wyścigi, handel i czat głosowy.',['Wyścigi','Wspólny melex','Praca w cementowni','Pożar z OSP','Czat głosowy 🎤'],'img/remiza.jpg'],
-   ['🌦️ Pory roku','Cztery pory roku, pogoda i cykl dnia.',['Deszcz i śnieg','Dzień i noc','Wnętrza budynków'],'img/passat.jpg']];
-  (function(){var tb=document.getElementById('tabs'),tp=document.getElementById('tabp');if(!tb)return;
-    tb.innerHTML=TABS.map(function(t,i){return '<button type="button" role="tab" data-i="'+i+'">'+t[0]+'</button>';}).join('');
-    function sel(i){var t=TABS[i];[].forEach.call(tb.children,function(b,k){b.classList.toggle('on',k===i);});tp.innerHTML='<div class="tx"><p>'+t[1]+'</p><div class="chips">'+t[2].map(function(c){return '<span>'+c+'</span>';}).join('')+'</div></div><img loading="lazy" src="'+t[3]+'" alt="">';}
-    tb.addEventListener('click',function(e){var b=e.target.closest('button');if(b)sel(+b.dataset.i);});sel(0);
-    var n=0;setInterval(function(){if(!tb.matches(':hover')&&!tp.matches(':hover')&&!tb.dataset.u){n=(n+1)%TABS.length;sel(n);}},6000);tb.addEventListener('click',function(){tb.dataset.u=1;});})();
+  function spy(){top.classList.toggle('solid',scrollY>40||nav.classList.contains('open'));var cur=null;secs.forEach(function(s){if(s.getBoundingClientRect().top<160)cur=s.id;});[].forEach.call(nav.querySelectorAll('button'),function(b){b.classList.toggle('on',b.getAttribute('data-go')===cur);});}
+  addEventListener('scroll',spy,{passive:true});bg.addEventListener('click',spy);spy();
   /* symulator drogi do domu */
-  (function(){var G=450000,m=200,bar=document.getElementById('simBar');if(!bar)return;var A=[['🛒 Zakupy w Lewiatanie',250],['📦 Zlecenie poboczne',1500],['💵 Banknot na chodniku',80],['🚚 Praca kuriera',4000],['🏁 Wielki wyścig gminny',25000],['🚔 Mandat (−10% gotówki)',-1]];
+  (function(){var G=450000,m=200,bar=document.getElementById('simBar');if(!bar)return;var A=[['Zakupy w Lewiatanie',250],['Zlecenie poboczne',1500],['Banknot na chodniku',80],['Praca kuriera',4000],['Wielki wyścig gminny',25000],['Mandat (−10% gotówki)',-1]];
     var bt=document.getElementById('simBtns'),mo=document.getElementById('simMoney'),lf=document.getElementById('simLeft'),win=document.getElementById('simWin');
-    bt.innerHTML=A.map(function(a,i){return '<button type="button" data-i="'+i+'">'+a[0]+(a[1]>0?' +'+a[1].toLocaleString('pl-PL')+' zł':'')+'</button>';}).join('');
-    function draw(){var p=Math.min(100,m/G*100);bar.style.width=p+'%';mo.textContent=Math.round(m).toLocaleString('pl-PL')+' zł';lf.textContent=m>=G?'Cel osiągnięty!':'Do domu brakuje '+Math.round(G-m).toLocaleString('pl-PL')+' zł';win.hidden=m<G;}
+    bt.innerHTML=A.map(function(a,i){return '<button type="button" data-i="'+i+'">'+a[0]+(a[1]>0?'<b>+'+a[1].toLocaleString('pl-PL')+' zł</b>':'')+'</button>';}).join('');
+    function draw(){var p=Math.min(100,m/G*100);bar.style.width=p+'%';mo.textContent=Math.round(m).toLocaleString('pl-PL')+' zł';lf.textContent=m>=G?'Cel osiągnięty':'Brakuje '+Math.round(G-m).toLocaleString('pl-PL')+' zł';win.hidden=m<G;}
     bt.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var a=A[+b.dataset.i];m=a[1]<0?Math.max(0,m-Math.min(5000,m*.1)):m+a[1];draw();});
     document.getElementById('simReset').addEventListener('click',function(){m=200;draw();});draw();})();
   /* klawiatura */
@@ -184,7 +170,7 @@ details{border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin
   var API='https://trebaczew-mp.kontakt-3e3.workers.dev/ranking', t=document.getElementById('rk');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   fetch(API).then(function(r){return r.json();}).then(function(j){
-    if(!j.length){t.rows[1].cells[0].textContent='Na razie nikogo. Zagraj w trybie wieloosobowym i zostań pierwszy!';return;}
+    if(!j.length){t.rows[1].cells[0].textContent='Ranking jest jeszcze pusty.';return;}
     var h='<tr><th>#</th><th>Gracz</th><th>Poziom</th><th>XP</th></tr>';
     j.slice(0,5).forEach(function(p,i){h+='<tr><td>'+(i+1)+'</td><td>'+esc(p.n)+'</td><td>'+p.l+'</td><td>'+p.xp+'</td></tr>';});
     t.innerHTML=h;
