@@ -86,10 +86,9 @@ async function boot(saved){
   const PLAYS=AREAS.filter(a=>a.t==='lei:playground');
   const PLAC=AREAS.find(a=>a.t==='am:parking'&&a.pts[0][0]===-40&&a.pts[0][1]===-278);
   const CHURCH=BPOLY.find(b=>b.name.startsWith('Kościół')); let CHURCH_DOOR=null;
-  // boisko szkolne obok przedszkola: obrót o 90° wokół środka + równy plac z niebieską bieżnią wokół (bieżnia z OSM zastąpiona)
+  // boisko szkolne obok przedszkola: ułożone wzdłuż Zagrodowej (jak na mapie), równy plac z niebieską bieżnią wokół (bieżnia z OSM zastąpiona)
   const TRK={lane:1.0,n:5,gap:.5};
   { const m0=mar(PITCH2.pts), c=Math.cos(m0.an), s=Math.sin(m0.an), hw=m0.d/2, hd=m0.w/2;
-    PITCH2.pts=[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]].map(([u,v])=>[m0.cx+u*c-v*s, m0.cz+u*s+v*c]);
     const m=mar(PITCH2.pts), hs=PITCH2.pts.map(v=>hRaw(v[0],v[1])), h=hs.reduce((a,v)=>a+v,0)/hs.length, cc=Math.cos(m.an), ss=Math.sin(m.an);
     const sw0=m.w>m.d, sh0=Math.min(m.w,m.d)/2+1, lg0=Math.max(m.w,m.d)/2+1, r00=sh0+TRK.gap, cz00=Math.max(0,lg0-Math.sqrt(Math.max(0,r00*r00-sh0*sh0))+.3), A0=r00+TRK.lane*TRK.n+1.5, B0=cz00+r00+TRK.lane*TRK.n+1.5, ow=sw0?B0:A0, od=sw0?A0:B0;
     const pad=[[-ow,-od],[ow,-od],[ow,od],[-ow,od]].map(([u,v])=>[m.cx+u*cc-v*ss, m.cz+u*ss+v*cc]);
@@ -294,7 +293,7 @@ async function boot(saved){
   const inSchool=(x,z)=>inPoly(x,z,SCHOOL.pts), inKinder=(x,z)=>inPoly(x,z,KINDER.pts);
   const HALL_B=BLD.find(b=>b.isHall)||BLD.find(b=>b.code===5&&Math.max(b.w,b.d)>50);
   const houses=[];
-  const CB={}; [['komf',-2198,983],['manu',-2070,938],['tutti',-2048,921],['autop',-1136,686],['hgraf',-1125,695],['dstary',-1180,670],['dsolar',-1210,681],['zuh',-1310,625],['zabdom',-50,38],['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
+  const CB={}; [['komf',-2198,983],['manu',-2070,938],['tutti',-2048,921],['autop',-1136,686],['hgraf',-1125,695],['dstary',-1180,670],['dsolar',-1210,681],['zuh',-1310,625],['zabdom',-50,38],['przed',-139,-134],['delik',-151,-341],['dworzec',-554,1454],['mineral',-580,1672],['swietl',-710,1630],['orlenShop',-2284,1098],['orlenRoof',-2308,1102],['biedr',-2328,973],['lidl',-2432,1186],['kwiac',-144,-229],['szk3',-88,-49],['w159',-130,73],['w161',-119,66],['w163',-110,64]].forEach(([k,x,z])=>{ let best=null,bd=1e9; BLD.forEach(b=>{ const d=Math.hypot(b.x-x,b.z-z); if(d<bd){bd=d;best=b;} }); if(best&&bd<8){ best.cust=k; CB[k]=best; } });
   if(CB.orlenRoof) CB.orlenRoof.skip=true;
   // domy nachodzące na jezdnię: odsuń od drogi (albo pomiń, gdy trzeba by przesunąć za daleko)
   { const RD=ROADS.filter(r=>!['track','path','footway','steps','cycleway','foot'].includes(r.t)); const nearPt=(r,x,z)=>{ let best=null,bd=1e9; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i],b=r.pts[i+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz||1; const t=clamp(((x-a[0])*dx+(z-a[1])*dz)/L,0,1); const px=a[0]+dx*t,pz=a[1]+dz*t; const d=Math.hypot(x-px,z-pz); if(d<bd){bd=d;best=[px,pz,d];} } return best; };
@@ -1061,22 +1060,38 @@ async function boot(saved){
       for(let k=0;k<4;k++){ const t=new THREE.Mesh(new THREE.TorusGeometry(.35,.12,8,16),dark); t.position.set(3+k*.8,.12,2.5); g.add(t); }
       // mały biały garaż z brązowymi drzwiami
       const ga=new THREE.Group(); ga.position.set(-5,0,3.5); g.add(ga); bx(ga,3,2.4,4,0,0,0,new THREE.MeshLambertMaterial({color:0xeeeeea,map:plasterTex})); bx(ga,3.3,.2,4.3,0,2.4,0,new THREE.MeshLambertMaterial({color:0x6b3a2a})); pl(ga,2.2,1.9,0,.95,2.02,new THREE.MeshLambertMaterial({color:0x6b4430}));
+      // plac zabaw wokół altanki: gumowa nawierzchnia, huśtawki, wieża ze zjeżdżalnią, bujaki, karuzela, huśtawka-równoważnia
+      { const rub=new THREE.Mesh(new THREE.PlaneGeometry(13,10).rotateX(-Math.PI/2),po(new THREE.MeshLambertMaterial({color:0x9b5a45,map:detailTex}),2)); rub.position.set(2,.04,-1); rub.receiveShadow=true; g.add(rub);
+        const bl=new THREE.MeshLambertMaterial({color:0x2f6fb5}), yl=new THREE.MeshLambertMaterial({color:0xf0c030}), rd=new THREE.MeshLambertMaterial({color:0xd33a2c}), gn=new THREE.MeshLambertMaterial({color:0x3fa34d}), stl=new THREE.MeshLambertMaterial({color:0x8a9096});
+        const sol=(x,z,hw,hd)=>addSolid({x:gx+x,z:gz+z,hw,hd,c:1,s:0,r:Math.max(hw,hd)+.3});
+        { const sg=new THREE.Group(); sg.position.set(2,0,-6); g.add(sg); [-1.7,1.7].forEach(x=>[-1,1].forEach(sd=>{ const lg=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,2.75,6).translate(0,1.37,0),bl); lg.position.set(x,0,sd*.8); lg.rotation.x=-sd*.3; sg.add(lg); })); bx(sg,3.8,.1,.1,0,2.62,0,bl);
+          [-.7,.7].forEach(x=>{ [-.2,.2].forEach(z=>bx(sg,.02,2.1,.02,x,.55,z,stl,true)); bx(sg,.45,.04,.22,x,.5,0,yl,true); }); sg.traverse(o=>o.castShadow=true); sol(2,-6,1.9,.5); }
+        { const sg=new THREE.Group(); sg.position.set(7,0,-4.6); g.add(sg); [[-.5,-.5],[.5,-.5],[-.5,.5],[.5,.5]].forEach(([x,z])=>bx(sg,.08,2.0,.08,x,0,z,stl)); bx(sg,1.2,.07,1.2,0,1.4,0,yl); const rf=new THREE.Mesh(new THREE.ConeGeometry(.95,.7,4).translate(0,.35,0),rd); rf.position.y=2.0; rf.rotation.y=Math.PI/4; sg.add(rf); bx(sg,1.2,.4,.04,0,1.45,.58,bl,true);
+          const ramp=bx(sg,.62,.05,2.7,0,.8,1.9,bl,true); ramp.rotation.x=.46; bx(sg,.05,.22,2.6,.34,.88,1.9,bl,true).rotation.x=.46; bx(sg,.05,.22,2.6,-.34,.88,1.9,bl,true).rotation.x=.46; bx(sg,.06,1.0,.06,.0,0,-.0,stl,true); sg.traverse(o=>o.castShadow=true); sol(7,-3.8,.8,1.9); }
+        [[7.6,1.6,0xd33a2c],[6.2,2.0,0x3fa34d]].forEach(([x,z,col])=>{ const rk=new THREE.Group(); rk.position.set(x,0,z); g.add(rk); const mt=new THREE.MeshLambertMaterial({color:col}); const sp=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.45,8).translate(0,.22,0),stl); rk.add(sp); bx(rk,.28,.4,.7,0,.45,0,mt); const hd=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),mt); hd.position.set(0,.95,.35); rk.add(hd); bx(rk,.6,.04,.3,0,.7,0,yl,true); rk.traverse(o=>o.castShadow=true); sol(x,z,.4,.4); });
+        { const cr=new THREE.Group(); cr.position.set(-6.5,0,-6); g.add(cr); const dk=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.0,.1,16).translate(0,.35,0),rd); cr.add(dk); bx(cr,.08,.9,.08,0,.35,0,stl); for(let k=0;k<4;k++){ const a=k*Math.PI/2; bx(cr,.04,.6,.04,Math.cos(a)*.9,.4,Math.sin(a)*.9,bl,true); } const rg=new THREE.Mesh(new THREE.TorusGeometry(.9,.025,5,18).rotateX(Math.PI/2),bl); rg.position.y=.95; cr.add(rg); cr.traverse(o=>o.castShadow=true); sol(-6.5,-6,1.0,1.0); }
+        { const sw=new THREE.Group(); sw.position.set(-6.5,0,.8); g.add(sw); bx(sw,.2,.45,.2,0,0,0,stl); const bd=bx(sw,3.0,.07,.3,0,.45,0,gn); bd.rotation.z=.14; bx(sw,.06,.3,.06,-1.3,.5,0,yl,true); bx(sw,.06,.3,.06,1.3,.35,0,yl,true); sw.traverse(o=>o.castShadow=true); sol(-6.5,.8,1.5,.3); } }
       sh(g); [[-3.5,-2.5,1.3],[-5,3.5,2.3]].forEach(([u,v,r2])=>addSolid({x:gx+u,z:gz+v,hw:r2,hd:r2,c:1,s:0,r:r2*1.5}));
       // iglaki i brzozy dookoła
       for(let k=0;k<7;k++){ const a=k/7*6.28, rr=7.5; const x=gx+Math.cos(a)*rr, z=gz+Math.sin(a)*rr; if(inPoly(x,z,KINDER.pts)&&!blocked(x,z,1)) EXTRA_TREES.push({x,z,s:R(.8,1.1),con:k%2===0,col:k%2?'#7a8a3a':'#2d5a2a'}); }
       // zielony płot panelowy od strony ulicy Zagrodowej (przy altance): panele na słupkach, brama dwuskrzydłowa i furtka - wg zdjęcia
       { const ZG=ROADS.find(r=>r.n==='Zagrodowa'&&r.t!=='track'), P=KINDER.pts, kc=centroid(P); const fcol=0x2f6b3c, fmat=new THREE.MeshLambertMaterial({color:fcol}), fmesh=(()=>{ const t=fenceT.clone(); t.needsUpdate=true; t.repeat.set(1,1); return new THREE.MeshLambertMaterial({map:t,transparent:true,alphaTest:.35,side:THREE.DoubleSide,color:0x3f8a4a}); })();
-        const runs=[]; for(let q=0;q<P.length-1;q++){ const a=P[q], b=P[q+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]), mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2; if(!ZG||l<3||mx>-128||roadDist(ZG,mx,mz)>9) continue; const tx=(b[0]-a[0])/l, tz=(b[1]-a[1])/l; let nx=-tz, nz=tx; if((kc[0]-mx)*nx+(kc[1]-mz)*nz<0){ nx=-nx; nz=-nz; } runs.push({a:[a[0]+nx*.6,a[1]+nz*.6],tx,tz,l,ang:Math.atan2(tz,tx)}); }
+        const runs=[]; for(let q=0;q<P.length-1;q++){ const a=P[q], b=P[q+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]), mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2; if(!ZG||l<2||mx>-121||roadDist(ZG,mx,mz)>9) continue; const tx=(b[0]-a[0])/l, tz=(b[1]-a[1])/l; let nx=-tz, nz=tx; if((kc[0]-mx)*nx+(kc[1]-mz)*nz<0){ nx=-nx; nz=-nz; } runs.push({a:[a[0]+nx*.6,a[1]+nz*.6],tx,tz,l,ang:Math.atan2(tz,tx)}); }
         const gp=[gx+3,gz-1.6]; let gr=null,gd=1e9,gu=0; runs.forEach(r=>{ const u=clamp((gp[0]-r.a[0])*r.tx+(gp[1]-r.a[1])*r.tz,3.5,r.l-3.5), d=Math.hypot(r.a[0]+r.tx*u-gp[0],r.a[1]+r.tz*u-gp[1]); if(d<gd){ gd=d; gr=r; gu=u; } });
         const W2=(r,u)=>[r.a[0]+r.tx*u, r.a[1]+r.tz*u];
-        const piece=(r,u0,u1)=>{ const len=u1-u0; if(len<.2) return; const c=W2(r,(u0+u1)/2); if([u0,(u0+u1)/2,u1].some(u=>{ const q=W2(r,u); return blocked(q[0],q[1],0,true); })) return; const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); g.rotation.y=-r.ang; scene.add(g);
+        const inBld=(x,z)=>BPOLY.some(pp=>inPoly(x,z,pp.pts))||BLD.some(b=>{ if(b.skip) return false; const dx=x-b.x, dz=z-b.z, c=Math.cos(b.a), sn=Math.sin(b.a); return Math.abs(dx*c+dz*sn)<b.w/2+.1&&Math.abs(-dx*sn+dz*c)<b.d/2+.1; });
+        const piece=(r,u0,u1)=>{ const len=u1-u0; if(len<.2) return; const c=W2(r,(u0+u1)/2); if(inBld(c[0],c[1])) return; const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); g.rotation.y=-r.ang; scene.add(g);
           const m=new THREE.Mesh(new THREE.PlaneGeometry(len,1.4),fmesh.clone()); m.material.map=fmesh.map.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(len/1.6,1); m.position.y=.8; g.add(m); bx(g,len,.05,.05,0,1.5,0,fmat,true); bx(g,len,.05,.05,0,.08,0,fmat,true);
           addSolid({x:c[0],z:c[1],hw:len/2,hd:.08,c:Math.cos(r.ang),s:Math.sin(r.ang),r:len/2+.2}); };
         const post=(r,u,h2)=>{ const c=W2(r,u); const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); scene.add(g); bx(g,.09,h2||1.65,.09,0,0,0,fmat,true); };
-        runs.forEach(r=>{ const cuts=(r===gr)?[[gu-2.4,gu+2.4]]:[]; let u0=0; const seg=(a,b)=>{ const n=Math.max(1,Math.ceil((b-a)/2.5)); for(let k=0;k<n;k++){ piece(r,a+(b-a)*k/n,a+(b-a)*(k+1)/n); post(r,a+(b-a)*k/n); } post(r,b); }; cuts.forEach(([a,b])=>{ seg(u0,a); u0=b; }); seg(u0,r.l); });
+        runs.forEach(r=>{ const cuts=(r===gr)?[[gu-.75,gu+.75]]:[]; let u0=0; const seg=(a,b)=>{ const n=Math.max(1,Math.ceil((b-a)/2.5)); for(let k=0;k<n;k++){ piece(r,a+(b-a)*k/n,a+(b-a)*(k+1)/n); post(r,a+(b-a)*k/n); } post(r,b); }; cuts.forEach(([a,b])=>{ seg(u0,a); u0=b; }); seg(u0,r.l); });
         if(gr){ const c=W2(gr,gu); const g=new THREE.Group(); g.position.set(c[0],H(c[0],c[1]),c[1]); g.rotation.y=-gr.ang; scene.add(g);
           const leaf=(x0,w0)=>{ const fr=new THREE.Group(); fr.position.set(x0,0,0); g.add(fr); [-w0/2,w0/2].forEach(o=>bx(fr,.06,1.55,.06,o,0,0,fmat,true)); [.1,.8,1.5].forEach(yy=>bx(fr,w0,.05,.05,0,yy,0,fmat,true)); const m=new THREE.Mesh(new THREE.PlaneGeometry(w0-.08,1.35),fmesh.clone()); m.material.map=fmesh.map.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(w0/1.6,1); m.position.y=.8; fr.add(m); };
-          leaf(-1.5,1.76); leaf(.3,1.76); leaf(1.8,1.16); [-2.4,-.6,1.2,2.4].forEach(o=>bx(g,.12,1.8,.12,o,0,0,fmat,true)); bx(g,.1,.12,.12,.9,.95,0,fmat,true); } } } }
+          leaf(0,1.1); [-.78,.78].forEach(o=>bx(g,.12,1.8,.12,o,0,0,fmat,true)); bx(g,.1,.12,.12,.4,.95,0,fmat,true);
+          // ścieżka z kostki od furtki do altanki (po lewej stronie ogrodu)
+          const nrm=[-gr.tz,gr.tx]; const inward=((kc[0]-c[0])*nrm[0]+(kc[1]-c[1])*nrm[1])>0?nrm:[-nrm[0],-nrm[1]]; const gz2=[gx+3,gz-1.6];
+          const P0=[c[0]+inward[0]*.6,c[1]+inward[1]*.6], P1=[c[0]+inward[0]*3.5-gr.tx*1.5,c[1]+inward[1]*3.5-gr.tz*1.5], P2=[(P1[0]+gz2[0])/2-gr.tx*.4,(P1[1]+gz2[1])/2-gr.tz*.4];
+          const path=resample([P0,P1,P2,gz2],1.5); const pm=new THREE.Mesh(ribbon(path,1.6,.1,1.6),matPaverRed); pm.receiveShadow=true; scene.add(pm); WALKS.push({pts:resample(path,4),len:lineLen(resample(path,4)),road:ZG}); } } } }
 
   // --- ogrodzenie szkoły (wg zdjęcia): czarny kuty płot z łukami na cokole, tuje, ceglane słupki bramy ---
   { const P=SCHOOL.pts, kc=centroid(P); const ironT=tex(128,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='#15171a'; x.lineWidth=2.4; for(let i=4;i<w;i+=8){ x.beginPath(); x.moveTo(i,h*.2); x.lineTo(i,h-4); x.stroke(); } x.lineWidth=3.5; x.beginPath(); x.moveTo(0,h*.3); x.quadraticCurveTo(w/2,-h*.08,w,h*.3); x.stroke(); x.beginPath(); x.moveTo(0,h-6); x.lineTo(w,h-6); x.stroke(); x.beginPath(); x.moveTo(0,h*.55); x.lineTo(w,h*.55); x.stroke(); });
@@ -1095,6 +1110,15 @@ async function boot(saved){
       const leaf=(x0,w0,open)=>{ const f=new THREE.Group(); f.position.set(x0,0,0); f.rotation.y=open; g.add(f); const m=new THREE.Mesh(new THREE.PlaneGeometry(w0,1.5),im.clone()); m.material.map=ironT.clone(); m.material.map.needsUpdate=true; m.material.map.repeat.set(w0/2.5,1); m.position.set(-x0*0+ (x0<0?w0/2:-w0/2)*0,1.1,0); m.position.x=x0<0?w0/2:-w0/2; f.add(m); bx(f,w0,.06,.06,x0<0?w0/2:-w0/2,.3,0,blk,true); };
       leaf(-2.2,2.0,0); leaf(2.2,2.0,-1.1); });
   }
+
+  // --- ogródek skalny przy narożniku przedszkola od Szkolnej (wg zdjęcia): żwir z głazami, tuje, świerk, znaki ---
+  { const c0=[-127.5,-121]; if(inPoly(c0[0],c0[1],KINDER.pts)){ const gv=new THREE.Mesh(new THREE.CircleGeometry(3.4,24).rotateX(-Math.PI/2),po(new THREE.MeshLambertMaterial({color:0xaaa497,map:detailTex}),3)); gv.position.set(c0[0],H(c0[0],c0[1])+.07,c0[1]); gv.receiveShadow=true; scene.add(gv);
+      const stoneM=new THREE.MeshLambertMaterial({color:0xb4afa4,map:detailTex}); for(let k=0;k<14;k++){ const a=k/14*6.28+.3, r=2.2+((k*7)%5)*.3; const x=c0[0]+Math.cos(a)*r, z=c0[1]+Math.sin(a)*r; const st=new THREE.Mesh(new THREE.DodecahedronGeometry(.22+((k*3)%4)*.1,0),stoneM); st.position.set(x,H(x,z)+.12,z); st.scale.y=.65; st.rotation.y=k; st.castShadow=true; scene.add(st); }
+      [[0,0,2.6],[.9,-.8,2.3],[-.9,-.6,2.0]].forEach(([u,v,hh],i)=>{ const x=c0[0]+u-1.2, z=c0[1]+v-.6; const th=new THREE.Mesh(new THREE.ConeGeometry(.55,hh,8).translate(0,hh/2,0),new THREE.MeshLambertMaterial({color:i?0x2f5d31:0x35693a})); th.position.set(x,H(x,z),z); th.castShadow=true; scene.add(th); });
+      EXTRA_TREES.push({x:c0[0]-1.6,z:c0[1]-1.4,s:1.5,con:true,col:'#3d6f6a'});
+      const sc=new THREE.Group(); sc.position.set(c0[0]+.4,H(c0[0],c0[1]),c0[1]+.8); scene.add(sc); bx(sc,.9,.5,.7,0,0,0,stoneM); bx(sc,.5,.8,.4,0,.5,0,stoneM);
+      const sg=new THREE.Group(); sg.position.set(c0[0]+3.6,H(c0[0]+3.6,c0[1]+1.5),c0[1]+1.5); scene.add(sg); bx(sg,.06,2.7,.06,0,0,0,steelG); const nsT=tex(64,64,(x)=>{ x.fillStyle='#fff'; x.beginPath(); x.arc(32,32,31,0,7); x.fill(); x.fillStyle='#1c4fa8'; x.beginPath(); x.arc(32,32,26,0,7); x.fill(); x.strokeStyle='#d22'; x.lineWidth=6; x.beginPath(); x.moveTo(14,14); x.lineTo(50,50); x.moveTo(50,14); x.lineTo(14,50); x.stroke(); });
+      const sgn=new THREE.Mesh(new THREE.CircleGeometry(.3,20),new THREE.MeshLambertMaterial({map:nsT,side:THREE.DoubleSide})); sgn.position.set(0,2.3,.04); sg.add(sgn); bx(sg,.3,.4,.03,0,1.65,.04,new THREE.MeshLambertMaterial({color:0x1c4fa8}),true); sg.rotation.y=Math.PI/2; addSolid({x:sg.position.x,z:sg.position.z,hw:.1,hd:.1,c:1,s:0,r:.3}); } }
   if(CB.delik) buildDelikatesy(CB.delik); if(CB.dworzec) buildDworzec(CB.dworzec); if(CB.mineral) buildMineral(CB.mineral); if(CB.swietl) buildSwietlica(CB.swietl); buildParkParkowa();
   // domy ze zdjęć (Wyzwolenia 159-163 naprzeciw kościoła, kwiaciarnia „Sas-Anka” przy Szkolnej 9, Szkolna 3) - modele z tools/blender/budynki2.py
   function buildPhotoHouse(b,name,re,ML,MD,col,roofCol,extra){ const {f,g,L,D,FZ,low,w}=groupAt(b,nearRoad(b,re)); const H0=5.8;
@@ -1117,6 +1141,7 @@ async function boot(saved){
   if(CB.hgraf) photoBld(CB.hgraf,'autopart_hala',18.5,14,0x9da3a8,0x6b7075,5.6,null);
   if(CB.zuh) photoBld(CB.zuh,'zuh',16,40,0x464a50,0x3c4046,6.4,null);
   if(CB.zabdom) photoBld(CB.zabdom,'dom_zabka',10,9,0x8e8d88,0x4a3329,3.1,null);
+  if(CB.przed) photoBld(CB.przed,'przedszkole',18,8,0xd9d3b4,0x7a4636,6.3,null);
   if(CB.dstary) photoBld(CB.dstary,'dom_stary',10,9.5,0xc8ab8d,0x6d7378,5.4,null);
   if(CB.dsolar) photoBld(CB.dsolar,'dom_solar',12.5,10,0xe6dcc4,0x4b3b34,5.2,null);
 
