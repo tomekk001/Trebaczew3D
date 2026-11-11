@@ -380,7 +380,7 @@ async function boot(saved){
       const n=Math.floor(L/step); for(let k=0;k<n;k++){ const t=(k+.5)*L/n; for(let f=0;f<floors;f++) list.push([a[0]+tx*t+nx*.05,y0+f*3.4,a[1]+tz*t+nz*.05,Math.atan2(nx,nz)]); } }
     const im=new THREE.InstancedMesh(new THREE.PlaneGeometry(1.8,wh||1.5),winMat,Math.max(1,list.length)); list.forEach((w,i)=>{ dum.position.set(w[0],w[1],w[2]); dum.rotation.set(0,w[3],0); dum.scale.set(1,1,1); dum.updateMatrix(); im.setMatrixAt(i,dum.matrix); im.setColorAt(i,col.set('#4a5866')); }); scene.add(im); return im; }
   const polyWinIMs=[];
-  const APT=BPOLY.find(b=>b.pts[0][0]===-107&&b.pts[0][1]===-222); let APT_DOORS=null, SCHOOL_M=null;
+  const APT=BPOLY.find(b=>b.pts[0][0]===-107&&b.pts[0][1]===-222); let APT_DOORS=null, SCHOOL_M=null, SCHOOL_DOOR2=null;
   BPOLY.forEach(p=>{ if(p===CHURCH||p===APT)return; const school=p.code===5; const h=school?7.4:5; const base=p.hmin-0.5; const ph=[];
     ph.push(extrude(p.pts,p.hc+h-base,new THREE.MeshLambertMaterial({color:school?0xf1e3c4:0xe9e4d8,map:plasterTex}),base));
     ph.push(extrude(p.pts,0.6,new THREE.MeshLambertMaterial({color:school?0x5f6670:0x6a6f75}),p.hc+h));
@@ -1036,6 +1036,7 @@ async function boot(saved){
   // --- Zacisze: ścieżka do szkoły od Wyzwolenia (aleja kasztanowców, zakaz wjazdu, tablica ogłoszeń) ---
   { const zc=ROADS.find(r=>r.n==='Zacisze'); if(zc){ const foot=[[-164,104],[-163,101],[-164,91],[-169,69],[-173,43],[-185,-25]]; const fm=new THREE.Mesh(ribbon(foot,2.2,.12,2.2),matPaver); fm.receiveShadow=true; scene.add(fm); WALKS.push({pts:resample(foot,4),len:lineLen(resample(foot,4)),road:zc});
       for(let d=8;d<Math.min(zc.L,140);d+=7.5){ const s=sampleLine(zc.pts,zc.len,zc.L-d); const o=zc.w/2+2.4; let x=s.x+s.tz*o, z=s.z-s.tx*o; if(foot.some((p,i)=>i<foot.length-1&&segDist(x,z,p[0],p[1],foot[i+1][0],foot[i+1][1])<2.6)){ x=s.x+s.tz*(o+4.2); z=s.z-s.tx*(o+4.2); } if(blocked(x,z,1.2))continue; EXTRA_TREES.push({x,z,s:R(1.5,1.8),con:false,tall:true,col:pick(['#b8742e','#c98a3a','#a8642a','#8f8a3a'])}); }
+      { const rf=resample(foot,6.5); for(let i=1;i<rf.length-1;i++){ const q=rf[i], t=[rf[i+1][0]-rf[i-1][0],rf[i+1][1]-rf[i-1][1]], tl=Math.hypot(t[0],t[1])||1; const lx=t[1]/tl, lz=-t[0]/tl; const x=q[0]+lx*2.5+R(-.3,.3), z=q[1]+lz*2.5+R(-.3,.3); if(blocked(x,z,.5,true)||roadNearF(x,z,.5)) continue; EXTRA_TREES.push({x,z,s:R(1.7,2.1),con:false,tall:true,col:pick(['#b8742e','#c98a3a','#a8642a','#9a6a2c','#bf8036'])}); } }
       const s0=sampleLine(zc.pts,zc.len,zc.L-6); const o=zc.w/2+1.2; const sx=s0.x-s0.tz*o, sz=s0.z+s0.tx*o; const g=new THREE.Group(); g.position.set(sx,H(sx,sz),sz); g.rotation.y=Math.atan2(-s0.tx,-s0.tz); scene.add(g); bx(g,.07,2.4,.07,0,0,0,steelG);
       const ne=tex(64,64,(c)=>{ c.fillStyle='#fff'; c.beginPath(); c.arc(32,32,31,0,7); c.fill(); c.fillStyle='#d01e1e'; c.beginPath(); c.arc(32,32,28,0,7); c.fill(); c.fillStyle='#fff'; c.fillRect(12,27,40,10); });
       const sg=new THREE.Mesh(new THREE.CircleGeometry(.32,24),new THREE.MeshLambertMaterial({map:ne})); sg.position.set(0,2.3,.05); g.add(sg);
@@ -1111,11 +1112,11 @@ async function boot(saved){
   // --- ogrodzenie szkoły (wg zdjęcia): czarny kuty płot z łukami na cokole, tuje, ceglane słupki bramy ---
   { const P=SCHOOL.pts, kc=centroid(P); const ironT=tex(128,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='#15171a'; x.lineWidth=2.4; for(let i=4;i<w;i+=8){ x.beginPath(); x.moveTo(i,h*.2); x.lineTo(i,h-4); x.stroke(); } x.lineWidth=3.5; x.beginPath(); x.moveTo(0,h*.3); x.quadraticCurveTo(w/2,-h*.08,w,h*.3); x.stroke(); x.beginPath(); x.moveTo(0,h-6); x.lineTo(w,h-6); x.stroke(); x.beginPath(); x.moveTo(0,h*.55); x.lineTo(w,h*.55); x.stroke(); });
     const im=new THREE.MeshLambertMaterial({map:ironT,transparent:true,alphaTest:.3,side:THREE.DoubleSide,color:0x25272a}), blk=new THREE.MeshLambertMaterial({color:0x1c1e20}), plm=new THREE.MeshLambertMaterial({color:0x9a968c,map:detailTex}), brk=new THREE.MeshLambertMaterial({color:0xa94a2e,map:detailTex}), cap=new THREE.MeshLambertMaterial({color:0x8d8a82});
-    const segs=[], posts=[], thuja=[], gates=[]; let gDone=false, g2Done=false; const G2P=[-183.3,-26];
+    const segs=[], posts=[], thuja=[], gates=[]; let gDone=false; const G2L=[[-183.3,-26]]; if(SCHOOL_M){ const {cx:sx,cz:sz,an:sa}=SCHOOL_M; G2L.push([sx-4.25*Math.cos(sa)-13*Math.sin(sa),sz-4.25*Math.sin(sa)+13*Math.cos(sa)]); } const G2D=G2L.map(()=>false);
     for(let q=0;q<P.length-1;q++){ const a=P[q], b=P[q+1], l=Math.hypot(b[0]-a[0],b[1]-a[1]); if(l<4) continue; const mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2; if(!roadNearF(mx,mz,6)) continue; const tx=(b[0]-a[0])/l, tz=(b[1]-a[1])/l; let nx=-tz, nz=tx; if((kc[0]-mx)*nx+(kc[1]-mz)*nz<0){ nx=-nx; nz=-nz; }
-      const A=[a[0]+nx*.8,a[1]+nz*.8]; const ang=Math.atan2(tz,tx); const gu=(!gDone&&l>25)?l*.5:-99; if(gu>0) gDone=true; const gu2=(l>100&&!g2Done)?((G2P[0]-a[0])*tx+(G2P[1]-a[1])*tz):-99; if(gu2>0) g2Done=true; const n=Math.max(1,Math.round(l/2.5));
-      for(let k=0;k<n;k++){ const u0=k/n*l, u1=(k+1)/n*l, um=(u0+u1)/2, c=[A[0]+tx*um,A[1]+tz*um]; if(gu>0&&Math.abs(um-gu)<2.6){ if(!gates.length) gates.push({x:A[0]+tx*gu,z:A[1]+tz*gu,ang,tx,tz,nx,nz}); continue; } if(gu2>0&&Math.abs(um-gu2)<3.3){ if(!gates.some(q=>q.open)){ const sg=(nx*-tz+nz*tx)>0?1:-1; gates.push({x:A[0]+tx*gu2,z:A[1]+tz*gu2,ang,tx,tz,nx,nz,open:1,sg}); } continue; } if([u0,um,u1].some(u=>blocked(A[0]+tx*u,A[1]+tz*u,0,true)||roadNearF(A[0]+tx*u,A[1]+tz*u,.3))) continue; segs.push([c[0],c[1],ang,(u1-u0)]); posts.push([A[0]+tx*u0,A[1]+tz*u0,ang]);
-        if(k%2===0&&!(gu2>0&&Math.abs(um-gu2)<4.6)){ const tq=[c[0]+nx*.9,c[1]+nz*.9]; if(!blocked(tq[0],tq[1],.2,true)) thuja.push(tq); } } }
+      const A=[a[0]+nx*.8,a[1]+nz*.8]; const ang=Math.atan2(tz,tx); const gu=(!gDone&&l>25)?l*.5:-99; if(gu>0) gDone=true; const g2=[]; G2L.forEach((gp,gi)=>{ if(G2D[gi]) return; const u=(gp[0]-a[0])*tx+(gp[1]-a[1])*tz, dv=Math.abs((gp[0]-a[0])*nx+(gp[1]-a[1])*nz); if(u>2&&u<l-2&&dv<14){ g2.push(u); G2D[gi]=true; } }); const n=Math.max(1,Math.round(l/2.5));
+      for(let k=0;k<n;k++){ const u0=k/n*l, u1=(k+1)/n*l, um=(u0+u1)/2, c=[A[0]+tx*um,A[1]+tz*um]; if(gu>0&&Math.abs(um-gu)<2.6){ if(!gates.length) gates.push({x:A[0]+tx*gu,z:A[1]+tz*gu,ang,tx,tz,nx,nz}); continue; } { const gq=g2.find(u=>Math.abs(um-u)<3.3); if(gq!==undefined){ const gx0=A[0]+tx*gq, gz0=A[1]+tz*gq; if(!gates.some(q=>q.open&&Math.hypot(q.x-gx0,q.z-gz0)<1)){ const sg=(nx*-tz+nz*tx)>0?1:-1; gates.push({x:gx0,z:gz0,ang,tx,tz,nx,nz,open:1,sg}); } continue; } } if([u0,um,u1].some(u=>blocked(A[0]+tx*u,A[1]+tz*u,0,true)||roadNearF(A[0]+tx*u,A[1]+tz*u,.3))) continue; segs.push([c[0],c[1],ang,(u1-u0)]); posts.push([A[0]+tx*u0,A[1]+tz*u0,ang]);
+        if(k%2===0&&!g2.some(u=>Math.abs(um-u)<4.6)){ const tq=[c[0]+nx*.9,c[1]+nz*.9]; if(!blocked(tq[0],tq[1],.2,true)) thuja.push(tq); } } }
     const dm=new THREE.Object3D();
     { const ip=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1.5).translate(0,.25+.75,0),im,Math.max(1,segs.length)), pl=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.3,.22).translate(0,.15,0),plm,Math.max(1,segs.length));
       segs.forEach((q,i)=>{ dm.position.set(q[0],H(q[0],q[1]),q[1]); dm.rotation.set(0,-q[2],0); dm.scale.set(q[3]+.04,1,1); dm.updateMatrix(); ip.setMatrixAt(i,dm.matrix); pl.setMatrixAt(i,dm.matrix); addSolid({x:q[0],z:q[1],hw:q[3]/2,hd:.1,c:Math.cos(q[2]),s:Math.sin(q[2]),r:q[3]/2+.3}); }); ip.count=pl.count=segs.length; scene.add(ip,pl);
@@ -1205,7 +1206,8 @@ async function boot(saved){
   function turbinesUpdate(dt){ TURBINES.forEach((r,i)=>r.rotation.x+=dt*(1.05+i*.07)); }
   await LP(44);
   /* ---------- ogrodzenia wzdłuż granic działek (ULDK) ---------- */
-  const KBB=bbox(KINDER.pts); const noFence=(x,z)=>(x>KBB[0]-4&&x<KBB[2]+7&&z>KBB[1]-4&&z<KBB[3]+4)||LOTS.some(l=>inPoly(x,z,l))||LOCKERS.some(l=>Math.hypot(l.x-x,l.z-z)<7)||[B_LEW,B_ZAB].some(b=>Math.hypot(b.x-x,b.z-z)<Math.hypot(b.w,b.d)/2+7)||[SCHOOL,KINDER,PARK,CEM,OSPA].some(a=>inPoly(x,z,a.pts))||[COURT,PITCH2].some(a=>{const c=centroid(a.pts);return Math.hypot(x-c[0],z-c[1])<35;});
+  const KBB=bbox(KINDER.pts); const nearSchool=(x,z,d)=>{ const P=SCHOOL.pts; for(let i=0;i<P.length-1;i++) if(segDist(x,z,P[i][0],P[i][1],P[i+1][0],P[i+1][1])<d) return true; return false; };
+  const noFence=(x,z)=>nearSchool(x,z,16)||(x>KBB[0]-4&&x<KBB[2]+7&&z>KBB[1]-4&&z<KBB[3]+4)||LOTS.some(l=>inPoly(x,z,l))||LOCKERS.some(l=>Math.hypot(l.x-x,l.z-z)<7)||[B_LEW,B_ZAB].some(b=>Math.hypot(b.x-x,b.z-z)<Math.hypot(b.w,b.d)/2+7)||[SCHOOL,KINDER,PARK,CEM,OSPA].some(a=>inPoly(x,z,a.pts))||[COURT,PITCH2].some(a=>{const c=centroid(a.pts);return Math.hypot(x-c[0],z-c[1])<35;});
   const roadNear=(x,z,m)=>ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+m);
   const GAPS=[], GATES=[], DRIVE_SPOTS=[];
   { const front=[], side=[]; const seen=new Set();
@@ -1748,7 +1750,7 @@ async function boot(saved){
       const frm=new THREE.MeshLambertMaterial({color:0x4a2f22}), gls=new THREE.MeshLambertMaterial({color:0x27333d}), cn=new THREE.MeshLambertMaterial({color:0x6b3a26}), stp=new THREE.MeshLambertMaterial({color:0x9a968c,map:detailTex});
       bx(dg,2.1,2.5,.12,0,0,0,frm); [-.52,.52].forEach(o=>bx(dg,.92,2.2,.05,o,.05,.07,gls)); bx(dg,.05,2.3,.07,0,.05,.09,frm);
       bx(dg,3.4,.14,1.8,0,2.75,.9,cn); [-1.5,1.5].forEach(o=>bx(dg,.1,2.75,.1,o,0,1.65,frm)); bx(dg,3.0,.18,1.2,0,0,.6,stp); bx(dg,2.6,.18,.5,0,.0,1.45,stp);
-      addSolid({x:d0[0]+nrm[0]*1.2,z:d0[1]+nrm[1]*1.2,hw:.1,hd:.1,c:1,s:0,r:.2});
+      SCHOOL_DOOR2={p:[d0[0],d0[1]],n:[nrm[0],nrm[1]]};
       const hh=Math.atan2(zh[1],zh[0]); [[-9,0xb8bcc2],[8.5,0x2c3e55]].forEach(([v,col])=>{ const q=W(3.6,v); const car=makeCar(col,'car'); seatCar(car,q[0],q[1],hh+(v<0?0:Math.PI)); scene.add(car); const cc=Math.cos(hh), ss=Math.sin(hh); addSolid({x:q[0],z:q[1],hw:2.2,hd:.95,c:cc,s:ss,r:2.5}); });
     }
     // parking z kostki po prawej stronie alejki (jak na zdjęciu) - przy asfalcie, od bramy w stronę Wyzwolenia
@@ -1921,7 +1923,12 @@ async function boot(saved){
     if(nr.r){ const a=nr.r.pts[nr.seg],b=nr.r.pts[nr.seg+1]; const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz; const t=clamp(((p.x-a[0])*dx+(p.z-a[1])*dz)/L,0,1); const qx=a[0]+dx*t-p.x, qz=a[1]+dz*t-p.z, l=Math.hypot(qx,qz)||1; dir=[qx/l,qz/l]; }
     let best=null; for(let r=6;r<40&&!best;r+=2){ for(let k=0;k<16;k++){ const an=Math.atan2(dir[1],dir[0])+(k%2?1:-1)*Math.ceil(k/2)*0.35; const x=p.x+Math.cos(an)*r, z=p.z+Math.sin(an)*r; if(!blocked(x,z,.6)){ best=[x,z]; break; } } }
     if(!best){ teleport(p.x,p.z); return; } st.x=best[0]; st.z=best[1]; st.vx=st.vz=0; st.yaw=Math.atan2(st.x-p.x,st.z-p.z); st.face=st.yaw+Math.PI; st.pitch=0.22; }
-  function toggleMap(v){ keys.clear(); resetJoy(); mapView.hidden=v===undefined?!mapView.hidden:!v; if(!mapView.hidden){ mvCenter(st.x,st.z,2.2); drawBig(); } else canvas.focus(); }
+  let poiBuilt=false;
+  function buildPoiList(){ poiBuilt=true; if(CB.orlenShop&&!POIS.some(q=>/orlen/i.test(q.n))){ const S=CB.orlenShop, pp=[S.x,S.z]; POIS.push({n:'ORLEN · stacja paliw (Działoszyn)',x:pp[0],z:pp[1],p:pp,c:'#d8141c',ic:'O',sp:labelSprite('ORLEN','#d8141c')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(pp[0],H(pp[0],pp[1])+9,pp[1]); lp.sp.visible=false; scene.add(lp.sp); }
+    poiList.innerHTML=''; const seen=new Set(); const skip=/^(Przystanek|Plac zabaw|Park w|Boisko|Orlik|Górka|Stadion|Paczkomat|Cmentarz)/;
+    POIS.filter(q=>!q.npcTag&&!skip.test(q.n)&&!seen.has(q.n)&&seen.add(q.n)).sort((a,b)=>a.n.localeCompare(b.n,'pl')).forEach(q=>{ const b=document.createElement('button'); b.innerHTML=`<i style="background:${q.c}"></i>`; b.append(q.n); b.dataset.k=q.n.toLowerCase(); b.addEventListener('click',()=>{ goTo(q); toggleMap(false); }); poiList.append(b); });
+    const si=document.getElementById('poiSearch'); if(si){ const fl=()=>{ const v=si.value.trim().toLowerCase(); [...poiList.children].forEach(b=>{ b.style.display=(!v||b.dataset.k.includes(v))?'':'none'; }); }; si.addEventListener('input',fl); si.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter'){ const f=[...poiList.children].find(b=>b.style.display!=='none'); if(f) f.click(); } }); si.addEventListener('keyup',e=>e.stopPropagation()); } }
+  function toggleMap(v){ keys.clear(); resetJoy(); mapView.hidden=v===undefined?!mapView.hidden:!v; if(!mapView.hidden&&!poiBuilt) buildPoiList(); if(!mapView.hidden){ mvCenter(st.x,st.z,2.2); drawBig(); } else canvas.focus(); }
   document.getElementById('bMap').addEventListener('click',()=>toggleMap()); document.getElementById('bMapM').addEventListener('click',()=>toggleMap()); document.getElementById('closeMap').addEventListener('click',()=>toggleMap(false));
   { const pts=new Map(); let moved=0, pinch0=0, z0=1;
     const cpx=e=>{ const r=big.getBoundingClientRect(); return [(e.clientX-r.left)*big.width/r.width,(e.clientY-r.top)*big.height/r.height]; };
@@ -2797,6 +2804,7 @@ async function boot(saved){
       trainHorn(FREIGHT[0],S); }
     // policja
     if(st.car&&!['bike'].includes(st.car.kind)){ cars.forEach(t=>{ if(Math.hypot(t.x-st.car.x,t.z-st.car.z)<3.8&&tAll-trafficHitT>4){ trafficHitT=tAll; if(rnd()<.5) setWanted(Math.max(st.wanted,1)); } }); }
+    if(st.wanted>0&&PARK&&inPoly(st.car?st.car.x:st.x,st.car?st.car.z:st.z,PARK.pts)){ setWanted(0); toast('🌳 Zgubiłeś policję w parku - przestali Cię gonić',3.2); }
     const want=Math.min(3,st.wanted); if(COPS.length<want&&rnd()<dt*2) spawnCop();
     for(let i=COPS.length-1;i>=0;i--){ const c=COPS[i]; const tx=st.car?st.car.x:st.x, tz=st.car?st.car.z:st.z; const dx=tx-c.x,dz=tz-c.z, d=Math.hypot(dx,dz);
       if(st.wanted===0){ c.far+=dt; c.v*=1-dt; if(c.far>4||d>200){ scene.remove(c.g); COPS.splice(i,1); continue; } }
@@ -3780,7 +3788,7 @@ async function boot(saved){
   // szkoła podstawowa: wejście głównymi drzwiami w ganku od północy (model szkola, drzwi w x≈-4.25, z≈11.3 w układzie modelu)
   const SCHOOL_ROOM=defRoom({kind:'school',W:40,D:22,HT:2*SCH_F,doorX:0,col:0xe07b39,wall:0xece6d4,floor:'#b0a898',ceil:0xf0f0ec,ceilE:0x4c4c4a,wallE:0x2c2b26,floorE:0x1c1c1a,levels:2}); SCHOOL_ROOM.title='Szkoła Podstawowa w Trębaczewie';
   SCHOOL_ROOM.items=[['Guma Turbo',1,'turbo',0],['Prince Polo',2,'hp',10],['Drożdżówka z serem',3,'hp',20],['Sok Kubuś',3,'hp',12],['Oranżada w proszku',1,'boost',30],['Kanapka z szynką',5,'hp',30]]; SCHOOL_ROOM.shopName='Sklepik szkolny'; SCHOOL_ROOM.sub='Pani Krysia · przerwa trwa 10 minut';
-  if(SCHOOL_M){ const {cx,cz,an}=SCHOOL_M, c=Math.cos(an), sn=Math.sin(an), W0=(x,z)=>[cx+x*c-z*sn,cz+x*sn+z*c]; addEnt(SCHOOL_ROOM,'szkoły',W0(-4.25,13.1),[-sn,c]); }
+  if(SCHOOL_M){ const {cx,cz,an}=SCHOOL_M, c=Math.cos(an), sn=Math.sin(an), W0=(x,z)=>[cx+x*c-z*sn,cz+x*sn+z*c]; addEnt(SCHOOL_ROOM,'szkoły',W0(-4.25,13.1),[-sn,c]); if(SCHOOL_DOOR2){ const e1=SCHOOL_ROOM.ent; addEnt(SCHOOL_ROOM,'szkoły (drugie wejście)',SCHOOL_DOOR2.p,SCHOOL_DOOR2.n); SCHOOL_ROOM.ent=e1; } }
   const SCH_SPOT={teach:[-6.2,3.6,1],k1a:[-18,7.3,0],board:[-19.2,6.5,0],shop:[-6,5.8,0]};
   function roomShopObj(o){ if(!o.items||!o.counter)return null; return {n:o.shopName||'Sklep',sub:o.sub,get p(){ return [o.x+o.counter[0],o.z+o.counter[1]]; },items:o.items}; }
   function enterRoom(e){ if(st.car||st.inside)return; if(e.room.kind==='home'&&!DONE.has('m20')){ toast('To dom na sprzedaż. Kupisz go w ostatniej misji „Własny kąt” (450 000 zł).',3.5); return; } if(st.wanted>0){ toast('Policja Cię ściga - nie wejdziesz teraz do środka',2.5); return; } const o=e.room; if(!o.built&&!modelsOk(ROOM_NEEDS[o.kind])&&!MODELS_SKIP){ waitModels(ROOM_NEEDS[o.kind],()=>{ MODELS_SKIP=true; enterRoom(e); MODELS_SKIP=false; }); return; } IN.lastSwap=tAll;
@@ -4176,7 +4184,7 @@ async function boot(saved){
     { const wl=gate; POIS.push({n:'Cementownia Warta',x:wl[0],z:wl[1],p:wl,c:'#6a75b8',ic:'C',sp:labelSprite('Cementownia Warta','#6a75b8')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(wl[0],H(wl[0],wl[1])+12,wl[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
     // melexy (elektryczne wózki, nie wymagają tankowania) do jazdy po terenie zakładu
     const melexes=[]; [[168,2880,-2.4],[88,2866,.5],[640,2955,0],[1062,2862,0],[1330,2848,3.1],[860,2955,3.14]].forEach(([x,z,hd])=>{ const c=addParked(makeMelex(),x,z,hd,'melex','Melex (elektryczny)',8.5,4); if(c){ c.g.userData.drv.visible=false; melexes.push(c); } });
-    const mini=[ {id:'palety',p:[1337,2897],title:'Paletyzacja worków - Cementownia Warta',label:'Paletyzacja worków'}, {id:'bhp',p:[96,2870],title:'Kontrola BHP - Cementownia Warta',label:'Kontrola BHP'}, {id:'cysterna',p:[880,2962],title:'Załadunek cystern - Cementownia Warta',label:'Załadunek cystern'}, {id:'laboratorium',p:[1097,2918],title:'Laboratorium - Cementownia Warta',label:'Pobieranie próbek'} ];
+    const mini=[ {id:'palety',p:[1337,2897],title:'Paletyzacja worków - Cementownia Warta',label:'Paletyzacja worków'}, {id:'bhp',p:[96,2870],title:'Kontrola BHP - Cementownia Warta',label:'Kontrola BHP'}, {id:'cysterna',p:[880,2962],title:'Załadunek cystern - Cementownia Warta',label:'Załadunek cystern'}, {id:'laboratorium',p:[1097,2918],title:'Laboratorium - Cementownia Warta',label:'Pobieranie próbek'} , {id:'mlyn',p:[1112,2812],title:'Młyn cementu - Cementownia Warta',label:'Młyn cementu'}, {id:'sterownia',p:[1230,2872],title:'Sterownia pieca - Cementownia Warta',label:'Sterownia pieca'} ];
     const tick=()=>{ melexes.forEach(c=>{ c.g.userData.drv.visible=(st.car===c); }); };
     return {gate,office,hall,mini,tick,melexes}; })();
   const KOMIS=(()=>{ const F=MJF; if(!F) return null; const {L,th,mx,mz}=F; const hMean=F.h;
@@ -4206,7 +4214,7 @@ async function boot(saved){
     const gb=L(-23.5,1.4); GARAGE={x:gb[0],z:gb[1],h:Math.atan2(mz,mx)};
     const wl=L(-23.5,6.5); POIS.push({n:'Myjnia',x:wl[0],z:wl[1],p:wl,c:'#c9242a',ic:'M',sp:labelSprite('Myjnia','#c9242a')}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(wl[0],H(wl[0],wl[1])+9,wl[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
     const door=L(9,14+1.2+1.4); const pd=npcFind(door[0],door[1],.6,200);
-    const it=[]; Object.keys(CARS).forEach(k=>it.push([CARS[k].n,CARS[k].p,'car',k])); it.push(['Rower',300,'bike',1]); Object.keys(TUNE).forEach(k=>it.push(['Tuning: '+TUNE[k].n,TUNE[k].p,'tune',k])); Object.keys(OUTFITS).forEach(k=>it.push(['Ubranie: '+OUTFITS[k].n,OUTFITS[k].p,'outfit',k]));
+    const it=[]; Object.keys(CARS).forEach(k=>it.push([CARS[k].n,CARS[k].p,'car',k])); it.push(['Rower',300,'bike',1]); Object.keys(TUNE).forEach(k=>it.push(['Tuning: '+TUNE[k].n,TUNE[k].p,'tune',k])); 
     const shop={n:'Auto-Komis Trębaczew',sub:'samochody, rower, tuning i ubrania · kupione auto podstawimy w myjni za komisem',p:pd,items:it,komis:true};
     POIS.push({n:'Auto-Komis Trębaczew',x:pd[0],z:pd[1],p:pd,c:'#c4221e',ic:'K',sp:labelSprite('Auto-Komis','#c4221e')}); { const lp=POIS[POIS.length-1]; lp.sp.position.set(pd[0],H(pd[0],pd[1])+9,pd[1]); lp.sp.visible=false; scene.add(lp.sp); const b=document.createElement('button'); b.innerHTML=`<i style="background:${lp.c}"></i>`; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); poiList.append(b); }
     return {shop,p:pd}; })();
@@ -4226,15 +4234,22 @@ async function boot(saved){
   function invAdd(it){ const k=it[0]; if(!OWN.inv) OWN.inv={}; const e=OWN.inv[k]||(OWN.inv[k]={n:0,t:it[2],v:it[3]}); e.n++; ownSave(); }
   function invUse(k){ const e=OWN.inv&&OWN.inv[k]; if(!e||e.n<1) return; if(e.t==='hp'){ if(st.hp>=100){ toast('Masz pełne zdrowie',1.8); return; } st.hp=Math.min(100,st.hp+e.v); toast(`Zjedzono: <b>${k}</b> (+${e.v} zdrowia)`,2.2); } else if(e.t==='boost'){ st.boost=e.v; toast(`Wypito: <b>${k}</b> - przypływ energii`,2.2); }
     e.n--; if(e.n<=0) delete OWN.inv[k]; ownSave(); saveGame(); renderInv(); }
-  function renderInv(){ const row=(a,b,btn)=>`<div class="ivRow"><b>${a}</b>${b?`<span>${b}</span>`:''}${btn||''}</div>`; let h=`<h2>EKWIPUNEK</h2><p class="sub">Masz ${fmt(st.money)} · klawisz <kbd>I</kbd> zamyka okno</p>`;
-    h+='<h3>Pojazdy</h3>'; if(OWN.car){ const C=CARS[OWN.car]; h+=`<div class="ivRow"><b>${C.n}</b><span>${OWN.tune.chip?'chip tuning':''}${OWN.tune.chip&&OWN.tune.bak?' · ':''}${OWN.tune.bak?'większy bak':''}</span>${carStatsHtml(OWN.car,OWN.tune)}${KOMIS?'<button data-act="park">Pokaż na mapie</button>':''}</div>`; } else h+=row('Brak auta','kup je w Auto-Komisie przy DK42');
-    h+=row('Rower',OWN.bike?'masz':'brak');
-    h+='<h3>Ubrania</h3>'; if(OWN.outfits.length) h+=OWN.outfits.map(k=>row(OUTFITS[k].n,'',`<button data-act="outfit" data-k="${k}">Załóż</button>`)).join(''); else h+=row('Brak kupionych ubrań','sklep: Auto-Komis');
-    h+='<h3>Jedzenie i napoje</h3>'; const ik=Object.keys(OWN.inv||{}); if(ik.length) h+=ik.map(k=>{ const e=OWN.inv[k]; return row(`${k} ×${e.n}`,e.t==='hp'?`+${e.v} zdrowia`:'energia',`<button data-act="use" data-k="${k.replace(/"/g,'&quot;')}">${e.t==='hp'?'Zjedz':'Wypij'}</button>`); }).join(''); else h+=row('Pusto','kup coś w Lewiatanie, Żabce, Eufori lub aptece');
-    const ex=[]; if(st.canister) ex.push(['Kanister paliwa',st.canister+' l']); if(st.books) ex.push(['Książki z biblioteki',String(st.books)]); if(ex.length){ h+='<h3>Inne</h3>'+ex.map(q=>row(q[0],q[1])).join(''); }
-    h+='<h3>Dom i meble</h3>'; h+=DONE.has('m20')?(OWN.furn.length?OWN.furn.map(k=>row(FURN[k][0],'w domu')).join(''):row('Dom kupiony','jeszcze bez mebli')):row('Dom','jeszcze nie kupiony');
-    h+='<button class="ivClose" data-act="close">Zamknij</button>'; invEl.innerHTML=h;
-    invEl.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.act; if(a==='close') toggleInv(false); else if(a==='use') invUse(b.dataset.k); else if(a==='outfit'){ applyOutfit(b.dataset.k); toast('Ubranie założone',1.8); } else if(a==='park'&&GARAGE){ WAYPOINT=[GARAGE.x,GARAGE.z]; toggleInv(false); toast('Twoje auto zaznaczone na radarze',2.4); } })); }
+  let INV_SEL=0;
+  function invTiles(){ const T=[]; if(OWN.car){ const C=CARS[OWN.car]; T.push({ic:'🚗',n:C.n,sub:(OWN.tune.chip?'chip tuning':'')+(OWN.tune.chip&&OWN.tune.bak?' · ':'')+(OWN.tune.bak?'większy bak':'')||'Twój samochód',extra:carStatsHtml(OWN.car,OWN.tune),btns:KOMIS?[['park','Pokaż na mapie']]:[]}); }
+    if(OWN.bike) T.push({ic:'🚲',n:'Rower',sub:'szybszy niż spacer'});
+    Object.keys(OWN.inv||{}).forEach(k=>{ const e=OWN.inv[k]; T.push({ic:e.t==='hp'?'🍔':'🥤',n:k,q:e.n,sub:e.t==='hp'?`+${e.v} zdrowia`:'energia',btns:[['use',e.t==='hp'?'Zjedz':'Wypij',k]]}); });
+    if(st.canister) T.push({ic:'⛽',n:'Kanister paliwa',sub:st.canister+' l'}); if(st.books) T.push({ic:'📚',n:'Książki z biblioteki',q:st.books,sub:'z biblioteki'});
+    OWN.outfits.forEach(k=>OUTFITS[k]&&T.push({ic:'👕',n:OUTFITS[k].n,sub:'ubranie',btns:[['outfit','Załóż',k]]}));
+    if(DONE.has('m20')) OWN.furn.forEach(k=>T.push({ic:'🛋️',n:FURN[k][0],sub:'w domu'}));
+    return T; }
+  function renderInv(){ const T=invTiles(); if(INV_SEL>=T.length) INV_SEL=0; const slots=Math.max(24,Math.ceil(T.length/6)*6); const esc=v=>String(v).replace(/"/g,'&quot;');
+    let h=`<h2>EKWIPUNEK</h2><p class="sub">Masz ${fmt(st.money)} · klawisz <kbd>I</kbd> zamyka okno</p><div class="ivWrap"><div class="ivGrid">`;
+    for(let i=0;i<slots;i++){ const t=T[i]; h+=t?`<button class="ivSlot${i===INV_SEL?' sel':''}" data-i="${i}" title="${esc(t.n)}"><span class="ic">${t.ic}</span>${t.q>1?`<b class="qty">${t.q}</b>`:''}</button>`:'<div class="ivSlot empty"></div>'; }
+    h+='</div><div class="ivDet">'; const t=T[INV_SEL];
+    if(t){ h+=`<div class="big">${t.ic}</div><h3>${t.n}${t.q>1?' ×'+t.q:''}</h3><p>${t.sub||''}</p>${t.extra||''}${(t.btns||[]).map(b=>`<button data-act="${b[0]}"${b[2]!==undefined?` data-k="${esc(b[2])}"`:''}>${b[1]}</button>`).join('')}`; } else h+='<h3>Pusto</h3><p>Kup jedzenie w Lewiatanie, Żabce, Eufori lub aptece, a auto w Auto-Komisie przy DK42.</p>';
+    h+='</div></div>'+(DONE.has('m20')?'':'<p class="sub">Dom: jeszcze nie kupiony</p>')+'<button class="ivClose" data-act="close">Zamknij</button>'; invEl.innerHTML=h;
+    invEl.querySelectorAll('.ivSlot[data-i]').forEach(b=>b.addEventListener('click',()=>{ INV_SEL=+b.dataset.i; renderInv(); }));
+    invEl.querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.act; if(a==='close') toggleInv(false); else if(a==='use'){ invUse(b.dataset.k); renderInv(); } else if(a==='outfit'){ applyOutfit(b.dataset.k); toast('Ubranie założone',1.8); } else if(a==='park'&&GARAGE){ WAYPOINT=[GARAGE.x,GARAGE.z]; toggleInv(false); toast('Twoje auto zaznaczone na radarze',2.4); } })); }
   function toggleInv(v){ const on=v===undefined?invEl.hidden:v; if(on&&(SHOP_OPEN||(typeof logEl!=='undefined'&&!logEl.hidden))) return; invEl.hidden=!on; if(on){ keys.clear(); renderInv(); } else canvas.focus(); }
   ['bInv','bInvM'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',e=>{ e.stopPropagation(); toggleInv(); }); });
   addEventListener('keydown',e=>{ if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return; if(!invEl.hidden&&e.key==='Escape'){ toggleInv(false); e.preventDefault(); e.stopPropagation(); } else if((e.key==='i'||e.key==='I')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&document.getElementById('menu').hidden){ toggleInv(); e.preventDefault(); } },true);
@@ -4936,7 +4951,67 @@ async function boot(saved){
       G.hist.split('').forEach((h,i)=>txt(c,h==='2'?'✔':h==='1'?'½':'✘',W/2-8*NB*1.6+i*26+20,H*.82,22,h==='2'?'#7fd06b':h==='1'?'#f2c230':'#e5484d'));
       if(G.msgT>0) bigTxt(c,G.msg,W/2,H*.32,Math.min(46,W/14),G.msg==='W RYTMIE'?'#47b04b':'#e5484d');
       txt(c,!G.go?'Czekam na partnera…':(IS_TOUCH?'Stuknij, gdy worek jest w zielonej strefie - razem z partnerem':'SPACJA lub klik, gdy worek jest w zielonej strefie - razem z partnerem'),W/2,H-24,Math.min(18,W/44),'#1b1e21'); }; return G; }
+
+  /* ===== POJEDYNEK PRZY REMIZIE: kto pierwszy naciśnie po sygnale (wodne pistolety) ===== */
+  function makePojedynek(opt){ const G={t:0,round:0,pw:0,ow:0,phase:'wait',pt:0,wait:0,react:0,opR:0,msg:'',msgT:0,score:0,over:undefined,winner:'',shot:0,rts:[]}; const OPN=['Zdzisiek z remizy','Bogdan spod sklepu','Pan Staszek, prezes OSP'];
+    const nr=()=>{ G.round++; G.phase='wait'; G.pt=0; G.wait=1.2+Math.random()*2.8; G.react=0; G.opR=[.5,.4,.34][Math.min(2,G.round-1)]+Math.random()*.08; G.msg=''; G.winner=''; G.shot=0; }; nr();
+    const endRound=(w,msg)=>{ G.phase='res'; G.pt=0; G.winner=w; G.msg=msg; G.msgT=1.7; if(w==='me'){ G.pw++; G.score+=Math.max(100,Math.round(1000-G.react*1000)); mgSnd.ok(); } else { G.ow++; mgSnd.bad(); } };
+    G.fire=()=>{ if(G.over!==undefined||G.phase==='res') return; if(G.phase==='wait') endRound('op','ZA WCZEŚNIE!'); else if(G.phase==='go'){ G.react=G.pt; G.rts.push(Math.round(G.pt*1000)); if(G.react<G.opR) endRound('me','TRAFIONY! '+Math.round(G.react*1000)+' ms'); else endRound('op','RYWAL SZYBSZY'); } };
+    G.update=dt=>{ G.t+=dt; if(G.shot>0) G.shot-=dt; if(G.over!==undefined){ G.over-=dt; if(G.over<=0) mgEnd(G.result()); return; } G.pt+=dt;
+      if(G.phase==='wait'&&G.pt>=G.wait){ G.phase='go'; G.pt=0; mgSnd.whistle(); } else if(G.phase==='go'&&G.pt>G.opR) endRound('op','RYWAL SZYBSZY');
+      else if(G.phase==='res'&&G.pt>1.8){ if(G.pw>=2||G.ow>=2){ G.over=.4; G.win=G.pw>=2; } else nr(); } };
+    G.down=()=>G.fire(); G.key=k=>{ if(k===' '||k==='Enter'||k.length===1) G.fire(); };
+    G.result=()=>({win:!!G.win,score:G.score,stars:!G.win?0:G.ow===0?3:2,text:G.win?`Pokonałeś: ${OPN[0]}. Wynik ${G.pw}:${G.ow}${G.rts.length?', najlepszy refleks '+Math.min(...G.rts)+' ms':''}.`:`Przegrałeś ${G.pw}:${G.ow}. Nie strzelaj przed sygnałem!`});
+    G.draw=(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H*.62); gr.addColorStop(0,'#8fc3ee'); gr.addColorStop(1,'#dcebf5'); c.fillStyle=gr; c.fillRect(0,0,W,H); c.fillStyle='#b9c0c4'; c.fillRect(0,H*.62,W,H*.38); c.fillStyle='#a1a8ac'; for(let i=0;i<14;i++) c.fillRect(i*W/13,H*.62,2,H*.38);
+      // remiza w tle
+      c.fillStyle='#b8392d'; c.fillRect(W*.1,H*.32,W*.8,H*.3); c.fillStyle='#8a2a22'; c.fillRect(W*.08,H*.3,W*.84,H*.04); for(let i=0;i<3;i++){ c.fillStyle='#d9dde0'; c.fillRect(W*.16+i*W*.25,H*.4,W*.18,H*.22); c.fillStyle='#e6e9ec'; for(let k=0;k<5;k++) c.fillRect(W*.16+i*W*.25,H*.4+k*H*.044,W*.18,3); } txt(c,'OSP TRĘBACZEW',W/2,H*.365,Math.min(34,W/22),'#fff');
+      const by=H*.86, sc=Math.min(2.2,H/340), mx=W*.3, ox=W*.7; const hitMe=G.phase==='res'&&G.winner==='op', hitOp=G.phase==='res'&&G.winner==='me';
+      person(c,mx,by,sc,'#2f6fd0','#2c3e66',{armR:G.phase==='go'||G.phase==='res'?-1.45:-.2,rot:hitMe?-.35:0}); person(c,ox,by,-sc,'#c8392b','#3a3a40',{armR:(G.phase==='go'&&G.pt>G.opR*.85)||G.phase==='res'?-1.45:-.2,rot:hitOp?.35:0});
+      c.save(); c.scale(1,1); c.restore();
+      if(G.phase==='res'){ const fromX=G.winner==='me'?mx+30*sc:ox-30*sc, toX=G.winner==='me'?ox-10*sc:mx+10*sc; const k=Math.min(1,G.pt*4); c.strokeStyle='rgba(90,170,255,.9)'; c.lineWidth=5; c.beginPath(); c.moveTo(fromX,by-62*sc); c.lineTo(fromX+(toX-fromX)*k,by-62*sc+(1-k)*0+10*k); c.stroke(); }
+      c.fillStyle='rgba(18,21,24,.88)'; rrect(c,W/2-190,70,380,44,8); c.fill(); txt(c,`Runda ${Math.min(3,G.round)} · Ty ${G.pw} : ${G.ow} ${OPN[0].split(' ')[0]}`,W/2,92,21,'#fff');
+      if(G.phase==='wait') bigTxt(c,'CZEKAJ NA SYGNAŁ…',W/2,H*.2,Math.min(52,W/12),'#f2c230'); else if(G.phase==='go') bigTxt(c,'STRZELAJ!',W/2,H*.2,Math.min(86,W/7),'#e5484d'); else if(G.phase==='res') bigTxt(c,G.msg,W/2,H*.2,Math.min(50,W/13),G.winner==='me'?'#47b04b':'#e5484d');
+      txt(c,IS_TOUCH?'Stuknij w ekran, gdy zobaczysz STRZELAJ!':'SPACJA lub klik - dopiero po sygnale. Przed sygnałem = fałszywy start.',W/2,H-34,Math.min(20,W/34),'#1b1e21'); }; return G; }
+  /* ===== MŁYN CEMENTU: utrzymaj obciążenie młyna kulowego w zielonym polu ===== */
+  function makeMlyn(opt){ const G={t:0,L:.2,feed:.3,hist:[],inBand:0,total:0,choke:0,idle:0,strikes:0,over:undefined,rot:0,msg:'',msgT:0,score:0,pt:0}; const DUR=60, LO=.45, HI=.65;
+    G.demand=t=>.5+.16*Math.sin(t*.45)+.09*Math.sin(t*1.3+1.7)+.04*Math.sin(t*3.1);
+    G.update=dt=>{ G.t+=dt; if(G.msgT>0) G.msgT-=dt; if(G.over!==undefined){ G.over-=dt; if(G.over<=0) mgEnd(G.result()); return; }
+      const up=G.kUp||G.hold; const dn=G.kDn; G.feed=clamp(G.feed+(up?1:dn?-1:-.35)*.55*dt,0,1);
+      if(G.choke>0){ G.choke-=dt; G.L=Math.max(.5,G.L-dt*.3); } else { G.L=clamp(G.L+(G.feed-G.demand(G.t))*.9*dt,0,1); if(G.L>.93){ G.choke=3; G.strikes++; G.msg='ZATOR W MŁYNIE!'; G.msgT=1.6; mgSnd.bad(); } else if(G.L<.07&&G.t>3){ G.idle+=dt; if(G.idle>1.8){ G.idle=0; G.strikes++; G.msg='MIELENIE NA PUSTO!'; G.msgT=1.4; mgSnd.bad(); } } else G.idle=0; }
+      G.total+=dt; if(G.L>=LO&&G.L<=HI&&G.choke<=0) G.inBand+=dt; G.rot+=dt*(1+(G.choke>0?0:1.4)); G.pt+=dt; if(G.pt>.12){ G.pt=0; G.hist.push(G.L); if(G.hist.length>140) G.hist.shift(); }
+      if(G.strikes>=3){ G.over=1; G.win=false; } else if(G.t>=DUR){ G.over=1; G.win=G.inBand/G.total>=.62; if(G.win) mgSnd.ok(); } };
+    G.down=(x,y)=>{ G.hold=true; }; G.up=()=>{ G.hold=false; };
+    const kk=k=>{ k=String(k).toLowerCase(); return k===' '||k==='w'||k==='arrowup'?'u':k==='s'||k==='arrowdown'?'d':''; }; G.key=k=>{ const t=kk(k); if(t==='u') G.kUp=true; if(t==='d') G.kDn=true; }; G.keyUp=k=>{ const t=kk(k); if(t==='u') G.kUp=false; if(t==='d') G.kDn=false; };
+    G.result=()=>{ const r=G.inBand/Math.max(1,G.total); return {win:!!G.win,score:Math.round(r*1000),stars:!G.win?0:r>.85&&G.strikes===0?3:r>.72?2:1,text:G.win?`Młyn pracował w optimum ${Math.round(r*100)}% czasu, awarie: ${G.strikes}.`:G.strikes>=3?'Zbyt wiele awarii młyna - zmiana przerwana.':`Za mało czasu w optimum (${Math.round(r*100)}%, potrzeba 62%).`}; };
+    G.draw=(c,W,H)=>{ const gr=c.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#cfd6da'); gr.addColorStop(1,'#8f989e'); c.fillStyle=gr; c.fillRect(0,0,W,H); c.fillStyle='#6f777c'; c.fillRect(0,H*.78,W,H*.22);
+      const cx=W*.42, cy=H*.5, mw=Math.min(W*.46,520), mh=mw*.38; c.fillStyle='#4f565b'; c.fillRect(cx-mw*.55,cy+mh*.55,mw*1.1,mh*.25); c.fillStyle='#d9d4c4'; rrect(c,cx-mw/2,cy-mh/2,mw,mh,mh*.35); c.fill(); c.strokeStyle='#5f6469'; c.lineWidth=5; c.stroke();
+      c.save(); c.beginPath(); rrect(c,cx-mw/2,cy-mh/2,mw,mh,mh*.35); c.clip(); c.strokeStyle='rgba(0,0,0,.25)'; c.lineWidth=10; for(let i=-6;i<12;i++){ const x=cx-mw/2+((i*34+G.rot*60)%(mw+68))-34; c.beginPath(); c.moveTo(x,cy-mh/2); c.lineTo(x+mh*.4,cy+mh/2); c.stroke(); } c.restore();
+      c.fillStyle='#e3a02a'; c.beginPath(); c.moveTo(cx-mw*.8,cy-mh*.9); c.lineTo(cx-mw*.55,cy-mh*.9); c.lineTo(cx-mw*.38,cy-mh*.35); c.lineTo(cx-mw*.62,cy-mh*.35); c.closePath(); c.fill(); txt(c,'SUROWIEC',cx-mw*.66,cy-mh*.62,Math.min(16,W/55),'#2a2a2a');
+      const gx=W*.78, gy=H*.2, gw=44, gh=H*.5; c.fillStyle='rgba(18,21,24,.9)'; rrect(c,gx-14,gy-34,gw+28,gh+68,10); c.fill(); txt(c,'OBCIĄŻENIE',gx+gw/2,gy-16,15,'#fff'); c.fillStyle='#2d3338'; c.fillRect(gx,gy,gw,gh); c.fillStyle='rgba(71,176,75,.55)'; c.fillRect(gx,gy+gh*(1-HI),gw,gh*(HI-LO)); c.fillStyle=G.choke>0?'#e5484d':(G.L>=LO&&G.L<=HI?'#47b04b':'#f2c230'); c.fillRect(gx,gy+gh*(1-G.L),gw,gh*G.L);
+      c.fillStyle='#fff'; c.fillRect(gx-8,gy+gh*(1-G.feed)-2,gw+16,4); txt(c,'dozownik',gx+gw/2,gy+gh+16,13,'#aab2b8');
+      const hx=W*.08, hy=H*.76, hw=Math.min(W*.6,640), hh=H*.14; c.fillStyle='rgba(18,21,24,.85)'; rrect(c,hx,hy,hw,hh,8); c.fill(); c.fillStyle='rgba(71,176,75,.25)'; c.fillRect(hx,hy+hh*(1-HI),hw,hh*(HI-LO)); c.strokeStyle='#ffd23a'; c.lineWidth=2; c.beginPath(); G.hist.forEach((v,i)=>{ const x=hx+i/139*hw, y=hy+hh*(1-v); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke();
+      c.fillStyle='rgba(18,21,24,.9)'; rrect(c,W/2-210,70,420,44,8); c.fill(); txt(c,`czas ${Math.max(0,Math.ceil(DUR-G.t))} s · w optimum ${Math.round(100*G.inBand/Math.max(1,G.total))}% · awarie ${G.strikes}/3`,W/2,92,19,'#fff');
+      if(G.msgT>0) bigTxt(c,G.msg,W/2,H*.3,Math.min(46,W/14),'#e5484d'); txt(c,IS_TOUCH?'Przytrzymaj palec - więcej surowca, puść - mniej. Trzymaj poziom w zielonym polu!':'Przytrzymaj SPACJĘ (lub W/↑) - więcej surowca, puść - mniej (S/↓ - szybciej mniej). Trzymaj poziom w zielonym!',W/2,H-30,Math.min(19,W/38),'#1b1e21'); }; return G; }
+  /* ===== STEROWNIA PIECA: reaguj na alarmy parametrów procesu ===== */
+  function makeSterownia(opt){ const G={t:0,over:undefined,fail:0,score:0,green:0,msg:'',msgT:0}; const DUR=55;
+    const P=[['Temp. pieca °C',1450,1380,1520],['Ciśnienie mbar',-8,-14,-3],['Tlen O₂ %',2.6,1.5,4],['Obroty pieca',3.4,2.8,4.2],['Prąd młyna A',210,170,250],['Poziom silosu %',60,35,85]].map(([n,v,lo,hi],i)=>({n,lo,hi,mid:(lo+hi)/2,v:(lo+hi)/2+(Math.random()-.5)*(hi-lo)*.4,vel:0,red:0,cd:0,warn:0}));
+    G.P=P; G.fix=i=>{ const q=P[i]; if(!q||q.cd>0||G.over!==undefined) return; q.cd=1.1; q.vel=(q.mid-q.v)*1.3+(Math.random()-.5)*(q.hi-q.lo)*.1; mgSnd.key(); };
+    G.update=dt=>{ G.t+=dt; if(G.msgT>0) G.msgT-=dt; if(G.over!==undefined){ G.over-=dt; if(G.over<=0) mgEnd(G.result()); return; }
+      let anyGreen=true; P.forEach(q=>{ if(q.cd>0) q.cd-=dt; const rng=q.hi-q.lo; q.vel+= (Math.random()-.5)*rng*(.55+G.t/DUR*.9)*dt + (Math.random()<dt*.18?(Math.random()<.5?-1:1)*rng*.35:0); q.vel*=1-dt*.9; q.v+=q.vel*dt*1.0; const out=q.v<q.lo||q.v>q.hi; if(out){ anyGreen=false; q.red+=dt; if(q.red>3){ q.red=0; q.v=q.mid+(Math.random()-.5)*rng*.3; q.vel=0; G.fail++; G.msg='ALARM: '+q.n; G.msgT=1.6; mgSnd.bad(); } } else q.red=Math.max(0,q.red-dt*2); });
+      if(anyGreen) G.green+=dt; if(G.fail>=3){ G.over=1; G.win=false; } else if(G.t>=DUR){ G.over=1; G.win=true; mgSnd.ok(); } };
+    G.down=(mx,my)=>{ const R=G.rects(MG.W,MG.H); R.forEach((r,i)=>{ if(mx>=r.x&&mx<=r.x+r.w&&my>=r.y&&my<=r.y+r.h) G.fix(i); }); }; G.key=k=>{ const i='123456'.indexOf(k); if(i>=0) G.fix(i); };
+    G.rects=(W,H)=>{ const w=Math.min(W*.28,230), h=Math.min(H*.26,160), gx=Math.min(W*.03,22), x0=W/2-(w*3+gx*2)/2, y0=H*.26; return P.map((q,i)=>({x:x0+(i%3)*(w+gx),y:y0+Math.floor(i/3)*(h+gx),w,h})); };
+    G.result=()=>({win:!!G.win,score:Math.round(G.green*14)-G.fail*100,stars:!G.win?0:G.fail===0?3:G.fail===1?2:1,text:G.win?`Piec utrzymany w parametrach. Alarmy: ${G.fail}.`:'Trzy awarie procesu - piec odstawiony. Reaguj szybciej na czerwone wskaźniki.'});
+    G.draw=(c,W,H)=>{ c.fillStyle='#161b20'; c.fillRect(0,0,W,H); c.fillStyle='#1f262d'; c.fillRect(0,H*.2,W,H*.7); const R=G.rects(W,H);
+      R.forEach((r,i)=>{ const q=P[i], out=q.v<q.lo||q.v>q.hi, f=(q.v-q.lo)/(q.hi-q.lo); const blink=out&&Math.floor(G.t*5)%2; c.fillStyle=out?(blink?'#5a1d1d':'#3a1515'):'#1b2c22'; rrect(c,r.x,r.y,r.w,r.h,10); c.fill(); c.strokeStyle=out?'#e5484d':'#47b04b'; c.lineWidth=3; c.stroke();
+        txt(c,`${i+1}. ${q.n}`,r.x+r.w/2,r.y+20,Math.min(16,r.w/12),'#cfd6da'); const bx0=r.x+16, bw=r.w-32, by0=r.y+r.h*.5; c.fillStyle='#0d1114'; c.fillRect(bx0,by0,bw,16); c.fillStyle='rgba(71,176,75,.35)'; c.fillRect(bx0+bw*.0,by0,bw,16); c.fillStyle=out?'#e5484d':'#7fe08a'; const px=bx0+bw*clamp(f,-.12,1.12); c.fillRect(px-3,by0-6,6,28);
+        txt(c,(Math.round(q.v*10)/10)+'',r.x+r.w/2,r.y+r.h*.8,Math.min(30,r.w/6),out?'#ff8a8a':'#e6f2e8'); if(q.cd>0){ c.fillStyle='rgba(255,255,255,.12)'; c.fillRect(r.x+4,r.y+r.h-8,(r.w-8)*(q.cd/1.1),4); } if(out){ c.fillStyle='#e5484d'; c.fillRect(r.x+4,r.y+4,(r.w-8)*(1-q.red/3),4); } });
+      c.fillStyle='rgba(18,21,24,.9)'; rrect(c,W/2-210,70,420,44,8); c.fill(); txt(c,`zmiana: ${Math.max(0,Math.ceil(DUR-G.t))} s · awarie ${G.fail}/3`,W/2,92,19,'#fff'); if(G.msgT>0) bigTxt(c,G.msg,W/2,H*.19,Math.min(42,W/16),'#e5484d');
+      txt(c,IS_TOUCH?'Stukaj w kafelek ze wskaźnikiem poza zielonym polem - regulacja (przerwa ~1 s).':'Kliknij kafelek (lub klawisze 1-6) ze wskaźnikiem poza normą - regulacja (przerwa ~1 s). Czerwony pasek = czas do awarii.',W/2,H-30,Math.min(19,W/38),'#cfd6da'); }; return G; }
   const MINIS={
+    pojedynek:{t:'Pojedynek przy remizie',make:makePojedynek,help:()=>mgHelp(['Pojedynek na wodne pistolety - do dwóch wygranych rund.','Poczekaj na sygnał STRZELAJ! i dopiero wtedy kliknij / naciśnij SPACJĘ.','Zbyt wczesny strzał = runda przegrana. Rywal z każdą rundą jest szybszy.']),reward:()=>150},
+    mlyn:{t:'Młyn cementu',make:makeMlyn,help:()=>mgHelp(['Jesteś operatorem młyna kulowego. Dozuj surowiec tak, by obciążenie młyna było w zielonym polu.','Za dużo surowca = zator (przestój), za mało = mielenie na pusto. Trzy awarie kończą zmianę.','Przez 60 sekund utrzymaj poziom w optimum co najmniej 62% czasu.']),reward:()=>140},
+    sterownia:{t:'Sterownia pieca',make:makeSterownia,help:()=>mgHelp(['Siedzisz w sterowni pieca obrotowego. Sześć parametrów procesu ucieka z normy.','Kliknij kafelek (lub klawisz 1-6), gdy wskaźnik wyjdzie poza zielone pole - regulacja wraca go do środka.','Nie dopuść, by parametr był poza normą dłużej niż 3 s. Trzy awarie = odstawienie pieca.']),reward:()=>130},
     paczkomat:{t:'Paczkomat',make:makePaczkomat,help:o=>mgHelp(o.mode==='odbierz'?['Zapamiętaj 6-cyfrowy kod z SMS-a i wpisz go na klawiaturze.','Kliknij skrytkę, która się otworzy - szybko, zanim się zamknie!','Masz 3 życia. Im szybciej, tym więcej punktów.']:['Dobierz gabaryt skrytki do wysokości paczki (A do 8 cm, B do 19 cm, C do 41 cm).','Zapamiętaj kod nadania i wpisz go na klawiaturze.','Kliknij otwartą skrytkę, zanim się zamknie. 3 paczki, 3 życia.']),reward:o=>o.mode==='odbierz'?30:60},
     flanki:{t:'Flanki w parku',make:makeFlanki,help:()=>mgHelp(['Rzucasz piłką w puszkę na środku: najpierw kąt, potem siła. Uważaj na wiatr!',IS_TOUCH?'Gdy trafisz - STUKAJ jak najszybciej, żeby wypić swoją puszkę, zanim rywal ją postawi.':'Gdy trafisz - WCISKAJ SPACJĘ jak najszybciej, żeby wypić swoją puszkę, zanim rywal ją postawi.','Gdy trafią rywale - klikaj szybko, żeby pobiec i postawić puszkę.','Wygrywa ekipa, która pierwsza opróżni 2 puszki.']),reward:()=>80},
     pilka:{t:'Mecz na orliku',make:makePilka,help:()=>mgHelp([IS_TOUCH?'Lewa strona ekranu - prowadź zawodnika (piłka sama trzyma się nogi).':'WASD lub strzałki - bieg z piłką (drybling).',IS_TOUCH?'Przycisk STRZAŁ: przytrzymaj, żeby nabrać siły, i puść.':'Przytrzymaj SPACJĘ, żeby nabrać siły, i puść - strzał. Mocny strzał w róg mija bramkarza.','Uważaj na dwóch obrońców - odbierają piłkę przy kontakcie.','Strzel 3 gole w 90 sekund.']),reward:()=>100},
@@ -4980,6 +5055,7 @@ async function boot(saved){
     if(STADIUM_P) addMiniSpot(walkSpot(STADIUM_P,false),'karne',{mode:'lzs',title:'Rzuty karne - LZS Trębaczew'},'Rzuty karne LZS');
     if(STADIUM_C) addMiniSpot(walkSpot([STADIUM_C[0]+3,STADIUM_C[1]+3],false),'zonglerka',{title:'Żonglerka - LZS Trębaczew'},'Żonglerka');
     addMiniSpot(walkSpot([orlik.m.cx+6,orlik.m.cz],false),'pilka',{title:'Mecz na orliku'},'Zagraj mecz');
+    { const ospP=POIS.find(q=>q.n==='OSP Trębaczew'); if(ospP) addMiniSpot(walkSpot([ospP.p[0],ospP.p[1]],false),'pojedynek',{title:'Pojedynek przy remizie'},'Pojedynek na wodne pistolety'); }
     if(CEMENT) CEMENT.mini.forEach(m=>addMiniSpot(walkSpot(m.p,false),m.id,{title:m.title},m.label));
     MINI_SPOTS.forEach(s=>{ const c=new THREE.Mesh(new THREE.CylinderGeometry(.18,.16,.4,12),new THREE.MeshLambertMaterial({color:s.id==='flanki'?0xc62a24:0xffffff})); c.position.y=.3; s.g.add(c); }); }
   miniSpotsInit();
