@@ -8,7 +8,7 @@ import base64, sys
 from pathlib import Path
 root = Path(__file__).parent
 src = root / "src"
-parts = ["data.js", "data_b.js", "data_h.js", "data_p.js", "data_r.js", "data_x.js", "data_osm.js", "data_rod.js", "data_cem.js", "data_park.js", "data_hum.js", "data_o.js", "data_m.js", "game.js"]
+parts = ["data.js", "data_b.js", "data_h.js", "data_p.js", "data_r.js", "data_x.js", "data_osm.js", "data_rod.js", "data_cem.js", "data_park.js", "data_hum.js", "data_o.js", "data_lod.js", "data_m.js", "game.js"]
 head = (src / "head.html").read_text(encoding="utf-8")
 fav = src / "favicon.png"
 if fav.exists():
