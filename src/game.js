@@ -2018,7 +2018,7 @@ async function boot(saved){
   const pMat=new THREE.PointsMaterial({color:0xaabbcc,size:.12,map:flakeTex,transparent:true,opacity:.6,depthWrite:false}); const PARTS=new THREE.Points(pGeo,pMat); PARTS.frustumCulled=false; scene.add(PARTS);
   const cA=new THREE.Color(), cB=new THREE.Color();
   function lerpHex(a,b,t){ cA.set(a); cB.set(b); return cA.lerp(cB,t); }
-  function envUpdate(dt){ ENV.time=(ENV.time+dt*ENV.speed+24)%24; if(ENV.time>18.2||ENV.time<6) ENV.time=6; /* tylko dzień i wieczór - bez nocy */ const a=(ENV.time-6)/12*Math.PI; const se=Math.sin(a); const k=clamp((se+0.08)/0.33,0,1); const dusk=se>-0.12?clamp(1-Math.abs(se)/0.32,0,1):0;
+  function envUpdate(dt){ if(ENV.fixed) ENV.time=12; else ENV.time=(ENV.time+dt*ENV.speed+24)%24; if(ENV.time>18.2||ENV.time<6) ENV.time=6; /* tylko dzień i wieczór - bez nocy */ const a=(ENV.time-6)/12*Math.PI; const se=Math.sin(a); const k=clamp((se+0.08)/0.33,0,1); const dusk=se>-0.12?clamp(1-Math.abs(se)/0.32,0,1):0;
     if(se>-0.05) SUNDIR.set(Math.cos(a)*0.75,Math.max(0.06,se*0.8),0.55).normalize(); else SUNDIR.set(-0.4,0.6,-0.5).normalize(); skyU.sunDir.value.copy(SUNDIR);
     const w=ENV.weather; if(!ENV.W){ ENV.W=[0,0,0,0]; ENV.W[w]=1; } for(let i=0;i<4;i++) ENV.W[i]+=((i===w?1:0)-ENV.W[i])*Math.min(1,dt/7); const Wt=ENV.W, wet=1-Wt[0]; const wl=Wt[0]+Wt[1]*.62+Wt[2]*.75+Wt[3]*.85;
     skyU.hor.value.copy(lerpHex(NIGHT.hor,DAY.hor,k)).lerp(cB.set(0xff8a4a),dusk*.55).lerp(cB.set(0x9aa3aa),(Wt[1]+Wt[2])*.6+Wt[3]*.5); skyU.zen.value.copy(lerpHex(NIGHT.zen,DAY.zen,k)).lerp(cB.set(0x7d868d),wet*.55*k); skyU.night.value=1-k;
@@ -2036,7 +2036,7 @@ async function boot(saved){
     // rutyna mieszkańców: w nocy na ulicach mniej ludzi
     const frac=(ENV.time<5.5||ENV.time>22.5)?.15:(ENV.time<7||ENV.time>20.5)?.5:1; peds.forEach((p,i)=>{ p.g.visible=hash(i)<frac; });
     BUS.day=ENV.time>5&&ENV.time<23; }
-  toggleNight=function(){ ENV.time=(ENV.time>=6&&ENV.time<16.5)?17.6:11; toast(ENV.time>12?'Przewinięto do wieczora':'Przewinięto do południa',2); };
+  toggleNight=function(){ if(ENV.fixed){ toast('W trybie wieloosobowym jest stale dzień',2); return; } ENV.time=(ENV.time>=6&&ENV.time<16.5)?17.6:11; toast(ENV.time>12?'Przewinięto do wieczora':'Przewinięto do południa',2); };
 
   /* ---------- dźwięk: otoczenie, silnik, radio ---------- */
   const AU={ctx:null,on:false,master:null,noise:null,rain:null,eng:null,engG:null,siren:null,sirG:null,radioG:null,station:0,next:0,step:0,amb:2};
@@ -2647,7 +2647,7 @@ async function boot(saved){
   async function mpInit(useWs){ try{ let room; if(useWs){ let ini=null; try{ const q=(new URLSearchParams(location.search).get('room')||'').toLowerCase(); if(/^p[a-z0-9]{5,8}$/.test(q)) ini=q; else if(/^[a-z0-9]{5,8}$/.test(q)) ini='p'+q; }catch(e){} room=wsRoom(MP_URL,ini); statEvent('mp'); } else { if(!window.claude||!window.claude.use)return; room=await window.claude.use('room'); if(!room)return; try{ MP.user=await window.claude.use('user'); }catch(e){} } MP.room=room;
       if(!myNick&&CHAR.name) myNick=cleanTxt(CHAR.name,24);
       if(!myNick&&MP.user){ try{ const me=await MP.user.me(); if(me&&me.name) myNick=cleanTxt(me.name.split(' ')[0],24); }catch(e){} }
-      MP.on=true; mpEl.hidden=false; { const bm=document.getElementById('bMic'); if(bm){ bm.hidden=false; bm.onclick=()=>{ if(VC.on) vcDisable(); else vcEnable(); }; setTimeout(()=>{ if(MP.on&&!VC.on) toast('🎤 Kliknij przycisk mikrofonu u góry, by rozmawiać głosowo (mówisz przytrzymując V)',5); },2500); } } { const bp=document.getElementById('bPeople'); bp.hidden=false; bp.onclick=()=>document.body.classList.toggle('mpOpen');  if(IS_TOUCH) document.getElementById('bChat').textContent='Czat'; } nickIn.value=myNick; renderList();
+      MP.on=true; ENV.fixed=true; mpEl.hidden=false; { const bm=document.getElementById('bMic'); if(bm){ bm.hidden=false; bm.onclick=()=>{ if(VC.on) vcDisable(); else vcEnable(); }; setTimeout(()=>{ if(MP.on&&!VC.on) toast('🎤 Kliknij przycisk mikrofonu u góry, by rozmawiać głosowo (mówisz przytrzymując V)',5); },2500); } } { const bp=document.getElementById('bPeople'); bp.hidden=false; bp.onclick=()=>document.body.classList.toggle('mpOpen');  if(IS_TOUCH) document.getElementById('bChat').textContent='Czat'; } nickIn.value=myNick; renderList();
       room.onPeers(ch=>{ ch.left.forEach(p=>{ const r=MP.remote.get(p.peer); if(!r)return; releaseGhost(r); [r.body,r.tag,r.veh,r.bubble].forEach(o=>o&&scene.remove(o)); MP.remote.delete(p.peer); if(r.name) toast(`👋 ${r.name.replace(/[<>&]/g,'')} wychodzi z gry`,2); });
         let names=false; [...ch.joined,...ch.updated].forEach(p=>{ if(p.sameTab||p.kind!=='viewer')return; if(!p.presence||p.presence.x===undefined)return; const isNew=!MP.remote.has(p.peer); ensureRemote(p); if(isNew){ names=true; } else { const r=MP.remote.get(p.peer); const nk=cleanTxt(p.presence.nick,24); if(nk&&nk!==r.name) names=true; } });
         if(names) mpNames(); else renderList(); },()=>{});
