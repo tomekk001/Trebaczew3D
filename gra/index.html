@@ -340,6 +340,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 <button id="mMute" aria-label="Dźwięk" style="position:fixed;z-index:8;right:calc(6px + env(safe-area-inset-right,0px));top:calc(6px + env(safe-area-inset-top,0px));width:26px;height:26px;padding:0;border:0;border-radius:13px;background:rgba(0,0,0,.35);color:#fff;font-size:13px;line-height:26px;cursor:pointer;opacity:.6">🔊</button>
 <button id="dChip" hidden style="position:fixed;z-index:8;right:calc(6px + env(safe-area-inset-right,0px));top:calc(38px + env(safe-area-inset-top,0px));padding:3px 9px;border:0;border-radius:12px;background:rgba(0,0,0,.4);color:#fff;font-size:12px;cursor:pointer">📋</button>
 <button class="btn" id="mAbort" hidden style="position:fixed;z-index:7;left:50%;top:calc(112px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-size:13px;padding:4px 12px;opacity:.85">Anuluj misję</button>
+<div id="admHud" hidden style="position:fixed;z-index:6;left:8px;bottom:8px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.55);color:#9fe3a1;font:12px/1.3 monospace;pointer-events:none"></div>
 <div class="hud" id="toast"></div>
 <div id="shop" hidden></div>
 <div id="inv" hidden></div>
@@ -385,6 +386,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
     <button class="mItem" id="mOpt">Opcje</button>
     <button class="mItem" id="mAcct">Konto <small id="mAcctSub">zapis w chmurze</small></button>
     <button class="mItem" id="mChar">Kreator postaci</button>
+    <button class="mItem" id="mAdm">Admin (GitHub) <small id="mAdmSub">zaloguj się, by szybciej latać po mapie</small></button>
     <button class="mItem" id="mNew" hidden>Nowa gra</button>
     <button class="mItem" id="mInstall" hidden>Pobierz grę <small id="mInstallSub">działa bez przeglądarki</small></button>
     <div class="mFoot"><button class="btn" id="mBug">Zgłoś błąd</button><span>Dane: © OpenStreetMap, © GUGiK</span></div>
@@ -2005,6 +2007,34 @@ async function boot(saved){
       const mt=fenceT.clone(); mt.needsUpdate=true; mt.wrapS=mt.wrapT=THREE.RepeatWrapping; const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:mt,transparent:true,alphaTest:.35,side:THREE.DoubleSide,color:0x4a8a4a})); scene.add(mesh);
       const pm=mkIM(boxGeo,posts.length,null); posts.forEach(([x,y,z],i)=>put(pm,i,x,y,z,0,.07,FH+.1,.07,'#59624f')); pm.castShadow=false; pm.instanceMatrix.needsUpdate=true; pm.instanceColor.needsUpdate=true; }
     window.__rodPlots=n; }
+  /* ---------- stadion w Działoszynie (OSM: stadium 351179148, boiska 351179150 / 1495872959, trybuny 1453320620-21) ---------- */
+  { const SPOLY=[[-2384,1422],[-2392,1426],[-2399,1431],[-2403,1437],[-2405,1442],[-2412,1442],[-2400,1577],[-2398,1577],[-2391,1576],[-2387,1583],[-2377,1590],[-2359,1593],[-2343,1588],[-2333,1580],[-2324,1567],[-2322,1557],[-2329,1475],[-2331,1453],[-2337,1438],[-2346,1427],[-2352,1423],[-2360,1420],[-2369,1419],[-2378,1421]];
+    const P1=[[-2403,1459],[-2338,1454],[-2330,1554],[-2395,1559]], P2=[[-2322.3,1471.5],[-2326.9,1406.2],[-2251,1397.4],[-2245.8,1466.2]];
+    const wM=new THREE.MeshLambertMaterial({color:0xffffff}), grM=new THREE.MeshLambertMaterial({color:0x59616a}), seatA=new THREE.MeshLambertMaterial({color:0x1f5fb4}), seatB=new THREE.MeshLambertMaterial({color:0xc8261e});
+    const pitches=[P1,P2].map((pp,k)=>{ const m=mar(pp); const y0=Math.min(...pp.map(v=>H(v[0],v[1]))); FLAT.push({p:pp,bb:bbox(pp),fe:0,h:y0});
+      const surf=new THREE.Mesh(new THREE.PlaneGeometry(m.w,m.d).rotateX(-Math.PI/2),po(new THREE.MeshLambertMaterial({map:courtTex('grass')}),2)); surf.position.set(m.cx,y0+.08,m.cz); surf.rotation.y=-m.an; surf.receiveShadow=true; scene.add(surf);
+      const gg=new THREE.Group(); gg.position.set(m.cx,y0,m.cz); gg.rotation.y=-m.an; scene.add(gg);
+      const long=m.w>=m.d; [-1,1].forEach(s=>{ const gx=long?s*(m.w/2-1):0, gz=long?0:s*(m.d/2-1); [-3.66,3.66].forEach(o=>bx(gg,.12,2.44,.12,long?gx:o,0,long?o:gz,wM)); if(long) bx(gg,.12,.12,7.44,gx,2.44,0,wM); else bx(gg,7.44,.12,.12,0,2.44,gz,wM); });
+      return {m,y0}; });
+    // trybuny: schodkowe siedziska zwrócone w stronę boiska
+    [[[-2404.4,1563.6],[-2406.4,1563.7],[-2408.8,1564.2],[-2416.1,1481.9],[-2411.6,1482.1],[-2407.5,1526.7],[-2407.0,1531.8]],[[-2334.3,1589.3],[-2321.6,1575.8],[-2320.7,1574.9],[-2324.7,1571.2],[-2338.2,1585.6]]].forEach((bp,bi)=>{ const m=mar(bp); const y0=Math.min(...bp.map(v=>H(v[0],v[1]))); const sw=m.d>m.w; const gg=new THREE.Group(); gg.position.set(m.cx,y0,m.cz); gg.rotation.y=-m.an+(sw?Math.PI/2:0); scene.add(gg);
+      const Lg=Math.max(m.w,m.d), Dg=Math.min(m.w,m.d), c=Math.cos(gg.rotation.y), s=Math.sin(gg.rotation.y), pc=pitches[0].m, dx=pc.cx-m.cx, dz=pc.cz-m.cz; const lz=-dx*s+dz*c; const dir=lz>=0?1:-1;
+      const st=(Dg-1.2)/4; for(let r=0;r<5;r++){ bx(gg,Lg,.45*(r+1),Math.max(.5,st),0,0,dir*(Dg/2-.6-r*st),r%2?seatB:seatA); }
+      addSolid({x:m.cx,z:m.cz,hw:Lg/2,hd:Dg/2,c:Math.cos(-gg.rotation.y),s:Math.sin(-gg.rotation.y),r:Math.hypot(Lg,Dg)/2}); });
+    // oświetlenie boiska bocznego (lit=yes): 4 maszty
+    { const m=pitches[1].m, y0=pitches[1].y0, c=Math.cos(-m.an), s=Math.sin(-m.an); [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b])=>{ const lx=a*(m.w/2+4), lz=b*(m.d/2+4); const x=m.cx+lx*c+lz*s, z=m.cz-lx*s+lz*c; const mg=new THREE.Group(); mg.position.set(x,H(x,z),z); scene.add(mg); bx(mg,.35,15,.35,0,0,0,grM); const lm=new THREE.Mesh(new THREE.BoxGeometry(2.6,.9,.5),new THREE.MeshBasicMaterial({color:0xfff3c4})); lm.position.set(0,15.6,0); lm.rotation.y=Math.atan2(m.cx-x,m.cz-z); mg.add(lm); addSolid({x,z,hw:.3,hd:.3,c:1,s:0,r:.5}); }); }
+    // ogrodzenie z siatki wokół obiektu (z bramą od północy, od parkingu)
+    { const FHh=2.2, pos=[], uv=[], idx=[], posts=[]; let v=0; const gate=(a,b)=>{ const mx=(a[0]+b[0])/2; return mx>-2372&&mx<-2340&&a[1]<1432&&b[1]<1432; };
+      for(let i=0;i<SPOLY.length;i++){ const a=SPOLY[i], b=SPOLY[(i+1)%SPOLY.length]; if(gate(a,b)) continue; const L=Math.hypot(b[0]-a[0],b[1]-a[1]), n=Math.max(1,Math.round(L/3)); for(let k=0;k<n;k++){ const t0=k/n,t1=(k+1)/n, ax=a[0]+(b[0]-a[0])*t0, az=a[1]+(b[1]-a[1])*t0, bx2=a[0]+(b[0]-a[0])*t1, bz=a[1]+(b[1]-a[1])*t1; const ha=H(ax,az), hb=H(bx2,bz);
+          pos.push(ax,ha,az,bx2,hb,bz,bx2,hb+FHh,bz,ax,ha+FHh,az); uv.push(0,0,L/n/1.4,0,L/n/1.4,1,0,1); idx.push(v,v+1,v+2,v,v+2,v+3); v+=4; posts.push([ax,ha,az]); }
+        addSolid({x:(a[0]+b[0])/2,z:(a[1]+b[1])/2,hw:L/2,hd:.1,c:(b[0]-a[0])/L,s:(b[1]-a[1])/L,r:L/2+.3}); }
+      const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); geo.setIndex(idx); geo.computeVertexNormals();
+      const mt=fenceT.clone(); mt.needsUpdate=true; mt.wrapS=mt.wrapT=THREE.RepeatWrapping; scene.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:mt,transparent:true,alphaTest:.35,side:THREE.DoubleSide,color:0x3f6f8a})));
+      const m4=new THREE.Matrix4(), q4=new THREE.Quaternion(), p3=new THREE.Vector3(), s3=new THREE.Vector3(), col=new THREE.Color(); const pm=mkIM(boxGeo,posts.length,null); posts.forEach(([x,y,z],i)=>{ m4.compose(p3.set(x,y,z),q4,s3.set(.1,FHh+.15,.1)); pm.setMatrixAt(i,m4); pm.setColorAt(i,col.set('#4c5660')); }); pm.castShadow=false; pm.instanceMatrix.needsUpdate=true; pm.instanceColor.needsUpdate=true; }
+    // ławki rezerwowych przy boisku głównym + znacznik na mapie
+    { const m=pitches[0].m, y0=pitches[0].y0; const gg=new THREE.Group(); gg.position.set(m.cx,y0,m.cz); gg.rotation.y=-m.an; scene.add(gg); [-6,6].forEach(o=>{ bx(gg,4,.5,.6,m.w>=m.d?o:m.w/2+1.5,0,m.w>=m.d?m.d/2+1.5:o,seatA); bx(gg,4,.9,.1,m.w>=m.d?o:m.w/2+1.5,.4,m.w>=m.d?m.d/2+1.9:o,grM); }); }
+    }
+
   /* ---------- drzewa ---------- */
   // ---- dane z OSM (tools/osm_extras.py): prawdziwe drzewa, szpalery, ścieżki piesze, ławki; do tego szpalery przy ulicach z chodnikami ----
   if(typeof DATA_OSM!=='undefined'){ const D=DATA_OSM;
@@ -2649,7 +2679,7 @@ async function boot(saved){
     big.forEach((pc,pi)=>{ const c=centroid(pc.p); const m=mar(pc.p); for(let k=0;k<6&&n<220;k++){ const u=(k-2.5)*6, x=c[0]+Math.cos(m.an)*u, z=c[1]+Math.sin(m.an)*u; if(!inPoly(x,z,pc.p)||blocked(x,z,1)||ROADS.some(r=>roadDist(r,x,z)<5))continue; dum.position.set(x,H(x,z)+.72,z); dum.rotation.set(0,-m.an+Math.PI/2+hash(n)*.4,0); dum.scale.set(1,1,1); dum.updateMatrix(); BALES.setMatrixAt(n++,dum.matrix); } });
     BALES.count=n; BALES.castShadow=true; scene.add(BALES); }
 
-  let STADIUM_P=null, STADIUM_C=null; const STAD={};
+  let STADIUM_P=null, STADIUM_C=null, STADIUM_D=null; const STAD={};
   await LP(78);
   /* ---------- stadion LZS Trębaczew (za DK42) ---------- */
   { const ST=dec([122,937,-80,-53,-9,-18,1,-6,3,-10,41,-58,94,67,-50,78]), PI2=dec([39,864,40,-57,82,56,-41,58,-81,-57]); const m=mar(PI2); const y0=Math.min(...PI2.map(v=>H(v[0],v[1])));
@@ -2742,6 +2772,9 @@ async function boot(saved){
     const cc=centroid(PI2); addSolid({x:m.cx+Math.cos(m.an)*(m.w/2+8),z:m.cz+Math.sin(m.an)*(m.w/2+8),hw:4,hd:6,c:Math.cos(m.an),s:Math.sin(m.an),r:7.5});
     POIS.push({n:'Stadion LZS Trębaczew',x:cc[0],z:cc[1],p:cc,c:'#1f5fb4',ic:'⚽',sp:labelSprite('Stadion LZS Trębaczew','#1f5fb4')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(cc[0],y0+8,cc[1]); lp.sp.visible=false; scene.add(lp.sp);
     const b=document.createElement('button'); b.innerHTML='<i style="background:#1f5fb4"></i>'; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); $('poiList').append(b); }
+  { const cc=[-2362,1490];
+    POIS.push({n:'Stadion w Działoszynie',x:cc[0],z:cc[1],p:cc,c:'#c8261e',ic:'⚽',sp:labelSprite('Stadion w Działoszynie','#c8261e')}); const lp=POIS[POIS.length-1]; lp.sp.position.set(cc[0],H(cc[0],cc[1])+9,cc[1]); lp.sp.visible=false; scene.add(lp.sp);
+    const b=document.createElement('button'); b.innerHTML='<i style="background:#c8261e"></i>'; b.append(lp.n); b.addEventListener('click',()=>{ goTo(lp); toggleMap(false); }); $('poiList').append(b); }
 
   // wsiąść można tylko do kilku aut: Passat spod Lewiatana, BMW Seby, własne auto i jedno zapasowe przy starcie; reszta to dekoracja
   { let spare=null, sd=1e9; parked.forEach(c=>{ if(c===PASSAT) return; c.deco=true; if(c.kind==='car'&&!roadNearF(c.x,c.z,3.4)){ const d=Math.hypot(c.x-SPAWN.x,c.z-SPAWN.z); if(d<sd&&d>12){ sd=d; spare=c; } } }); if(spare){ spare.deco=false; spare.name='Fiat Seicento'; }
@@ -4956,7 +4989,13 @@ async function boot(saved){
   $('mChar').addEventListener('click',()=>openPanel($('pChar').hidden?'pChar':''));
   $('mBug').addEventListener('click',()=>openPanel($('pBug').hidden?'pBug':''));
   // tryb wieloosobowy: najpierw nazwa gracza (wymagana), potem połączenie
-  function nickCheck(v){ v=cleanTxt(v,16).replace(/\s+/g,' ').trim(); if(v.length<2) return [null,'Nazwa musi mieć co najmniej 2 znaki.']; if(!/[\p{L}\p{N}]/u.test(v)) return [null,'Nazwa musi zawierać litery lub cyfry.']; if(/^(gracz|ty|admin|moderator|serwer|system)$/i.test(v)) return [null,'Ta nazwa jest zajęta - wybierz inną.']; return [v,'']; }
+  /* ---------- tryb admina: logowanie GitHub przez Worker (konto z listy), szybki lot z góry, noclip, współrzędne ---------- */
+  const ADM={on:false,login:''}; const ADM_URL='https://trebaczew-mp.kontakt-3e3.workers.dev';
+  function admRender(){ const b=$('mAdm'); if(!b)return; b.firstChild.textContent=ADM.on?'Admin: '+ADM.login+' ✓ ':'Admin (GitHub) '; $('mAdmSub').textContent=ADM.on?'kliknij, aby wylogować':'zaloguj się, by szybciej latać po mapie'; $('admHud').hidden=!ADM.on; }
+  async function admVerify(t){ try{ const r=await fetch(ADM_URL+'/auth/verify?t='+encodeURIComponent(t),{cache:'no-store'}); const j=await r.json(); if(j&&j.ok){ ADM.on=true; ADM.login=String(j.login||'').slice(0,40); try{ sessionStorage.setItem('trebaczew-adm',t); }catch(e){} admRender(); toast('<b>Tryb admina</b><br>Widok z lotu ptaka: lot bez kolizji, Shift - bardzo szybko',5); return; } }catch(e){} ADM.on=false; try{ sessionStorage.removeItem('trebaczew-adm'); }catch(e){} admRender(); }
+  { let t=''; try{ const m=/[#&]adm=([A-Za-z0-9_.-]{20,400})/.exec(location.hash); if(m){ t=m[1]; history.replaceState(null,'',location.pathname+location.search); } else t=sessionStorage.getItem('trebaczew-adm')||''; }catch(e){} if(t) admVerify(t); }
+  $('mAdm').addEventListener('click',()=>{ if(ADM.on){ ADM.on=false; try{ sessionStorage.removeItem('trebaczew-adm'); }catch(e){} admRender(); return; } location.href=ADM_URL+'/auth/game?return='+encodeURIComponent('https://trebaczew.io/gra/'); });
+  function nickCheck(v){ v=cleanTxt(v,16).replace(/\s+/g,' ').trim(); if(v.length<1) return [null,'Wpisz dowolny nick, żeby zagrać.']; if(/^(gracz|ty|admin|moderator|serwer|system)$/i.test(v)) return [null,'Ta nazwa jest zajęta - wybierz inną.']; return [v,'']; }
   function nickGo(){ const [v,err]=nickCheck($('nickStart').value); if(!v){ $('nickErr').textContent=err; $('nickStart').focus(); return; } myNick=v; nickIn.value=v; try{ localStorage.setItem('trebaczew-nick',v); }catch(e){} openPanel(''); if(!MP.on) mpInit(true); $('mPlay').click(); }
   $('mMulti').addEventListener('click',()=>{ if(MP.on){ $('mPlay').click(); return; } openPanel('pNick'); $('nickStart').value=myNick||''; $('nickErr').textContent=''; setTimeout(()=>{ try{ $('nickStart').focus(); }catch(e){} },60); });
   $('nickGo').addEventListener('click',nickGo); $('nickStart').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); nickGo(); } });
@@ -5552,7 +5591,7 @@ async function boot(saved){
       else { if(keys.has('a')||keys.has('arrowleft'))sd-=1; if(keys.has('d')||keys.has('arrowright'))sd+=1; }
       if(joy.id!==null){ fw=-joy.y; sd=joy.x; }
       mag=Math.min(1,Math.hypot(fw,sd)); if(mag<0.12)mag=0;
-      let speed=(keys.has('shift')||st.run)?(st.mode===2?60:8.5):(st.mode===2?25:4.2);
+      let speed=(keys.has('shift')||st.run)?(ADM.on&&st.mode===2?320:ADM.on?24:8.5):(ADM.on&&st.mode===2?90:ADM.on?7:4.2);
       let tvx=0,tvz=0;
       if(mag>0){ const sy=Math.sin(st.yaw), cy=Math.cos(st.yaw); const dx=(-sy*fw+cy*sd), dz=(-cy*fw-sy*sd); const l=Math.hypot(dx,dz)||1;
         const up=(H(st.x+dx/l,st.z+dz/l)-H(st.x,st.z)); speed*=clamp(1-up*1.2,0.55,1.15);            // pod górkę wolniej
@@ -5561,10 +5600,11 @@ async function boot(saved){
       if(mag===0&&Math.hypot(st.vx,st.vz)<0.15){ st.vx=0; st.vz=0; }
       const vel=Math.hypot(st.vx,st.vz); moving=vel>0.1; mag=Math.min(1,vel/4.2);
       if(moving){ const dx=st.vx, dz=st.vz;
-        const nx=st.x+st.vx*dt, nz=st.z+st.vz*dt; const feet=(st.gy||0)+(st.jy||0); const pb=st.inside?((x,z)=>curBlocked(x,z,.35)):(x,z)=>blocked(x,z,.35)||noWalk(x,z)||parked.some(c=>{ if(c===st.car)return false; const lx=(x-c.x)*Math.cos(c.h)+(z-c.z)*Math.sin(c.h), lz=-(x-c.x)*Math.sin(c.h)+(z-c.z)*Math.cos(c.h); const [L2,W2]=roofBox(c); return Math.abs(lx)<L2+.35&&Math.abs(lz)<W2+.35&&feet<roofH(c)-.12; });
+        const nx=st.x+st.vx*dt, nz=st.z+st.vz*dt; const feet=(st.gy||0)+(st.jy||0); const pb=st.inside?((x,z)=>curBlocked(x,z,.35)):(x,z)=>(ADM.on&&st.mode===2)?false:blocked(x,z,.35)||noWalk(x,z)||parked.some(c=>{ if(c===st.car)return false; const lx=(x-c.x)*Math.cos(c.h)+(z-c.z)*Math.sin(c.h), lz=-(x-c.x)*Math.sin(c.h)+(z-c.z)*Math.cos(c.h); const [L2,W2]=roofBox(c); return Math.abs(lx)<L2+.35&&Math.abs(lz)<W2+.35&&feet<roofH(c)-.12; });
         if(!pb(nx,nz)){st.x=nx;st.z=nz;} else if(!pb(nx,st.z)) st.x=nx; else if(!pb(st.x,nz)) st.z=nz;
         const tf=Math.atan2(dx,dz); let df=tf-st.face; df=Math.atan2(Math.sin(df),Math.cos(df)); st.face+=df*Math.min(1,dt*12); st.walk+=dt*vel*1.6; }
       if(!st.inside){ st.x=clamp(st.x,X0+30,X1-30); st.z=clamp(st.z,Z0+30,Z1-30); }
+      if(ADM.on){ const la=51.1301965-st.z/110574, lo=18.9215954+st.x/(111320*Math.cos(51.1301965*Math.PI/180)); $('admHud').textContent='x '+st.x.toFixed(0)+'  z '+st.z.toFixed(0)+'  '+la.toFixed(5)+', '+lo.toFixed(5); }
       { const fa=st.inside&&CUR.floorAt, ss=st.inside?(fa?CUR.floorAt(st.x-CUR.x,st.z-CUR.z):0):stairAt(st.x,st.z), sup=st.inside?ss:Math.max(roofAt(st.x,st.z),ss), gy=st.gy||0, ft=gy+(st.jy||0), tol=fa||(ss>0&&ss>=sup-.001)?.7:.15; if(sup>gy+.01){ if(ft>=sup-tol){ st.jy=Math.max(0,ft-sup); st.gy=sup; if(st.jy===0) st.vy=0; } } else if(sup<gy-.01){ st.jy=ft-sup; st.gy=sup; if(!st.vy) st.vy=-.01; } }
       player.position.set(st.x,(st.inside?CUR.y:H(st.x,st.z))+0.1+(st.gy||0)+(st.jy||0)+(moving?Math.abs(Math.cos(st.walk))*0.05:0),st.z); player.rotation.y=st.face; animPerson(player,st.walk,moving?mag:0); player.visible=st.mode!==1; }
     const fx=st.car?st.car.x:st.x, fz=st.car?st.car.z:st.z, fy=st.inside?CUR.y+(st.gy||0):H(fx,fz)+(st.car?0:(st.gy||0)); const sh=shake>0?(Math.random()-.5)*shake:0; shake=Math.max(0,shake-dt);

@@ -335,6 +335,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
 <button id="mMute" aria-label="Dźwięk" style="position:fixed;z-index:8;right:calc(6px + env(safe-area-inset-right,0px));top:calc(6px + env(safe-area-inset-top,0px));width:26px;height:26px;padding:0;border:0;border-radius:13px;background:rgba(0,0,0,.35);color:#fff;font-size:13px;line-height:26px;cursor:pointer;opacity:.6">🔊</button>
 <button id="dChip" hidden style="position:fixed;z-index:8;right:calc(6px + env(safe-area-inset-right,0px));top:calc(38px + env(safe-area-inset-top,0px));padding:3px 9px;border:0;border-radius:12px;background:rgba(0,0,0,.4);color:#fff;font-size:12px;cursor:pointer">📋</button>
 <button class="btn" id="mAbort" hidden style="position:fixed;z-index:7;left:50%;top:calc(112px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-size:13px;padding:4px 12px;opacity:.85">Anuluj misję</button>
+<div id="admHud" hidden style="position:fixed;z-index:6;left:8px;bottom:8px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.55);color:#9fe3a1;font:12px/1.3 monospace;pointer-events:none"></div>
 <div class="hud" id="toast"></div>
 <div id="shop" hidden></div>
 <div id="inv" hidden></div>
@@ -380,6 +381,7 @@ body.inmg #hud,body.inmg .tbtns,body.inmg #joy{visibility:hidden}
     <button class="mItem" id="mOpt">Opcje</button>
     <button class="mItem" id="mAcct">Konto <small id="mAcctSub">zapis w chmurze</small></button>
     <button class="mItem" id="mChar">Kreator postaci</button>
+    <button class="mItem" id="mAdm">Admin (GitHub) <small id="mAdmSub">zaloguj się, by szybciej latać po mapie</small></button>
     <button class="mItem" id="mNew" hidden>Nowa gra</button>
     <button class="mItem" id="mInstall" hidden>Pobierz grę <small id="mInstallSub">działa bez przeglądarki</small></button>
     <div class="mFoot"><button class="btn" id="mBug">Zgłoś błąd</button><span>Dane: © OpenStreetMap, © GUGiK</span></div>

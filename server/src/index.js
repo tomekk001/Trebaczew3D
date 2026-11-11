@@ -244,6 +244,25 @@ async function hasStatsSession(req, env) {
   return crypto.subtle.verify('HMAC', key, signature, encoder.encode(payload));
 }
 
+
+// ---- tryb admina w grze: to samo logowanie GitHub co statystyki (tylko STATS_ALLOWED_LOGIN), osobny token z kontekstem "game" ----
+const GAME_RETURN = ['https://trebaczew.io/gra/', 'https://trebaczew.io/gra/index.html'];
+const GAME_NEXT_COOKIE = '__Host-treb-game-next';
+async function gameAdminToken(secret, expires) {
+  const payload = base64UrlEncode(encoder.encode(`${STATS_ALLOWED_LOGIN}:${expires}:game`));
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secret + ':game'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return `${payload}.${base64UrlEncode(new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(payload))))}`;
+}
+async function gameAdminValid(token, env) {
+  const parts = String(token || '').split('.');
+  if (!env.STATS_SESSION_SECRET || env.STATS_SESSION_SECRET.length < 32 || parts.length !== 2) return false;
+  const sig = base64UrlDecode(parts[1]), pb = base64UrlDecode(parts[0]); if (!sig || !pb) return false;
+  const v = new TextDecoder().decode(pb).split(':');
+  if (v.length !== 3 || v[0] !== STATS_ALLOWED_LOGIN || v[2] !== 'game' || !/^\d+$/.test(v[1]) || +v[1] <= Math.floor(Date.now() / 1000)) return false;
+  const key = await crypto.subtle.importKey('raw', encoder.encode(env.STATS_SESSION_SECRET + ':game'), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+  return crypto.subtle.verify('HMAC', key, sig, encoder.encode(parts[0]));
+}
+
 function noStoreError(message, status) {
   return new Response(message, { status, headers: { 'cache-control': 'no-store', 'content-type': 'text/plain; charset=utf-8' } });
 }
@@ -269,6 +288,22 @@ export default {
       const response = new Response(null, { status: 302, headers: { location: authorize.href, 'cache-control': 'no-store' } });
       response.headers.append('set-cookie', `${STATS_STATE_COOKIE}=${state}; Path=/; Max-Age=300; HttpOnly; Secure; SameSite=Lax`);
       return response;
+    }
+    if (url.pathname === '/auth/game' && req.method === 'GET') {
+      const ret = GAME_RETURN.includes(url.searchParams.get('return') || '') ? url.searchParams.get('return') : GAME_RETURN[0];
+      if (!await hasStatsSession(req, env)) {
+        const r = new Response(null, { status: 302, headers: { location: `${url.origin}/auth/login`, 'cache-control': 'no-store' } });
+        r.headers.append('set-cookie', `${GAME_NEXT_COOKIE}=${encodeURIComponent(ret)}; Path=/; Max-Age=300; HttpOnly; Secure; SameSite=Lax`);
+        return r;
+      }
+      const tok = await gameAdminToken(env.STATS_SESSION_SECRET, Math.floor(Date.now() / 1000) + 12 * 3600);
+      const r = new Response(null, { status: 302, headers: { location: `${ret}#adm=${tok}`, 'cache-control': 'no-store' } });
+      r.headers.append('set-cookie', `${GAME_NEXT_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`);
+      return r;
+    }
+    if (url.pathname === '/auth/verify' && req.method === 'GET') {
+      const ok = await gameAdminValid(url.searchParams.get('t'), env);
+      return new Response(JSON.stringify({ ok, login: ok ? STATS_ALLOWED_LOGIN : '' }), { headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } });
     }
     if (url.pathname === '/auth/callback' && req.method === 'GET') {
       const state = url.searchParams.get('state') || '', code = url.searchParams.get('code') || '';
@@ -298,7 +333,8 @@ export default {
         return response;
       }
       const expires = Math.floor(Date.now() / 1000) + STATS_SESSION_SECONDS;
-      const response = new Response(null, { status: 302, headers: { location: `${url.origin}/statystyki.html`, 'cache-control': 'no-store' } });
+      const goGame = cookieValue(req, GAME_NEXT_COOKIE);
+      const response = new Response(null, { status: 302, headers: { location: goGame ? `${url.origin}/auth/game?return=${encodeURIComponent(goGame)}` : `${url.origin}/statystyki.html`, 'cache-control': 'no-store' } });
       response.headers.append('set-cookie', clearStatsStateCookie());
       response.headers.append('set-cookie', `${STATS_SESSION_COOKIE}=${await statsSessionToken(env.STATS_SESSION_SECRET, expires)}; Path=/; Max-Age=${STATS_SESSION_SECONDS}; HttpOnly; Secure; SameSite=Lax`);
       return response;
