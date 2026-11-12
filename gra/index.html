@@ -5385,7 +5385,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   { const _as=applySeason; applySeason=function(){ _as(); syncChunks(); }; }
   let chunkT=0; function chunkUpdate(fx,fz){ if(tAll-chunkT<.25&&!GAME.paused) return; chunkT=tAll; const R=(IS_TOUCH?480:760)*(st.mode===2?1.6:1); CHUNKS.forEach(c=>{ const d=Math.hypot(c.x-fx,c.z-fz)-c.r; c.o.visible=!st.inside&&d<R; }); }
 
-  let fpsAcc=0,fpsN=0,pr=DPR,lowN=0; const T_START=performance.now();
+  let fpsAcc=0,fpsN=0,pr=DPR,lowN=0,fpsNow=0,frN=0; const T_START=performance.now();
   /* ---------- menu główne, pauza (Esc), opcje z przypisywaniem klawiszy, kreator postaci, zgłaszanie błędów ---------- */
   const menuEl=$('menu'), MENU={t:0,view:'',c:null,ca:0};
   { const cc=centroid(CHURCH.pts); MENU.c=[cc[0]+40,cc[1]+30]; MENU.a0=0; MENU.r=110;
@@ -5502,7 +5502,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       sun.position.set(st.x+SUNDIR.x*220,fy+SUNDIR.y*220,st.z+SUNDIR.z*220); sun.target.position.set(st.x,fy,st.z); }
     else if(!GAME.started){ const a=MENU.a0+Math.sin(MENU.t*.12)*.2, r=MENU.r, c=MENU.c, y=H(c[0],c[1]), off=-r*.22; camera.position.set(c[0]+Math.sin(a)*r,y+Math.max(62,r*.5),c[1]+Math.cos(a)*r); camera.lookAt(c[0]-Math.cos(a)*off,y+2,c[1]+Math.sin(a)*off); sun.position.set(c[0]+SUNDIR.x*220,y+SUNDIR.y*220,c[1]+SUNDIR.z*220); sun.target.position.set(c[0],y,c[1]); }
     else return false;
-    cullUpdate(); sky.position.copy(camera.position); if(composer) composer.render(dt); else renderer.render(scene,camera); return true; }
+    cullUpdate(); sky.position.copy(camera.position); renderer.shadowMap.needsUpdate=true; if(composer) composer.render(dt); else renderer.render(scene,camera); return true; }
   function inCam2(){ const p=camera.position; p.x=clamp(p.x,CUR.x-CUR.W/2+.3,CUR.x+CUR.W/2-.3); p.z=clamp(p.z,CUR.z-CUR.D/2+.3,CUR.z+CUR.D/2-.3); }
   // instalacja gry (PWA): własne okno, pełny ekran, działa też bez internetu - tylko na trebaczew.io
   { let deferred=null; const inst=$('mInstall'), onSite=/trebaczew\.io$/.test(location.hostname)||location.hostname==='localhost'; const standalone=matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches||navigator.standalone;
@@ -6172,7 +6172,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   function animPerson(p,walk,amt){ const u=p.userData, sn=Math.sin(walk), cs=Math.cos(walk); if(u.idle){ u.idle.amt=Math.max(u.idle.amt,amt); if(u.chest&&amt>.05) u.chest.rotation.y=-sn*.09*amt; } u.lL.rotation.x=sn*.55*amt; u.lR.rotation.x=-sn*.55*amt; u.aL.rotation.x=-sn*.45*amt; u.aR.rotation.x=sn*.45*amt;
     if(u.kL){ u.kL.rotation.x=amt*(.12+.8*Math.max(0,-cs)); u.kR.rotation.x=amt*(.12+.8*Math.max(0,cs)); u.eL.rotation.x=-(.12+.3*amt+Math.max(0,sn)*.25*amt); u.eR.rotation.x=-(.12+.3*amt+Math.max(0,-sn)*.25*amt); } }
   SDK('c'); function frame(){ const rawDt=clock.getDelta(); const dt=Math.min(rawDt,0.05); tAll+=dt; if(RAD.on&&(GAME.paused||!st.car)) radioFile(false); WINDU.value=tAll; if(CEMENT&&CEMENT.tick) CEMENT.tick();
-    fpsAcc+=rawDt; fpsN++; if(fpsAcc>2){ const fps=fpsN/fpsAcc; fpsAcc=0; fpsN=0; if(performance.now()-T_START<14000) lowN=0; else if(fps<27) lowN++; else lowN=0; const flo=IS_TOUCH?.85:.65; if(lowN>=3&&pr<=flo+.001){ if(ao&&ao.enabled){ ao.enabled=false; } else if(bloom&&bloom.enabled){ bloom.enabled=false; } else if(sun.shadow.mapSize.x>1024){ sun.shadow.mapSize.set(1024,1024); if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null; } } } const npr=lowN>=3?(lowN=0,Math.max(flo,pr-0.1)):fps>48?Math.min(DPR,pr+0.1):pr; if(npr!==pr){ pr=npr; renderer.setPixelRatio(pr); resize(); } }
+    fpsAcc+=rawDt; fpsN++; if(fpsAcc>2){ const fps=fpsN/fpsAcc; fpsNow=fps; fpsAcc=0; fpsN=0; if(performance.now()-T_START<14000) lowN=0; else if(fps<27) lowN++; else lowN=0; const flo=IS_TOUCH?.85:.65; if(lowN>=3&&pr<=flo+.001){ if(ao&&ao.enabled){ ao.enabled=false; } else if(bloom&&bloom.enabled){ bloom.enabled=false; } else if(sun.shadow.mapSize.x>1024){ sun.shadow.mapSize.set(1024,1024); if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null; } } } const npr=lowN>=3?(lowN=0,Math.max(flo,pr-0.1)):fps>48?Math.min(DPR,pr+0.1):pr; if(npr!==pr){ pr=npr; renderer.setPixelRatio(pr); resize(); } }
     if(!mapView.hidden){ requestAnimationFrame(frame); return; }
     if(GAME.paused){ menuFrame(dt); requestAnimationFrame(frame); return; }
     if(MG.on){ MG.frame(rawDt>0.1?0.016:rawDt); requestAnimationFrame(frame); return; }
@@ -6232,8 +6232,9 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     if(locTimer>0){ locTimer-=dt; if(locTimer<=0)locEl.classList.remove('on'); }
     extUpdate(dt); mpUpdate(dt);
     if(grade) grade.uniforms.time.value=tAll%100;
+    frN++; renderer.shadowMap.autoUpdate=false; renderer.shadowMap.needsUpdate=(fpsNow<50)||(frN&1)===0;   // przy płynnej grze (>=50 kl/s) cienie odświeżane co drugą klatkę
     if(composer) composer.render(dt); else renderer.render(scene,camera);
-    drawRadar();
+    if((frN&1)===0) drawRadar();   // mapka co drugą klatkę
     if(tAll-lastHud>0.2){ lastHud=tAll; updHud(); }
     requestAnimationFrame(frame); }
   hot && hot.snapshot && hot.snapshot(()=>({x:st.x,z:st.z,yaw:st.yaw,mode:st.mode,night:st.night,money:st.money}));
