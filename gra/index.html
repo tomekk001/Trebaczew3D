@@ -932,7 +932,7 @@ async function boot(saved){
   const ANISO=renderer.capabilities.getMaxAnisotropy();
   const scene=new THREE.Scene();
   const SUNDIR=new THREE.Vector3(-0.62,0.42,0.66).normalize();
-  const DAY={hor:0xc3daee,zen:0x2a63c4,fog:0xc2d4e4,hemiS:0xcfe2ff,hemiG:0x7a735c,hemi:0.62,sun:1.15,sunC:0xfff0d8,bloom:0.3,exp:0.95}; const HK=PBR?.62:1;
+  const DAY={hor:0xc3daee,zen:0x2a63c4,fog:0xc2d4e4,hemiS:0xcfe2ff,hemiG:0x7a735c,hemi:0.62,sun:1.15,sunC:0xfff0d8,bloom:0.3,exp:0.95}; const HK=PBR?.62:1; const HKP=PBR?.28:1; /* światła punktowe we wnętrzach: materiały PBR liczą je na piksel, więc duże ściany łapały dużo więcej światła niż dawniej */
   const NIGHT={hor:0x232a48,zen:0x04060e,fog:0x121726,hemiS:0x4a5c8c,hemiG:0x12141c,hemi:0.4,sun:0.18,sunC:0x9fb4ff,bloom:0.8,exp:1.02};
   scene.fog=new THREE.Fog(DAY.fog,190,1000);
   const camera=new THREE.PerspectiveCamera(60,1,0.25,4000);
@@ -1348,7 +1348,15 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   // budynki z Blendera są w paczce doczytywanej - do tego czasu stoi bryła proceduralna, potem zamieniamy ją na model
   function whenModel(name,fn){ const ok=()=>typeof MODELS!=='undefined'&&MODELS[name]; if(ok()){ fn(); return; } const h=()=>{ if(ok()){ window.removeEventListener('modele',h); fn(); } }; window.addEventListener('modele',h); }
   const plinSwap=new THREE.MeshLambertMaterial({color:0x8d8a84});
-  function swapIn(g,name,hide,o){ o=o||{}; whenModel(name,()=>{ const m=modelClone(name); if(!m)return; m.scale.set(o.sx||1,o.sy||1,o.sz||1); if(o.y)m.position.y=o.y; g.add(m); hide.forEach(c=>{ if(c)c.visible=false; }); if(o.low!==undefined&&o.low<-.95&&o.L) bx(g,o.L,-.9-o.low,o.D,0,o.low,0,plinSwap); if(o.after)o.after(m); }); }
+  /* schody i podesty z modeli Blendera (współrzędne modelu: x0,x1,z0,z1, wysokość ya na początku osi ax i yb na jej końcu), żeby postać po nich wchodziła zamiast w nie wnikać */
+  const STAIR_DEF={
+    przedszkole0:[[-3.65,.75,9,11.3,.75,.75,'z'],[-3.2,.3,11.3,12.8,.75,0,'z']],
+    przedszkole:[[-10.2,-9,-3.6,-1.4,.45,.45,'z'],[-11.1,-10.2,-3.6,-1.4,0,.45,'x']],
+    szkola:[[-6.2,-2.3,11.2,12.6,.5,0,'z']],
+    blok:[].concat(...[-12,0,12].map(c=>[[c-1.4,c+1.4,5.75,7.15,.5,.5,'z'],[c+1.4,c+2.4,5.75,7.15,.5,0,'x'],[c-2.4,c-1.4,5.75,7.15,0,.5,'x']]))};
+  function swapIn(g,name,hide,o){ o=o||{}; if(STAIR_DEF[name]){ const D=STAIR_DEF[name], gx=g.position.x, gy=g.position.y, gz=g.position.z, cs=Math.cos(g.rotation.y), sn=Math.sin(g.rotation.y), sx=o.sx||1, sz=o.sz||1; let R2=0; D.forEach(d=>{ R2=Math.max(R2,Math.hypot(Math.max(Math.abs(d[0]),Math.abs(d[1]))*sx,Math.max(Math.abs(d[2]),Math.abs(d[3]))*sz)); }); R2+=2;
+      STAIRS.push((X,Z)=>{ const dx=X-gx, dz=Z-gz; if(Math.abs(dx)>R2||Math.abs(dz)>R2||!g.userData.swapped) return 0; const u=(dx*cs-dz*sn)/sx, v=(dx*sn+dz*cs)/sz; let top=null; for(const d of D){ if(u>=d[0]&&u<=d[1]&&v>=d[2]&&v<=d[3]){ const t=d[6]==='z'?(v-d[2])/(d[3]-d[2]):(u-d[0])/(d[1]-d[0]); const y=d[4]+(d[5]-d[4])*t; if(top===null||y>top) top=y; } } return top===null?0:Math.max(0,gy+top-H(X,Z)); }); }
+    whenModel(name,()=>{ const m=modelClone(name); if(!m)return; g.userData.swapped=true; m.scale.set(o.sx||1,o.sy||1,o.sz||1); if(o.y)m.position.y=o.y; g.add(m); hide.forEach(c=>{ if(c)c.visible=false; }); if(o.low!==undefined&&o.low<-.95&&o.L) bx(g,o.L,-.9-o.low,o.D,0,o.low,0,plinSwap); if(o.after)o.after(m); }); }
   const bodyOf=(g,n,keep)=>g.children.slice(0,n).filter(c=>!keep.has(c));
   const LEW_LOT={};
   function buildLewiatan(b){ const f0=rotFront(b,frontSide(b,ROAD_SZK)); const f={...f0,x:2*b.x-f0.x,z:2*b.z-f0.z,nx:-f0.nx,nz:-f0.nz,rot:f0.rot+Math.PI}; const L=f.len, D=f.dep, FZ=D/2; const g=new THREE.Group(); g.position.set(b.x,b.hc,b.z); g.rotation.y=f.rot; scene.add(g); b.front=f;
@@ -4420,7 +4428,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       animPerson(c.p,0,0); c.wait-=dt; if(c.wait<=0){ if(rnd()<.35){ for(let q=0;q<2;q++){ const s=Q[q].indexOf(null); if(s>=0&&(s===0||Q[q][s-1])){ Q[q][s]=c; c.q=q; c.s=s; if(s===0)c.pay=R(6,11); c.st='toQueue'; c.path=[[p.z<IN.CZ?IN.AISLE.reduce((a,b)=>Math.abs(b-p.x)<Math.abs(a-p.x)?b:a):p.x,IN.CZ],[IN.QX[q],IN.CZ],[IN.QX[q],IN.QZ[s]]]; return; } } }
         inRoute(c,pick(IN.AISLE),R(-7,-2)); } });
     // światło w sklepie (używa puli latarni)
-    lampPool.forEach((l,i)=>{ if(i<6){ l.position.set(IN.x-10+(i%3)*10,IN.y+3.4,IN.z-5+Math.floor(i/3)*9); l.intensity=.8; l.distance=19; l.color.set(0xffffff); } else l.intensity=0; });
+    lampPool.forEach((l,i)=>{ if(i<6){ l.position.set(IN.x-10+(i%3)*10,IN.y+3.4,IN.z-5+Math.floor(i/3)*9); l.intensity=.8*HKP; l.distance=19; l.color.set(0xffffff); } else l.intensity=0; });
     if(typeof PARTS!=='undefined') PARTS.visible=false; }
   let fadeEl=document.getElementById('fade');
   function fadeTo(cb){ if(!fadeEl){ cb(); return; } fadeEl.classList.add('on'); setTimeout(()=>{ cb(); setTimeout(()=>fadeEl.classList.remove('on'),60); },260); }
@@ -4736,7 +4744,18 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const wz=npcPerson(o,false,0x3a5a3a,0x2a2c30,0x8a8a8a,{style:'jacket',hairStyle:'cap',capC:0x2a3a2a}); wz.position.set(-2.2,0,4.5); wz.rotation.y=Math.PI/2; o.npc.push({p:wz,role:'stand',t:0}); col(-2.5,4.2,-1.9,4.8,0);
     const ubox=new THREE.BoxGeometry(1,1,1).translate(0,.5,0), dm=new THREE.Object3D();
     IB.forEach((arr,mat)=>{ const im=new THREE.InstancedMesh(ubox,mat,arr.length); arr.forEach((a,i)=>{ dm.position.set(a[0],a[1],a[2]); dm.rotation.set(0,a[6],0); dm.scale.set(a[3],a[4],a[5]); dm.updateMatrix(); im.setMatrixAt(i,dm.matrix); }); im.receiveShadow=true; if(mat.transparent){ im.renderOrder=2; } g.add(im); }); }
-  function buildRoom(o){ if(o.built)return; o.built=true; ({home:homeInterior,school:schoolInterior,shop:shopInterior,zabka:zabkaInterior,counter:counterInterior,pharm:pharmInterior,clinic:clinicInterior,rest:restInterior,church:churchInterior,lib:libInterior})[o.kind](o); o.g.traverse(q=>{ if(q.isMesh&&q.geometry.type==='BoxGeometry'){ q.castShadow=true; q.receiveShadow=true; } }); }
+  /* salka przy przedszkolu: miejsce imprez okolicznościowych - stoły z obrusami, parkiet, bufet, balony */
+  function salkaInterior(o){ const g=roomShell(o), W=o.W, D=o.D; const wood=new THREE.MeshLambertMaterial({color:0x8a5a34}), cloth=new THREE.MeshLambertMaterial({color:0xf4f1ea}), chairM=new THREE.MeshLambertMaterial({color:0x6b4a2e}), gold=new THREE.MeshLambertMaterial({color:0xd4a53a});
+    const pq=tex(128,128,(c,w,h)=>{ for(let i=0;i<8;i++)for(let j=0;j<8;j++){ c.fillStyle=(i+j)%2?'#9a6a3c':'#b0804a'; c.fillRect(i*16,j*16,16,16); } },true); pq.repeat.set(3,2.5); const fl=new THREE.Mesh(new THREE.PlaneGeometry(6,5).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({map:pq})); fl.position.set(0,.02,.5); g.add(fl);
+    bx(g,5,.5,2.2,0,0,-D/2+1.3,wood); box2(o,-2.5,-D/2,2.5,-D/2+2.5);                                         // mała scena
+    [-1.9,1.9].forEach(x=>{ bx(g,.5,1.1,.5,x,.5,-D/2+1.2,new THREE.MeshLambertMaterial({color:0x1d1f22})); });   // kolumny głośnikowe
+    const ban=tex(512,96,(c,w,h)=>{ c.fillStyle='#7a3f8a'; c.fillRect(0,0,w,h); c.fillStyle='#fff'; c.font='800 56px Barlow, Arial'; c.textAlign='center'; c.fillText('WSZYSTKIEGO NAJLEPSZEGO',w/2,68); }); pl(g,6,1.1,0,2.75,-D/2+.04,new THREE.MeshBasicMaterial({map:ban}));
+    [[-W/2+2.4,-1.5],[-W/2+2.4,2.2],[W/2-2.4,-1.5],[W/2-2.4,2.2]].forEach(([x,z],k)=>{ bx(g,1.5,.74,3.0,x,0,z,cloth); bx(g,1.56,.04,3.06,x,.74,z,cloth,true); for(let i=0;i<3;i++)[-1,1].forEach(sd=>{ bx(g,.42,.45,.42,x+sd*1.1,0,z-1+i,chairM); bx(g,.06,.5,.42,x+sd*1.3,.45,z-1+i,chairM,true); bx(g,.22,.03,.22,x+sd*.45,.78,z-1+i,gold,true); }); box2(o,x-1.4,z-1.7,x+1.4,z+1.7); });
+    bx(g,4,.9,.8,W/2-3,0,D/2-1.0,wood); bx(g,4.06,.05,.86,W/2-3,.9,D/2-1.0,cloth,true); box2(o,W/2-5.1,D/2-1.6,W/2-.9,D/2-.4);   // bufet
+    const BC=[0xe23b3b,0x2f7fd8,0xf2c230,0x3fae4a,0xff8a3d,0xb44ad0]; for(let k=0;k<14;k++){ const b=new THREE.Mesh(new THREE.SphereGeometry(.2,10,8),new THREE.MeshLambertMaterial({color:BC[k%6]})); b.scale.y=1.2; b.position.set(-W/2+.6+(k%7)*(W-1.2)/6,o.HT-.45-(k%3)*.12,k<7?-D/2+.5:D/2-.5); g.add(b); }
+    for(let k=0;k<3;k++){ const p=custPerson(o); p.position.set(-1.2+k*1.2,0,.4+((k*7)%3)*.6); p.rotation.y=k*2.1; o.npc.push({p,role:'eat',t:k*2}); }
+    addWalker(o,[[-W/2+4.4,D/2-1.6],[-W/2+4.4,-D/2+3.4],[W/2-4.4,-D/2+3.4],[W/2-4.4,D/2-2.4]],null); }
+  function buildRoom(o){ if(o.built)return; o.built=true; ({salka:salkaInterior,home:homeInterior,school:schoolInterior,shop:shopInterior,zabka:zabkaInterior,counter:counterInterior,pharm:pharmInterior,clinic:clinicInterior,rest:restInterior,church:churchInterior,lib:libInterior})[o.kind](o); o.g.traverse(q=>{ if(q.isMesh&&q.geometry.type==='BoxGeometry'){ q.castShadow=true; q.receiveShadow=true; } }); }
   // wejścia z zewnątrz
   const ENTS=[]; let DOOR_ENT=null;
   ENTS.push({label:'Lewiatana',get p(){ return SHOPS[0].p; },get f(){ return B_LEW.doorF; },get n(){ return [B_LEW.front.nx,B_LEW.front.nz]; },enter:()=>enterStore()});
@@ -4756,6 +4775,8 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     else if(best) addEnt(CHURCH_ROOM,'kościoła',[best.m[0]+best.n[0]*1.6,best.m[1]+best.n[1]*1.6],best.n); }
   function churchDoorUpdate(dt){ const D=CHURCH_DOOR; if(!D)return; const near=!st.inside&&Math.hypot(st.x-D.p[0],st.z-D.p[1])<4.2&&(st.gy||0)>.5; const tgt=near?1:0; if(Math.abs(D.cur-tgt)<.002)return; D.cur+=(tgt-D.cur)*Math.min(1,dt*4); D.leaves.forEach(l=>l.piv.rotation.y=l.sd*D.cur*1.35); }
   // biblioteka (filia w Trębaczewie)
+  { /* wejście do salki: boczne drzwi przedszkola od Szkolnej (pod łukowym daszkiem) */
+    const pb=CB.przed; if(pb&&pb.front){ const SAL=defRoom({kind:'salka',W:16,D:12,HT:3.6,col:0x7a3f8a,title:'Salka',logo:logoT('#7a3f8a','#ffffff','SALKA','700 64px Barlow, Arial')}); const f=pb.front, w=L2W(pb.x,pb.z,f.rot), sx=f.len/18, sz=f.dep/8; const p=w(-9.7*sx,-2.5*sz), q=w(-12*sx,-2.5*sz); addEnt(SAL,'salki',p,[q[0]-p[0],q[1]-p[1]]); } }
   const LIB_ROOM=defRoom({kind:'lib',W:14,D:12,col:0x2a5a8a,logo:logoT('#2a5a8a','#ffffff','BIBLIOTEKA','700 64px Barlow, Arial')});
   LIB_ROOM.items=[['„Pan Tadeusz” - A. Mickiewicz',0,'book',0],['„Lalka” - B. Prus',0,'book',0],['„Quo vadis” - H. Sienkiewicz',0,'book',0],['„Chłopi” - W. Reymont',0,'book',0],['„W pustyni i w puszczy” - H. Sienkiewicz',0,'book',0],['„Krzyżacy” - H. Sienkiewicz',0,'book',0]]; LIB_ROOM.shopName='Biblioteka'; LIB_ROOM.sub='Wypożyczalnia · książki za darmo';
   { const lb=BLD.filter(b=>Math.hypot(b.x+136,b.z+124)<14).sort((a,b)=>Math.hypot(a.x+136,a.z+125)-Math.hypot(b.x+136,b.z+125))[0]; if(lb){ const nr=nearestRoad(lb.x,lb.z,r=>r.t!=='track'); const f=frontSide(lb,nr.r); addEnt(LIB_ROOM,'biblioteki',[f.x+f.nx*1.6,f.z+f.nz*1.6],[f.nx,f.nz]); } }
@@ -4785,8 +4806,8 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       if(c.role==='priest'){ const up=(c.t%10)<4; u.aL.rotation.x=u.aR.rotation.x=up?-2.2:-.4; u.aL.rotation.z=-.5; u.aR.rotation.z=.5; return; }
       if(c.role==='walk'){ if(c.wait>0){ c.wait-=dt; animPerson(c.p,0,0); return; } const L=c.len[c.len.length-1]; c.d+=c.dir*1.05*dt; if(c.d>L){ c.d=L; c.dir=-1; c.wait=R(1,3); } if(c.d<0){ c.d=0; c.dir=1; c.wait=R(1,3); } if(rnd()<dt*.08) c.wait=R(1.5,4);
         const s=sampleLine(c.path,c.len,c.d); c.p.position.x=s.x; c.p.position.z=s.z; c.p.rotation.y=Math.atan2(s.tx*c.dir,s.tz*c.dir); c.walk+=dt*3.4; animPerson(c.p,c.walk,1); } });
-    if(o.kind==='school'){ const L1=(st.gy||0)>1.8, ly=o.y+(L1?2*SCH_F:SCH_F-.3)-.4; lampPool.forEach((l,i)=>{ if(i<6){ const gx=Math.round((st.x-o.x)/6)*6+((i%3)-1)*6, gz=(Math.floor(i/3)?-5:5); l.position.set(o.x+clamp(gx,-17,17),ly,o.z+gz); l.intensity=.55; l.distance=13; l.color.set(0xfff6e8); } else l.intensity=0; }); }
-    else { const n=o.kind==='church'?4:6; lampPool.forEach((l,i)=>{ if(i<n){ l.position.set(o.x-o.W/3+(i%3)*o.W/3,o.y+o.HT-.5,o.z-o.D/3+Math.floor(i/3)*o.D/1.6); l.intensity=o.kind==='church'?1.1:(o.kind==='pharm'||o.kind==='clinic')?.45:.95; l.distance=Math.max(16,Math.max(o.W,o.D)*.75); l.color.set(o.kind==='church'?0xffd9a0:o.kind==='pharm'?0xffeed6:0xffffff); } else l.intensity=0; }); }
+    if(o.kind==='school'){ const L1=(st.gy||0)>1.8, ly=o.y+(L1?2*SCH_F:SCH_F-.3)-.4; lampPool.forEach((l,i)=>{ if(i<6){ const gx=Math.round((st.x-o.x)/6)*6+((i%3)-1)*6, gz=(Math.floor(i/3)?-5:5); l.position.set(o.x+clamp(gx,-17,17),ly,o.z+gz); l.intensity=.55*HKP; l.distance=13; l.color.set(0xfff6e8); } else l.intensity=0; }); }
+    else { const n=o.kind==='church'?4:6; lampPool.forEach((l,i)=>{ if(i<n){ l.position.set(o.x-o.W/3+(i%3)*o.W/3,o.y+o.HT-.5,o.z-o.D/3+Math.floor(i/3)*o.D/1.6); l.intensity=(o.kind==='church'?1.1:(o.kind==='pharm'||o.kind==='clinic')?.45:.95)*HKP; l.distance=Math.max(16,Math.max(o.W,o.D)*.75); l.color.set(o.kind==='church'?0xffd9a0:o.kind==='pharm'?0xffeed6:0xffffff); } else l.intensity=0; }); }
     if(typeof PARTS!=='undefined') PARTS.visible=false; }
 
   /* ---------- Działoszyn: ORLEN (Piłsudskiego 75), Biedronka, Lidl ---------- */
