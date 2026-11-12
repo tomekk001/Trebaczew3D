@@ -2697,7 +2697,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const box=(c,x,z,h)=>{ const [L,W]=dimsOf(c); return {x:x??c.x,z:z??c.z,h:h??c.h,L,W}; };
   function park(x,z,h,van,spec){ const fx=Math.cos(h),fz=Math.sin(h); for(const k of [-1.7,0,1.7]){ if(blocked(x+fx*k,z+fz*k,1.0))return false; } if(ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+1.2))return false;
     const L=van?5:spec?4.67:4.4, me={x,z,h,L,W:1.95}; if(parked.some(p=>Math.abs(p.x-x)<14&&Math.abs(p.z-z)<14&&obb(me,box(p),.4)))return false;
-    const c={g:spec?spec.g:makeCar(pick(CARCOL),van?'van':''),x,z,h,v:0,steer:0,L,W:1.95,kind:van?'van':'car'}; if(spec&&spec.name)c.name=spec.name; c.k0=Math.round(x)+','+Math.round(z); seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); if(spec){ PASSAT=c; c.cap=62; c.ftype='pb95'; c.fuel=8; c.lowWarn=false; } return true; }
+    const c={g:spec?spec.g:makeCar(pick(CARCOL),van?'van':''),x,z,h,v:0,steer:0,L,W:1.95,kind:van?'van':'car'}; if(spec&&spec.name)c.name=spec.name; c.k0=Math.round(x)+','+Math.round(z); seatCar(c.g,x,z,h); scene.add(c.g); parked.push(c); if(spec){ PASSAT=c; c.cap=62; c.ftype='pb95'; c.fuel=31; c.lowWarn=false; } return true; }
   // --- szkoła: trzecie wejście od strony dziedzińca, chodnik na dziedzińcu, ścieżki na halę i do Szkolnej; altanka ze ścieżką ---
   let SCHOOL_DOOR3=null;
   { const PA=[-150,-70], PB=[-142,-73], dl=Math.hypot(PB[0]-PA[0],PB[1]-PA[1]); let nx=(PB[1]-PA[1])/dl, nz=-(PB[0]-PA[0])/dl; if(nz>0){ nx=-nx; nz=-nz; }
@@ -2950,7 +2950,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   function locationName(){ const zn=zones.find(zz=>inPoly(st.x,st.z,zz[0])); if(zn)return zn[1]; const nr=nearestRoad(st.x,st.z); if(nr.r&&nr.d<nr.r.w/2+14){ if(nr.r.main)return 'Wyzwolenia (DK42)'; if(nr.r.n)return nr.r.n; return nr.r.t==='track'?'Droga polna':''; } if(houses.some(h=>Math.abs(h.x-st.x)<40&&Math.abs(h.z-st.z)<40))return ''; return 'Pola uprawne'; }
   function fmt(n){ return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' zł'; }
   function addMoney(v){ st.money+=v; moneyEl.classList.remove('pop'); void moneyEl.offsetWidth; moneyEl.classList.add('pop'); }
-  function setWanted(n){ st.wanted=clamp(n,0,5); st.wantedT=0; }
+  function setWanted(n){ st.wanted=clamp(n,0,5); st.wantedT=0; if(st.wanted===0&&typeof COPS!=='undefined'){ COPS.forEach(q=>scene.remove(q.g)); COPS.length=0; } }
   const ADDR_B=BLD.filter(b=>b.addr); let lastAddr=null;
   function nearAddr(){ if(st.car)return null; let best=null,bd=1e9; for(const b of ADDR_B){ const dx=st.x-b.x,dz=st.z-b.z; if(Math.abs(dx)>40||Math.abs(dz)>40)continue; const c=Math.cos(b.a),s=Math.sin(b.a); const lx=Math.abs(dx*c+dz*s)-b.w/2, lz=Math.abs(-dx*s+dz*c)-b.d/2; const d=Math.hypot(Math.max(0,lx),Math.max(0,lz)); if(d<bd){bd=d;best=b;} } return bd<4?best:null; }
   function updHud(){ const ln=st.inside?(CUR===IN?'Lewiatan':(CUR.title||'Wnętrze')):locationName(); if(ln&&ln!==lastLoc){ lastLoc=ln; locMain.textContent=ln; locSub.textContent='Trębaczew'; locEl.classList.add('on'); locTimer=4; }
@@ -3399,7 +3399,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     AU.rain.gain.value=0; // deszcz i grad bez dźwięku (szum i stukanie były nieprzyjemne)
     const inCar=st.car&&st.car.kind!=='bike'; AU.engG.gain.value=inCar?.05+Math.min(.06,Math.abs(st.car.v)*.003):0; if(inCar) AU.eng.frequency.value=(st.car.kind==='tractor'?28:38)+Math.abs(st.car.v)*(st.car.kind==='moto'?6:3.2);
     carVoices(); // pociąg jest bezgłośny (na życzenie): bez dudnienia, stukotu, sygnału i dzwonka przejazdu
-    const copNear=COPS.some(c=>Math.hypot(c.x-st.x,c.z-st.z)<120); AU.sirG.gain.value=copNear?.035:0; if(copNear) AU.siren.frequency.value=800+Math.sin(now*3)*350;
+    const copNear=st.wanted>0&&COPS.some(c=>Math.hypot(c.x-st.x,c.z-st.z)<120); AU.sirG.gain.value=copNear?.035:0; if(copNear) AU.siren.frequency.value=800+Math.sin(now*3)*350;
     const radioOn=st.car&&st.car.kind!=='bike'&&st.car.kind!=='tractor'&&AU.station<OFF; AU.radioG.gain.value+=((radioOn?.85:0)-AU.radioG.gain.value)*Math.min(1,dt*3);
     const s=STN[AU.station]; const sp=60/(s?s.bpm:100)/4;
     radioFile(!!(radioOn&&s&&s.file&&AU.on&&!GAME.paused)); if(AU.next<now-.3) AU.next=now+.05; while(AU.next<now+.15){ if(radioOn&&!(s&&s.file)) musicStep(AU.next,AU.step); AU.step++; AU.next+=sp; }
@@ -4884,7 +4884,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   /* ---------- paliwo: bak, spalanie, tankowanie na Orlenie ---------- */
   const FUEL_NAME={pb95:'Pb95',on:'ON',lpg:'LPG',pb98:'Pb98'};
   function fuelInit(c){ if(!c||c.kind==='bike'||c.kind==='melex'||c.fuel!==undefined)return; const cap=Math.round(({car:45,van:70,moto:14,tractor:90,fire:200,bus:200}[c.kind]||45)*(c.capMul||1)); c.cap=cap; c.ftype=c.kind==='car'?pick(['pb95','pb95','pb95','on','lpg']):c.kind==='moto'?'pb95':'on'; c.fuel=+(cap*R(.6,1)).toFixed(1); c.lowWarn=false; }
-  function fuelUse(c,dist){ if(c.fuel===undefined||dist<=0)return; const was=c.fuel; c.fuel=Math.max(0,c.fuel-dist*c.cap/18000);
+  function fuelUse(c,dist){ if(c.fuel===undefined||dist<=0)return; const was=c.fuel; c.fuel=Math.max(0,c.fuel-dist*c.cap/30000);
     if(was/c.cap>.15&&c.fuel/c.cap<=.15) toast('<b>MAŁO PALIWA</b><br>Zatankuj na ORLENIE w Działoszynie (ul. Piłsudskiego)',4);
     if(was>0&&c.fuel<=0){ toast('<b>SKOŃCZYŁO SIĘ PALIWO</b><br>Dojdź pieszo na ORLEN i kup kanister albo podjedź innym autem',5); if(AU.ctx&&AU.on) noiseHit(AU.ctx.currentTime,.4,.05,'lowpass',200); } }
   function nearPump(){ if(!st.car||!ORLEN||st.car.fuel===undefined)return null; return ORLEN.pumps.find(p=>Math.hypot(p[0]-st.car.x,p[1]-st.car.z)<6)||null; }
