@@ -21,6 +21,7 @@
     "files": ["main.js", "game/**"],
     "directories": { "output": "dist" },
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "icon.png" },
+    "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }], "icon": "icon.png", "identity": "-", "category": "public.app-category.games", "artifactName": "Trebaczew-Mac.dmg" },
     "nsis": { "oneClick": true, "perMachine": false, "artifactName": "Trebaczew-Setup.exe", "shortcutName": "Symulator życia w Trębaczewie" }
   }
 }

@@ -361,6 +361,50 @@ def przedszkole(i):
         other_sides(3, 3, left=False)
     M.finish(res=1024 if i == 0 else 512, quality=74, ao_dist=1.6)
 
+# ---------------- blok mieszkalny przy cementowni (wg zdjęcia): 2 kondygnacje, płaski dach, żółty pas pod dachem, loggie i balkony ----------------
+def blok():
+    L, D, F = 36.0, 11.5, 3.0; H = 2 * F + .5
+    M = Model('blok'); m = mats(M, '#e7e0bb', '#6d6862', '#f4f4f2', '#c9b56a')
+    yel = M.mat('yel', '#dcc56c', noise=.05, scale=20); dark = M.mat('logg', '#8f8a78', noise=.08); railm = M.mat('rail', '#6b6f72'); terr = M.mat('ramp', '#d6b85a', brick=(.3, .15, '#b99a44', .012))
+    walls(M, m, L, D, H, plh=.5); fz = D / 2
+    M.box(-L / 2 - .08, L / 2 + .08, H - .1, H + .9, -D / 2 - .08, D / 2 + .08, yel)                 # żółty pas attyki
+    M.box(-L / 2 - .2, L / 2 + .2, H + .9, H + 1.0, -D / 2 - .2, D / 2 + .2, M.mat('cap', '#8a8780'))  # obróbka dachu
+    M.box(-L / 2 + .3, L / 2 - .3, H + .85, H + .92, -D / 2 + .3, D / 2 - .3, m['roof'])
+    for y in (F - .15,): M.box(-L / 2 - .02, L / 2 + .02, y, y + .3, fz, fz + .03, yel)               # pas między kondygnacjami
+    def w2(x, y, z=fz, face='+z', w=1.5, h=1.4):
+        win(M, x, y, z, w, h, m['frame'], m['glass'], face, m['sill'])
+    def loggia(x, y, w=3.4):   # wnęka z barierką i drzwiami balkonowymi
+        M.box(x - w / 2, x + w / 2, y - .1, y + 2.5, fz - .02, fz + .02, dark)
+        M.box(x - .5, x + .5, y, y + 2.15, fz + .02, fz + .06, m['glass']); M.box(x + .7, x + 1.5, y + .9, y + 2.1, fz + .02, fz + .06, m['glass'])
+        M.box(x - w / 2 - .1, x + w / 2 + .1, y - .2, y, fz, fz + 1.0, m['white'])
+        M.box(x - w / 2 - .1, x + w / 2 + .1, y + .95, y + 1.0, fz + .93, fz + .98, railm)
+        xx = x - w / 2 - .1
+        while xx <= x + w / 2 + .1: M.box(xx, xx + .03, y, y + .97, fz + .94, fz + .97, railm); xx += .16
+        for sx in (-1, 1): M.box(x + sx * (w / 2 + .1) - .02, x + sx * (w / 2 + .1) + .02, y, y + 1.0, fz, fz + .98, railm)
+    # front: trzy klatki, układ okien i loggii jak na zdjęciu
+    for cx in (-12.0, 0.0, 12.0):
+        for f in range(2):
+            y = 1.75 + f * F
+            w2(cx - 4.6, y); w2(cx + 4.6, y)
+            if f == 1: loggia(cx - 1.6, F + .35); w2(cx + 2.2, y)
+            else: w2(cx - 2.3, y, w=1.2); w2(cx + 2.2, y)
+        # wejście z żółtą rampą i schodami
+        M.box(cx - .6, cx + .6, .5, 2.6, fz, fz + .06, m['frame']); M.box(cx - .5, cx + .5, .5, 2.5, fz + .06, fz + .09, M.mat('bdoor', '#5a5f63'))
+        M.box(cx - 1.4, cx + 1.4, 2.7, 2.82, fz, fz + 1.3, M.mat('cap', '#8a8780'))
+        M.box(cx - 1.4, cx + 1.4, BASE, .5, fz, fz + 1.4, terr)
+        M.prism([(cx + 1.4, BASE, fz), (cx + 1.4, .5, fz), (cx + 4.4, BASE, fz)], (0, 0, 1.4), terr); M.prism([(cx - 1.4, BASE, fz), (cx - 4.4, BASE, fz), (cx - 1.4, .5, fz)], (0, 0, 1.4), terr)
+    for sx in (-1, 1):   # narożne loggie na piętrze przy szczytach
+        loggia(sx * (L / 2 - 2.2), F + .35, 3.0)
+    # tył i szczyty: proste rzędy okien
+    for f in range(2):
+        y = 1.75 + f * F
+        for k in range(12): w2(-L / 2 + (k + .5) * L / 12, y, -fz, '-z', 1.3, 1.35)
+        for z in (-2.6, 2.6):
+            win(M, L / 2, y, z, 1.2, 1.35, m['frame'], m['glass'], '+x', m['sill']); win(M, -L / 2, y, z, 1.2, 1.35, m['frame'], m['glass'], '-x', m['sill'])
+    for x in (-13.5, -1.5, 10.5): chimney(M, m, x, -1.0, H + .9, H + 2.2, .9, .6)
+    for x in (-6.0, 6.0): M.cyl(x, H + .9, H + 2.6, 1.5, .03, .03, 6, m['metal']); M.cyl(x + .0, H + 2.2, H + 2.25, 1.5, .45, .45, 10, M.mat('dish', '#d9dcde'))
+    M.finish(res=1024, quality=74, ao_dist=1.6)
+
 # ---------------- wiatrak (elektrownia wiatrowa) ----------------
 def wiatrak():
     M = Model('wiatrak'); Hh = 95.0
@@ -389,7 +433,7 @@ def wiatrak_wirnik():
 if __name__ == '__main__':
     todo = sys.argv[1:]
     for f, a in ((dom_w159, None), (dom_w161, None), (dom_w163, None), (kwiaciarnia, None), (dom_szk3, None), (szkola, None), (osp, None), (zabka2, None),
-                 (przedszkole, 0), (przedszkole, 1), (przedszkole, 2), (wiatrak, None), (wiatrak_wirnik, None)):
+                 (przedszkole, 0), (przedszkole, 1), (przedszkole, 2), (blok, None), (wiatrak, None), (wiatrak_wirnik, None)):
         name = f.__name__ + ('' if a is None else str(a))
         if todo and name not in todo: continue
         f() if a is None else f(a)

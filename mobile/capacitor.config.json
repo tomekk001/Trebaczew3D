@@ -1,0 +1,7 @@
+{
+  "appId": "io.trebaczew.gra",
+  "appName": "Trębaczew",
+  "webDir": "www",
+  "server": { "url": "https://trebaczew.io/gra/", "cleartext": false, "allowNavigation": ["trebaczew.io"] },
+  "android": { "backgroundColor": "#0d1217" }
+}

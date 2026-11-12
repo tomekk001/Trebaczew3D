@@ -33,6 +33,7 @@ def main():
         if len(p) < 3: continue
         xs = [q[0]/10 for q in p]; zs = [q[1]/10 for q in p]
         if max(xs) < WX0 or min(xs) > WX1 or max(zs) < WZ0 or min(zs) > WZ1: continue
+        if sum(xs)/len(xs) > -1100: continue                 # tylko zachód (Sadowiec i okolice): w centrum zostają dotychczasowe działki, do których dopasowane są ręczne poprawki płotów
         p = simplify(p, 1.2)                                   # dm
         if len(p) < 3 or abs(area(p)) < 400: continue          # < 4 m2
         d = [p[0][0], p[0][1]] + [w for i in range(1, len(p)) for w in (p[i][0]-p[i-1][0], p[i][1]-p[i-1][1])]
@@ -91,6 +92,7 @@ def main():
             if r and len(r) > 1: parts = "|".join(f"{x:.1f},{z:.1f},{rw:.1f},{rd:.1f}" for x, z, rw, rd in r)
         fixes[tgt] = f"{tgt}:{mx:.1f},{mz:.1f},{w:.1f},{d:.1f},{math.degrees(an)%360:.1f}:{parts}:{','.join(map(str, skip))}"
     print("poprawki obrysów", len(fixes), stats)
+    extra = []; fixes = {}                                   # budynki z EGiB wyłączone (wróciliśmy do dotychczasowych obrysów)
     (SRC / "data_cad.js").write_text("/* ewidencja gruntów i budynków (EGiB, GUGiK): działki z klasoużytkiem (dm, delty) i budynki, których brakowało */\nconst DATA_CAD=\"" + ";".join(recs) + "\";\nconst DATA_CADB=\"" + ";".join(extra) + "\";\nconst DATA_CADFIX=\"" + ";".join(fixes.values()) + "\";\n", encoding="utf8")
     print("dzialki", len(recs), "budynki dodatkowe", len(extra), "rozmiar", (SRC / "data_cad.js").stat().st_size)
 
