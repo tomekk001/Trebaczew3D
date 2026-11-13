@@ -1162,6 +1162,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     if(b.name==='Lewiatan'||b.name==='Żabka'){ b.kind='brand'; addSolid({x:b.x,z:b.z,hw:b.w/2,hd:b.d/2,c,s,r:Math.hypot(b.w,b.d)/2}); return; }
     if(b.cust){ b.kind='cust'; addSolid({x:b.x,z:b.z,hw:b.w/2,hd:b.d/2,c,s,r:Math.hypot(b.w,b.d)/2}); return; }
     if(inKinder(b.x,b.z)||(b.code===5&&inPoly(b.x,b.z,OSPA.pts))){ b.kind=inKinder(b.x,b.z)?'kinderX':'osp'; addSolid({x:b.x,z:b.z,hw:b.w/2,hd:b.d/2,c,s,r:Math.hypot(b.w,b.d)/2}); return; }
+    if((b.code===5||inSchool(b.x,b.z))&&b!==HALL_B&&b.w*b.d>300&&Math.max(b.w,b.d)/Math.min(b.w,b.d)>3){ b.kind='schoolW'; addSolid({x:b.x,z:b.z,hw:b.w/2,hd:b.d/2,c,s,r:Math.hypot(b.w,b.d)/2}); return; }   // długie skrzydło szkoły: model w stylu głównego budynku
     let h,rt,rh,wall,roof,kind='house';
     if(b===HALL_B){ kind='hall'; h=9.5; rt='barrel'; wall='#d4dbe1'; roof='#7b8794'; }
     else if(b.code===5||inSchool(b.x,b.z)){ kind='school'; h=b.lv?b.lv*3.6:7.2; rt='hip'; rh=2.2; wall='#f1e3c4'; roof='#5f6670'; }
@@ -1727,6 +1728,9 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       addSolid({x:(a[0]+c[0])/2,z:(a[1]+c[1])/2,hw:Ln/2,hd:.12,c:Math.cos(an),s:Math.sin(an),r:Ln/2+.3}); }
   }
   let OSP_FLAG=null;
+  BLD.filter(b=>b.kind==='schoolW').forEach(b=>{ const long=b.w>=b.d, len=long?b.w:b.d, wid=long?b.d:b.w; const g=new THREE.Group(); const cs=Math.cos(b.a), sn=Math.sin(b.a); const hh=Math.max(...[[1,1],[1,-1],[-1,1],[-1,-1]].map(([u,v])=>H(b.x+u*b.w/2*cs-v*b.d/2*sn,b.z+u*b.w/2*sn+v*b.d/2*cs)));
+    g.position.set(b.x,hh,b.z); g.rotation.y=long?-b.a:-(b.a+Math.PI/2); scene.add(g);
+    const ph=new THREE.Mesh(new THREE.BoxGeometry(len,7.4,wid),new THREE.MeshLambertMaterial({color:0xe6d7b6})); ph.position.y=3.7; ph.castShadow=ph.receiveShadow=true; g.add(ph); swapIn(g,'szkola_skrzydlo',[ph],{sx:len/56,sz:wid/13}); });
   buildPrzedszkole(); buildOSP(); LATER.forEach(f=>f());
 
   /* ================= miejsca ze zdjęć (Street View) ================= */
@@ -6247,5 +6251,5 @@ hot && hot.ready ? hot.ready(boot) : boot(hot && hot.data || {});
 })();
 
 </script>
-<script src="models_in.js?v=ab1efb0f" async></script>
+<script src="models_in.js?v=e532ffcf" async></script>
 </html>

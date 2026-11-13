@@ -179,6 +179,28 @@ def szkola():
     for x in (-12, 0.5, 13): chimney(M, m, x, 2.0 if x < 6 else -1, H + .2, H + 1.6, .7, .9)
     M.finish(res=1024, quality=68, ao_dist=2.0)
 
+# ---------------- szkoła: długie skrzydło (56 x 13 m) w stylu głównego budynku ----------------
+def szkola_skrzydlo():
+    M = Model('szkola_skrzydlo'); L, D = 56.0, 13.0; F = 3.5; H = 2 * F + .4; m = mats(M, '#e6d7b6', '#8a4130', '#f6f6f2', '#8d877c', '#5c2a1e')
+    flat = M.mat('papa', '#4a4a48', noise=.12); cap = M.mat('blacha', '#9a9c9a', noise=.03); portal = M.mat('portal', '#9a3d2c', brick=(.25, .075, '#d6c9b6', .012))
+    walls(M, m, L, D, H)
+    M.box(-L / 2 - .08, L / 2 + .08, H, H + .55, -D / 2 - .08, D / 2 + .08, m['wall']); M.box(-L / 2 - .14, L / 2 + .14, H + .55, H + .63, -D / 2 - .14, D / 2 + .14, cap)
+    M.box(-L / 2 + .2, L / 2 - .2, H + .2, H + .3, -D / 2 + .2, D / 2 - .2, flat)
+    M.box(-L / 2 - .05, L / 2 + .05, H - .35, H, -D / 2 - .05, D / 2 + .05, m['white'])
+    n = int((L - 4) / 2.9); xs = [-L / 2 + 2 + (L - 4) * (i + .5) / n for i in range(n)]
+    for face, z in (('+z', D / 2), ('-z', -D / 2)):
+        for y in (1.7, 1.7 + F):
+            for x in xs:
+                if abs(x) < 1.6 and y < 3: continue
+                win(M, x, y, z, 1.6, 1.55, m['frame'], m['glass'], face, m['sill'])
+        sg = 1 if face == '+z' else -1   # wejście pośrodku: ceglany portal i drzwi
+        M.box(-1.3, 1.3, 0, 3.0, z if sg > 0 else z - .12, z + .12 if sg > 0 else z, portal)
+        M.box(-.9, .9, 0, 2.5, z + .12 * sg if sg > 0 else z - .13, z + .13 if sg > 0 else z - .12, M.mat('sdoor', '#5a3324'))
+    for z in (-3.1, 3.1):
+        for y in (1.7, 1.7 + F):
+            win(M, L / 2, y, z, 1.5, 1.55, m['frame'], m['glass'], '+x', m['sill']); win(M, -L / 2, y, z, 1.5, 1.55, m['frame'], m['glass'], '-x', m['sill'])
+    M.finish(res=1024, quality=68, ao_dist=2.0)
+
 # ---------------- OSP Trębaczew ----------------
 def osp():
     M = Model('osp'); L, D = 16.0, 19.5; H1, H2 = 3.9, 3.3; H = H1 + H2; m = mats(M, '#a3a6a8', '#3a3d40', '#f4f4f2', '#7a7c7e')
@@ -432,7 +454,7 @@ def wiatrak_wirnik():
 
 if __name__ == '__main__':
     todo = sys.argv[1:]
-    for f, a in ((dom_w159, None), (dom_w161, None), (dom_w163, None), (kwiaciarnia, None), (dom_szk3, None), (szkola, None), (osp, None), (zabka2, None),
+    for f, a in ((dom_w159, None), (dom_w161, None), (dom_w163, None), (kwiaciarnia, None), (dom_szk3, None), (szkola, None), (szkola_skrzydlo, None), (osp, None), (zabka2, None),
                  (przedszkole, 0), (przedszkole, 1), (przedszkole, 2), (blok, None), (wiatrak, None), (wiatrak_wirnik, None)):
         name = f.__name__ + ('' if a is None else str(a))
         if todo and name not in todo: continue
