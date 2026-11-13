@@ -6,7 +6,7 @@
 <title>Symulator życia w Trębaczewie</title>
 <meta name="description" content="Symulator życia w Trębaczewie - gra 3D w stylu GTA po prawdziwej wsi Trębaczew (gm. Działoszyn). Misje, poziomy, auta, sklep Lewiatan, Orlen w Działoszynie.">
 <meta property="og:title" content="Symulator życia w Trębaczewie">
-<meta property="og:description" content="Gra 3D w stylu GTA po prawdziwym Trębaczewie. 20 misji, poziomy, auta i dom za 450 000 zł.">
+<meta property="og:description" content="Gra 3D w stylu GTA po prawdziwym Trębaczewie. 21 misji głównych, poziomy, auta i dom za 450 000 zł.">
 <meta property="og:image" content="https://trebaczew.io/og.jpg">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -1155,6 +1155,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
         RD.forEach(r=>{ if(roadDist(r,b.x,b.z)>Math.hypot(b.w,b.d)/2+r.w/2+2)return; const clr=r.w/2+(r.t==='srv'?.3:.9); pts.forEach(q=>{ const np=nearPt(r,q[0],q[1]); const pen=clr-np[2]; if(pen>0&&(!worst||pen>worst.pen)) worst={pen,np,q}; }); });
         if(!worst)break; let nx=b.x-worst.np[0], nz=b.z-worst.np[1]; const l=Math.hypot(nx,nz)||1; nx/=l; nz/=l; const m=worst.pen+.15; b.x+=nx*m; b.z+=nz*m; if(b.parts) b.parts.forEach(q=>{ q.x+=nx*m; q.z+=nz*m; }); moved+=m; }
       if(moved>7) b.skip=true; }); }
+  { /* duplikaty budynków (ten sam obrys dwa razy: migotanie ścian) - zostaje pierwszy */ const DG=new Map(); BLD.forEach(b=>{ if(b.skip||!b.w||!b.d) return; const gx=Math.floor(b.x/20), gz=Math.floor(b.z/20); let dupe=false; for(let i=gx-1;i<=gx+1&&!dupe;i++)for(let j=gz-1;j<=gz+1&&!dupe;j++) for(const a of (DG.get(i+','+j)||[])){ if(Math.hypot(a.x-b.x,a.z-b.z)<2.5&&((Math.abs(a.w-b.w)<2.5&&Math.abs(a.d-b.d)<2.5)||(Math.abs(a.w-b.d)<2.5&&Math.abs(a.d-b.w)<2.5))){ dupe=true; break; } } if(dupe){ b.skip=true; return; } const k=gx+','+gz; (DG.get(k)||DG.set(k,[]).get(k)).push(b); }); }
   BLD.forEach((b,bi)=>{ if(b.skip){ b.kind='skip'; return; } const ar=b.w*b.d, ratio=Math.max(b.w,b.d)/Math.min(b.w,b.d);
     // wysokość posadowienia: środek i najniższy narożnik
     const c=Math.cos(b.a), s=Math.sin(b.a); b.hc=H(b.x,b.z); b.hmin=Math.min(...[[1,1],[1,-1],[-1,1],[-1,-1]].map(([u,v])=>H(b.x+u*b.w/2*c-v*b.d/2*s,b.z+u*b.w/2*s+v*b.d/2*c)));
@@ -4940,7 +4941,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   function updLevel(){ const L=levelOf(st.xp), a=LVL_XP[L-1], b=LVL_XP[L]; $('lvlTxt').textContent='POZIOM '+L+(L>=10?' (MAX)':''); $('xpb').style.width=(L>=10?100:Math.round((st.xp-a)/(b-a)*100))+'%'; }
   function addXP(v){ const L0=levelOf(st.xp); st.xp+=v; const L=levelOf(st.xp); st.level=L; updLevel(); if(L>L0){ toast(`<b>AWANS! POZIOM ${L}</b><br>Nowe misje w dzienniku (Q)`,4); if(AU.ctx&&AU.on) sfx.win(); refreshMarks(); } }
 
-  /* ---------- kampania: 20 misji głównych + misje poboczne ---------- */
+  /* ---------- kampania: 21 misji głównych + misje poboczne ---------- */
   let LASTBUY=null; const _buy=buy; buy=function(i){ const it=SHOP_OPEN&&SHOP_OPEN.items[i]; const m0=st.money; _buy(i); if(it&&st.money<m0) LASTBUY={shop:SHOP_OPEN.n,item:it[0],t:tAll}; };
   const fr=(b,o)=>{ const f=b.front; return [f.x+f.nx*(o||3),f.z+f.nz*(o||3)]; }; const sideOf=(b,o,sd)=>{ const f=b.front; return [f.x+f.nx*o-f.nz*sd,f.z+f.nz*o+f.nx*sd]; };
   const nearHouse=(x,z)=>frontOf(resHouses.reduce((a,h)=>Math.hypot(h.x-x,h.z-z)<Math.hypot(a.x-x,a.z-z)?h:a));
@@ -4955,7 +4956,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const STATION_P=(()=>{ try{ const bx0=-554, bz0=1454; const nr=nearestRoad(bx0,bz0,r=>r.t!=='track'&&/Kolejowa/.test(r.n||'')); if(nr.r&&nr.d<80){ const a=nr.r.pts[nr.seg], b=nr.r.pts[nr.seg+1]; const dx=b[0]-a[0], dz=b[1]-a[1], L=dx*dx+dz*dz||1; const t=clamp(((bx0-a[0])*dx+(bz0-a[1])*dz)/L,0,1); const px=a[0]+dx*t, pz=a[1]+dz*t; const dd=Math.hypot(bx0-px,bz0-pz)||1; const o=nr.r.w/2+5; const q=npcFind(px+(bx0-px)/dd*o,pz+(bz0-pz)/dd*o,2,400); if(q) return [q[0],q[1]]; } }catch(e){} return [-510,1462]; })(), DOC_P=APT_DOORS?APT_DOORS.clinic:[-99,-206];
   const MIN_P=CB.mineral&&CB.mineral.front?fr(CB.mineral,8):[-580,1690];
   const TIR_P=TIR_LOT?[TIR_LOT.x,TIR_LOT.z]:[-130,-260];
-  const fieldPts=()=>{ const out=[]; for(let t=0;t<200&&out.length<4;t++){ const pc=pick(PARCELS); if(pc.res||Math.abs(polyArea(pc.p))<9000)continue; const c=centroid(pc.p); if(!blocked(c[0],c[1],2)&&!out.some(o=>Math.hypot(o[0]-c[0],o[1]-c[1])<120)) out.push(c); } return out; };
+  const fieldPts=()=>{ const out=[]; for(let t=0;t<600&&out.length<4;t++){ const pc=pick(PARCELS); if(pc.res||Math.abs(polyArea(pc.p))<9000)continue; const c=centroid(pc.p); if(!blocked(c[0],c[1],2)&&![[0,0],[7,0],[-7,0],[0,7],[0,-7]].some(o=>noWalk(c[0]+o[0],c[1]+o[1])||blocked(c[0]+o[0],c[1]+o[1],1.2))&&c[0]>X0+80&&c[0]<X1-80&&c[1]>Z0+80&&c[1]<Z1-80&&!out.some(o=>Math.hypot(o[0]-c[0],o[1]-c[1])<120)) out.push(c); } return out; };   // pola dostępne dla ciągnika: poza maską niedostępnych pól i budynkami
   const dkPt=f=>{ const s=sampleLine(DK.pts,DK.len,DK.L*f); return [s.x,s.z]; };
   const C=(id,n,lvl,xp,reward,start,desc,steps,o)=>Object.assign({id,n,lvl,xp,reward,start,desc,steps,main:true},o||{});
   const CAMPAIGN=[
@@ -5064,7 +5065,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
         else return nextStep(); } else { if(s.wait) A.w=Math.max(0,A.w-dt*.5); if(s.mini){ A.mIn=false; if(d>R0+2&&A.mRetry){ A.mLock=false; A.mRetry=false; } } } }
     missionEl.hidden=false; missionEl.innerHTML=`<b>${A.m.n}</b><span>${s.t}${s.p&&d>1?' · '+Math.round(d)+' m':''}${info?' · '+info:''}</span>${A.m.time?`<em>${Math.max(0,Math.ceil(A.t))} s</em>`:''}`; }
   function nextStep(){ const A=ACTIVE, s=A.steps[A.i]; if(s.onDone){ try{ s.onDone(); }catch(e){} } if(s.win){ endMission(true); winGame(); return; } A.i++; if(AU.ctx&&AU.on)sfx.cash(); if(A.i>=A.steps.length) endMission(true); else { stepBegin(); toast(A.steps[A.i].t,2.2); } }
-  function winGame(){ const w=document.getElementById('winScreen'); if(!w)return; w.hidden=false; w.querySelector('.stats').textContent=`Poziom ${st.level} · misje główne: ${DONE.size}/20 · czas gry: ${Math.round(tAll/60)} min`; }
+  function winGame(){ const w=document.getElementById('winScreen'); if(!w)return; w.hidden=false; w.querySelector('.stats').textContent=`Poziom ${st.level} · misje główne: ${[...DONE].filter(id=>CAMPAIGN.some(c=>c.id===id)).length}/${CAMPAIGN.length} · czas gry: ${Math.round(tAll/60)} min`; }
   function extBlips(rx,px,py,sc){ const dot=(x,z,c,r)=>{ const [a,b]=mp(x,z); rx.beginPath(); rx.arc(a-px,b-py,r/sc,0,7); rx.fillStyle=c; rx.fill(); rx.lineWidth=2/sc; rx.strokeStyle='#000'; rx.stroke(); };
     if(ACTIVE){ const s=ACTIVE.steps[ACTIVE.i]; if(s.p) dot(s.p[0],s.p[1],'#ff3a3a',8); } else MISSIONS.forEach(m=>{ if(m.mk.visible) dot(m.sp[0],m.sp[1],m.main?'#ffd23a':'#3fb0ff',6); }); if(WAYPOINT) dot(WAYPOINT[0],WAYPOINT[1],'#c86bff',7);
     COPS.forEach(c=>dot(c.x,c.z,Math.floor(tAll*4)%2?'#2040ff':'#ff2020',5)); NPC.forEach(n=>{ const s=npcStage(n.id); if(s!=='zadanie'&&s!=='ma')return; const t=npcTarget(n); if(t) dot(t.p[0],t.p[1],s==='ma'?'#7ee08a':'#ffd34a',5); }); mpBlips(dot); }
@@ -5102,7 +5103,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   addEventListener('pagehide',()=>{ try{ saveGame(); }catch(e){} }); document.addEventListener('visibilitychange',()=>{ if(document.hidden){ try{ saveGame(); }catch(e){} } });
   const LASTOUT={x:Math.round(st.x*10)/10,z:Math.round(st.z*10)/10,yaw:Math.round(st.yaw*100)/100};
   function saveGame(){ if(!st.inside){ LASTOUT.x=Math.round(st.x*10)/10; LASTOUT.z=Math.round(st.z*10)/10; LASTOUT.yaw=Math.round(st.yaw*100)/100; } try{ localStorage.setItem('trebaczew-gra',JSON.stringify({v:2,money:st.money,xp:st.xp,sideN:SIDE_N,turbo:st.turbo||0,turboSet:[...TURBO_HAVE],done:[...DONE],side:SIDE_T,season:ENV.season,time:ENV.time,weather:ENV.weather,px:LASTOUT.x,pz:LASTOUT.z,pyaw:LASTOUT.yaw})); }catch(e){} }
-  try{ const sv=JSON.parse(localStorage.getItem('trebaczew-gra')||'null'); if(sv){ if(saved.money===undefined){ st.money=+sv.money||0; shownMoney=st.money; } if(sv.v===2){ (sv.done||[]).forEach(d=>{ if(CAMPAIGN.some(m=>m.id===d)) DONE.add(d); }); st.xp=Math.max(0,+sv.xp||0); if(sv.side&&typeof sv.side==='object') Object.keys(sv.side).forEach(k=>{ if(SIDE.some(m=>m.id===k)) SIDE_T[k]=+sv.side[k]||0; }); } if(sv.turbo) st.turbo=+sv.turbo||0; if(sv.sideN&&typeof sv.sideN==='object') Object.keys(sv.sideN).forEach(k=>{ const r=sv.sideN[k]; if(r&&isFinite(r.n)&&isFinite(r.t)) SIDE_N[k]={n:+r.n,t:+r.t}; }); if(Array.isArray(sv.turboSet)) sv.turboSet.forEach(i=>{ if(Number.isInteger(i)&&i>=0&&i<TURBO_CARS.length) TURBO_HAVE.add(i); }); if(sv.season!==undefined)ENV.season=sv.season; if(sv.time!==undefined)ENV.time=sv.time; } }catch(e){}
+  try{ const sv=JSON.parse(localStorage.getItem('trebaczew-gra')||'null'); if(sv){ if(saved.money===undefined){ st.money=clamp(Math.round(+sv.money)||0,0,1e9); shownMoney=st.money; } if(sv.v===2){ (sv.done||[]).forEach(d=>{ if(CAMPAIGN.some(m=>m.id===d)) DONE.add(d); }); st.xp=Math.max(0,+sv.xp||0); if(sv.side&&typeof sv.side==='object') Object.keys(sv.side).forEach(k=>{ if(SIDE.some(m=>m.id===k)) SIDE_T[k]=+sv.side[k]||0; }); } if(sv.turbo) st.turbo=+sv.turbo||0; if(sv.sideN&&typeof sv.sideN==='object') Object.keys(sv.sideN).forEach(k=>{ const r=sv.sideN[k]; if(r&&isFinite(r.n)&&isFinite(r.t)) SIDE_N[k]={n:+r.n,t:+r.t}; }); if(Array.isArray(sv.turboSet)) sv.turboSet.forEach(i=>{ if(Number.isInteger(i)&&i>=0&&i<TURBO_CARS.length) TURBO_HAVE.add(i); }); if(sv.season!==undefined)ENV.season=sv.season; if(sv.time!==undefined)ENV.time=sv.time; } }catch(e){}
   { let has=false; try{ has=!!localStorage.getItem('trebaczew-gra'); }catch(e){} if(!has&&saved.money===undefined&&st.money<200){ st.money=200; shownMoney=st.money; } }
   st.level=levelOf(st.xp); updLevel(); refreshMarks();
   /* ---------- postęp: własne auto i tuning, ubrania, dom do urządzenia, zlecenia dnia, osiągnięcia, ranking ---------- */
