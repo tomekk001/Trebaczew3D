@@ -1335,7 +1335,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const roadNear=(x,z,m)=>ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+m);
   const GAPS=[], GATES=[], DRIVE_SPOTS=[];
   SDK('a'); if(CAD.length) CAD.forEach(pc=>{ pc.res=false; if(!(pc.k===''||pc.k.indexOf('B')>=0)||/^(dr|Ls|W|K|Tk)/.test(pc.k)) return; const bl=BLD.filter(b=>b.x>pc.bb[0]&&b.x<pc.bb[2]&&b.z>pc.bb[1]&&b.z<pc.bb[3]&&inPoly(b.x,b.z,pc.p)); if(bl.length){ pc.res=true; pc.bl=bl; } });
-  { const front=[], side=[]; const seen=new Set();
+  { const front=[], side=[], CONC=[]; const seen=new Set();
     // puste małe działki przy ulicy, graniczące z ogrodzonymi (np. naprzeciw przedszkola i Żabki), też dostają płot, żeby ogrodzenie nie urywało się w pół ulicy
     { const near2=(a,b)=>a.bb[0]<b.bb[2]+2&&a.bb[2]>b.bb[0]-2&&a.bb[1]<b.bb[3]+2&&a.bb[3]>b.bb[1]-2; const share=(a,b)=>a.p.some(u=>b.p.some(v=>Math.hypot(u[0]-v[0],u[1]-v[1])<2));
       const cand=FPARC.filter(pc=>{ if(pc.res) return false; { const mm=mar(pc.p); if(Math.max(mm.w,mm.d)>60&&Math.min(mm.w,mm.d)<20) return false; } const ar=Math.abs(polyArea(pc.p)); if(ar<120||ar>2600) return false; const c=centroid(pc.p); if(noFence(c[0],c[1])||blocked(c[0],c[1],0)) return false; if(pc.p.some((a,i)=>{ const b=pc.p[(i+1)%pc.p.length]; const ex=b[0]-a[0], ez=b[1]-a[1], l2=ex*ex+ez*ez||1; const t=Math.max(0,Math.min(1,((B_ZAB.x-a[0])*ex+(B_ZAB.z-a[1])*ez)/l2)); return Math.hypot(a[0]+ex*t-B_ZAB.x,a[1]+ez*t-B_ZAB.z)<28; })) return false; /* przy Żabce (wjazd na parking) bez płotu */ return pc.p.some((a,i)=>{ const b=pc.p[(i+1)%pc.p.length]; return roadNear((a[0]+b[0])/2,(a[1]+b[1])/2,4.5); }); });
@@ -1395,13 +1395,13 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     { const FCUT=[[-122,-50,-112,-54],[-114,-59,-147,-43]]; for(const arr of [front,side]) for(let i=arr.length-1;i>=0;i--){ const q=arr[i]; if(FCUT.some(c=>segDist(q[0],q[1],c[0],c[1],c[2],c[3])<1.8)) arr.splice(i,1); } }
     { /* płot naprzeciw szkoły i przedszkola, za przychodnią (x -115 z -145 → x -104 z -63): wzdłuż podanej linii, ale nie bliżej niż 6,2 m od osi Szkolnej, żeby nie wchodził na chodnik */
         const LA=[-115,-145], LB=[-104,-63], pts=[], N0=34; for(let i=0;i<=N0;i++){ const t=i/N0; let x=LA[0]+(LB[0]-LA[0])*t, z=LA[1]+(LB[1]-LA[1])*t; const nr=nearestRoad(x,z,r=>r.t!=='track'&&r.n==='Szkolna'); if(nr.r&&nr.d<6.2){ const a2=nr.r.pts[nr.seg], b2=nr.r.pts[nr.seg+1]; const dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((x-a2[0])*dx+(z-a2[1])*dz)/l2,0,1), qx=a2[0]+dx*tt, qz=a2[1]+dz*tt, dd=Math.hypot(x-qx,z-qz)||1; x=qx+(x-qx)/dd*6.2; z=qz+(z-qz)/dd*6.2; } pts.push([x,z]); }
-        for(let i=0;i<pts.length-1;i++){ const A=pts[i], B=pts[i+1], l=Math.hypot(B[0]-A[0],B[1]-A[1]); if(l<.3) continue; const c=[(A[0]+B[0])/2,(A[1]+B[1])/2]; if(blocked(c[0],c[1],.15)||side.some(q=>Math.hypot(q[0]-c[0],q[1]-c[1])<1.1)||front.some(q=>Math.hypot(q[0]-c[0],q[1]-c[1])<1.1)) continue; side.push([c[0],c[1],Math.atan2(B[1]-A[1],B[0]-A[0]),l,1]); }
+        for(let i=0;i<pts.length-1;i++){ const A=pts[i], B=pts[i+1], l=Math.hypot(B[0]-A[0],B[1]-A[1]); if(l<.3) continue; const c=[(A[0]+B[0])/2,(A[1]+B[1])/2]; if(blocked(c[0],c[1],.15)||side.some(q=>Math.hypot(q[0]-c[0],q[1]-c[1])<1.1)||front.some(q=>Math.hypot(q[0]-c[0],q[1]-c[1])<1.1)) continue; CONC.push([c[0],c[1],Math.atan2(B[1]-A[1],B[0]-A[0]),l]); }
         { /* zwykła, otwierana brama na tym płocie, możliwie najbliżej x -110 z -95 */
           const GT=[-110,-95], GW=3.8; let bi=0,bd=1e9; for(let i=0;i<pts.length-1;i++){ const A=pts[i], B=pts[i+1], dx=B[0]-A[0], dz=B[1]-A[1], l2=dx*dx+dz*dz||1, tt=clamp(((GT[0]-A[0])*dx+(GT[1]-A[1])*dz)/l2,0,1), d=Math.hypot(A[0]+dx*tt-GT[0],A[1]+dz*tt-GT[1]); if(d<bd){ bd=d; bi=i; } }
           const A=pts[bi], B=pts[bi+1], ll=Math.hypot(B[0]-A[0],B[1]-A[1])||1, tx=(B[0]-A[0])/ll, tz=(B[1]-A[1])/ll; const t0=clamp((GT[0]-A[0])*tx+(GT[1]-A[1])*tz,0,ll); const C=[A[0]+tx*t0, A[1]+tz*t0];
-          for(let i=side.length-1;i>=0;i--){ const q=side[i]; if(Math.abs((q[0]-C[0])*tx+(q[1]-C[1])*tz)<GW/2+q[3]/2&&Math.abs(-(q[0]-C[0])*tz+(q[1]-C[1])*tx)<1.2) side.splice(i,1); }
+          for(let i=CONC.length-1;i>=0;i--){ const q=CONC[i]; if(Math.abs((q[0]-C[0])*tx+(q[1]-C[1])*tz)<GW/2+q[3]/2&&Math.abs(-(q[0]-C[0])*tz+(q[1]-C[1])*tx)<1.2) CONC.splice(i,1); }
           let nx=-tz, nz=tx; const sr=nearestRoad(C[0],C[1],r=>r.t!=='track'&&r.n==='Szkolna'); if(sr.r){ const a2=sr.r.pts[sr.seg], b2=sr.r.pts[sr.seg+1]; const dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((C[0]-a2[0])*dx+(C[1]-a2[1])*dz)/l2,0,1); if((a2[0]+dx*tt-C[0])*nx+(a2[1]+dz*tt-C[1])*nz<0){ nx=-nx; nz=-nz; } }
-          GAPS.push({x0:C[0]-tx*GW/2,z0:C[1]-tz*GW/2,x1:C[0]+tx*GW/2,z1:C[1]+tz*GW/2,G:GW,tx,tz,nx,nz,pc:null,onlyBrama:true,steel:false,green:true}); } }
+          GAPS.push({x0:C[0]-tx*GW/2,z0:C[1]-tz*GW/2,x1:C[0]+tx*GW/2,z1:C[1]+tz*GW/2,G:GW,tx,tz,nx,nz,pc:null,onlyBrama:true,steel:false}); } }
     { /* przegląd całej mapy: żaden odcinek płotu nie może stać na jezdni ani na chodniku (jezdnia + pas chodnika przy ulicach z chodnikiem), ani wchodzić w budynek */
       const RS=new Map(); ROADS.forEach(r=>{ if(r.t==='track'||!r.pts) return; const sw=(r.sw||r.main||SIDEWALK.has(r.n))?2.5:.35, lim=(r.w||4)/2+sw; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i], b=r.pts[i+1]; const x0=Math.floor((Math.min(a[0],b[0])-lim)/40), x1=Math.floor((Math.max(a[0],b[0])+lim)/40), z0=Math.floor((Math.min(a[1],b[1])-lim)/40), z1=Math.floor((Math.max(a[1],b[1])+lim)/40); for(let gx=x0;gx<=x1;gx++)for(let gz=z0;gz<=z1;gz++){ const k=gx+','+gz; (RS.get(k)||RS.set(k,[]).get(k)).push([a[0],a[1],b[0],b[1],lim]); } } });
       const onRoad=(x,z)=>{ const L=RS.get(Math.floor(x/40)+','+Math.floor(z/40)); if(!L) return false; for(const q of L) if(segDist(x,z,q[0],q[1],q[2],q[3])<q[4]) return true; return false; };
@@ -1421,32 +1421,46 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       const bl=BLD.filter(b=>!b.skip&&b.w&&b.d&&isFinite(b.x)); const bg=new Map(); bl.forEach(b=>{ const k=Math.floor(b.x/30)+','+Math.floor(b.z/30); (bg.get(k)||bg.set(k,[]).get(k)).push(b); });
       const inB=(x,z,self,m)=>{ const gx=Math.floor(x/30), gz=Math.floor(z/30); for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++) for(const o of (bg.get((gx+i)+','+(gz+j))||[])){ if(o===self||o.kind==='out'&&Math.min(o.w,o.d)<4) continue; const c=Math.cos(o.a),s=Math.sin(o.a),dx=x-o.x,dz=z-o.z; if(Math.abs(dx*c+dz*s)<o.w/2+m&&Math.abs(-dx*s+dz*c)<o.d/2+m) return true; } return false; };
       const put=(arr,x,z,ang,len)=>{ if(noFence(x,z)||roadNear(x,z,1.2)||x<X0+40||x>X1-40||z<Z0+40||z>Z1-40) return; const k=cell(x,z); const pr=seenP.get(k); if(pr&&pr.some(a=>Math.abs(Math.sin(a-ang))<.35)) return; if(inB(x,z,null,.35)) return; (seenP.get(k)||seenP.set(k,[]).get(k)).push(ang); arr.push([x,z,ang,len]); };
-      const edge=(arr,A,B,gap)=>{ const L=Math.hypot(B[0]-A[0],B[1]-A[1]); if(L<1) return; const n=Math.max(1,Math.round(L/2.6)), ang=Math.atan2(B[1]-A[1],B[0]-A[0]); for(let k=0;k<n;k++){ const t0=k/n,t1=(k+1)/n,tm=(t0+t1)/2; if(gap&&Math.abs(tm-.5)*L<gap/2+.01) continue; const x0=A[0]+(B[0]-A[0])*t0,z0=A[1]+(B[1]-A[1])*t0,x1=A[0]+(B[0]-A[0])*t1,z1=A[1]+(B[1]-A[1])*t1; put(arr,(x0+x1)/2,(z0+z1)/2,ang,L/n); } };
-      const NEWG=[]; window.__newg=NEWG;
+      const edge=(arr,A,B,gap,off)=>{ const L=Math.hypot(B[0]-A[0],B[1]-A[1]); if(L<1) return; const n=Math.max(1,Math.round(L/2.6)), ang=Math.atan2(B[1]-A[1],B[0]-A[0]); for(let k=0;k<n;k++){ const t0=k/n,t1=(k+1)/n,tm=(t0+t1)/2; if(gap&&Math.abs((tm-.5)*L-(off||0))<gap/2+.01) continue; const x0=A[0]+(B[0]-A[0])*t0,z0=A[1]+(B[1]-A[1])*t0,x1=A[0]+(B[0]-A[0])*t1,z1=A[1]+(B[1]-A[1])*t1; put(arr,(x0+x1)/2,(z0+z1)/2,ang,L/n); } };
+      const NEWG=[]; window.__newg=NEWG; const R=[];
       const gateAt=(A,B,nx,nz)=>{ const G=Math.hypot(B[0]-A[0],B[1]-A[1]); NEWG.push({x0:A[0],z0:A[1],x1:B[0],z1:B[1],G,tx:(B[0]-A[0])/G,tz:(B[1]-A[1])/G,nx,nz,pc:null}); };
-      bl.forEach(b=>{ if(b.kind!=='house'&&b.kind!=='farm') return; if(Math.min(b.w,b.d)<4||b.w*b.d<40) return;
-        const ux=Math.cos(b.a), uz=Math.sin(b.a), vx=-Math.sin(b.a), vz=Math.cos(b.a);
-        const nr=nearestRoad(b.x,b.z,r=>!NOT.includes(r.t)); let done=false;
+      const isTarget=b=>b.kind==='house'||b.kind==='farm'||(Math.hypot(b.x+80,b.z-17)<3&&Math.abs(b.d-14)<1.5);   // + dom naprzeciw Lewiatana (obok Żabki)
+      bl.forEach(b=>{ if(!isTarget(b)) return; if(Math.min(b.w,b.d)<4||b.w*b.d<40) return;
+        const conc=Math.hypot(b.x+80,b.z-17)<3; const ux=Math.cos(b.a), uz=Math.sin(b.a), vx=-Math.sin(b.a), vz=Math.cos(b.a);
+        const nr=nearestRoad(b.x,b.z,r=>!NOT.includes(r.t)); let rc=null;
         if(nr.r&&nr.d<60){ const a=nr.r.pts[nr.seg], c=nr.r.pts[nr.seg+1]; const dx=c[0]-a[0],dz=c[1]-a[1],l2=dx*dx+dz*dz||1, tt=clamp(((b.x-a[0])*dx+(b.z-a[1])*dz)/l2,0,1); const q=[a[0]+dx*tt,a[1]+dz*tt]; const Ll=Math.sqrt(l2), Tx=dx/Ll, Tz=dz/Ll; let nx=-Tz, nz=Tx; if((b.x-q[0])*nx+(b.z-q[1])*nz<0){ nx=-nx; nz=-nz; }
           const Lb=(b.x-q[0])*nx+(b.z-q[1])*nz, tb=(b.x-q[0])*Tx+(b.z-q[1])*Tz; const sup=(ax,az)=>Math.abs(ux*ax+uz*az)*b.w/2+Math.abs(vx*ax+vz*az)*b.d/2; const hn=sup(nx,nz), hT=sup(Tx,Tz);
           const sw=(nr.r.sw||nr.r.main||SIDEWALK.has(nr.r.n))?2.5:.35; const Lmin=nr.r.w/2+sw+.15; let Lf=nr.r.w/2+sw+.9; if(Lb-hn-1.3<Lf) Lf=Math.max(Lmin,Lb-hn-1.3);
-          if(Lb-hn-Lf<26){ done=true; const sM=Math.max(4,Math.min(8,hT*.5)), Lback=Lb+hn+9, Tm=hT+sM; const P=(l,t)=>[q[0]+nx*l+Tx*(t-tb*0)+0,q[1]+nz*l+Tz*t];
-            const t0=-Tm+tb, t1=Tm+tb; const gt=tb; const GA=P(Lf,gt-2.6), GB=P(Lf,gt+2.6);
-            edge(front,P(Lf,t0),P(Lf,t1),5.2); gateAt(GA,GB,nx,nz);
-            edge(side,P(Lf,t1),P(Lback,t1),0); edge(side,P(Lf,t0),P(Lback,t0),0); edge(side,P(Lback,t0),P(Lback,t1),0); } }
-        if(!done){ build(b,vx,vz,-vz,vx,b.d/2,b.w/2,6); } });
-      function build(b,fx,fz,tx,tz,hs,ht,dF){ const sM=Math.max(4,Math.min(8,ht*.6)), bM=9, T=ht+sM, S0=-(hs+bM), S1=hs+dF; const P=(s,t)=>[b.x+fx*s+tx*t,b.z+fz*s+tz*t];
-        edge(front,P(S1,-T),P(S1,T),5.2); gateAt(P(S1,-2.6),P(S1,2.6),-fx,-fz);
-        edge(side,P(S1,T),P(S0,T),0); edge(side,P(S1,-T),P(S0,-T),0); edge(side,P(S0,-T),P(S0,T),0); }
+          if(Lb-hn-Lf<26){ const sM=Math.max(4,Math.min(8,hT*.5)); rc={b,conc,q,nx,nz,Tx,Tz,l0:Lf,l1:Lb+hn+9,lb:Lb,t0:tb-hT-sM,t1:tb+hT+sM,tb,hT,hn,road:true}; } }
+        if(!rc){ const hs=b.d/2, ht=b.w/2, sM=Math.max(4,Math.min(8,ht*.6)); rc={b,conc,q:[b.x,b.z],nx:-vx,nz:-vz,Tx:vz,Tz:-vx,l0:-(hs+6),l1:hs+9,lb:0,t0:-(ht+sM),t1:ht+sM,tb:0,hT:ht,hn:hs,road:false}; }
+        R.push(rc); });
+      /* sąsiednie działki: płot kończy się tam, gdzie zaczyna się płot sąsiada - wspólna granica w połowie między budynkami */
+      { const G2=new Map(); const key=(x,z)=>Math.floor(x/40)+','+Math.floor(z/40); R.forEach((r,i)=>{ r.i=i; r.cx=r.q[0]+r.nx*r.lb+r.Tx*r.tb; r.cz=r.q[1]+r.nz*r.lb+r.Tz*r.tb; (G2.get(key(r.cx,r.cz))||G2.set(key(r.cx,r.cz),[]).get(key(r.cx,r.cz))).push(r); });
+        const loc=(r,x,z)=>[(x-r.q[0])*r.nx+(z-r.q[1])*r.nz,(x-r.q[0])*r.Tx+(z-r.q[1])*r.Tz];
+        R.forEach(A=>{ const gx=Math.floor(A.cx/40), gz=Math.floor(A.cz/40); for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)(G2.get((gx+i)+','+(gz+j))||[]).forEach(B=>{ if(B.i<=A.i) return; if(Math.hypot(A.cx-B.cx,A.cz-B.cz)>70) return;
+          if(A.Tx*B.Tx+A.Tz*B.Tz<.8||A.nx*B.nx+A.nz*B.nz<.8) return;                    // różne kierunki - pomijamy
+          const [lB,tB]=loc(A,B.cx,B.cz); const dl=lB-A.lb, dt=tB-A.tb;
+          const ovT=Math.min(A.t1,tB-B.hT-(B.tb-B.t0-B.hT)+0)>-1e9;                                     // (zachowawczo)
+          const Bt0=tB-(B.tb-B.t0), Bt1=tB+(B.t1-B.tb); const Bl0=B.l0-B.lb+lB, Bl1=B.l1-B.lb+lB;           // zakresy B we współrzędnych A
+          if(Math.min(A.l1,Bl1)-Math.max(A.l0,Bl0)<1.5) return; if(Math.min(A.t1,Bt1)-Math.max(A.t0,Bt0)<.5) return;   // brak nakładania
+          if(Math.abs(dt)>=Math.abs(dl)*.9){ // obok siebie wzdłuż drogi
+            let lo=A, hi=B, ao=0; let mA,mB; if(dt>0){ const a1=A.tb+A.hT, b0=tB-B.hT; const m=a1<b0?(a1+b0)/2:(A.tb+tB)/2; A.t1=Math.min(A.t1,m); B.t0=Math.max(B.t0,m-(tB-B.tb)); }
+            else { const a0=A.tb-A.hT, b1=tB+B.hT; const m=b1<a0?(a0+b1)/2:(A.tb+tB)/2; A.t0=Math.max(A.t0,m); B.t1=Math.min(B.t1,m-(tB-B.tb)); } }
+          else { // jeden za drugim (głębia): wspólna granica w połowie
+            if(dl>0){ const m=((A.lb+A.hn)+(lB-B.hn))/2; A.l1=Math.min(A.l1,m); B.l0=Math.max(B.l0,m-(lB-B.lb)); } else { const m=((A.lb-A.hn)+(lB+B.hn))/2; A.l0=Math.max(A.l0,m); B.l1=Math.min(B.l1,m-(lB-B.lb)); } } }); }); }
+      R.forEach(r=>{ r.t0=Math.min(r.t0,r.tb-r.hT-.5); r.t1=Math.max(r.t1,r.tb+r.hT+.5); const F=r.conc?CONC:front, S=r.conc?CONC:side; const P=(l,t)=>[r.q[0]+r.nx*l+r.Tx*t,r.q[1]+r.nz*l+r.Tz*t];
+        const gc=clamp(r.tb,r.t0+3.4,r.t1-3.4); edge(F,P(r.l0,r.t0),P(r.l0,r.t1),5.2,gc-(r.t0+r.t1)/2); gateAt(P(r.l0,gc-2.6),P(r.l0,gc+2.6),r.nx,r.nz);
+        edge(S,P(r.l0,r.t1),P(r.l1,r.t1),0); edge(S,P(r.l0,r.t0),P(r.l1,r.t0),0); edge(S,P(r.l1,r.t0),P(r.l1,r.t1),0); });
     }
 
-    [...front,...side].forEach(p=>addSolid({x:p[0],z:p[1],hw:p[3]/2+.05,hd:.07,c:Math.cos(p[2]),s:Math.sin(p[2]),r:p[3]/2+.2}));
+    [...front,...side,...CONC].forEach(p=>addSolid({x:p[0],z:p[1],hw:p[3]/2+.05,hd:.07,c:Math.cos(p[2]),s:Math.sin(p[2]),r:p[3]/2+.2}));
     // przerwy w płotach od ulicy -> furtka i brama
     FPARC.forEach(pc=>{ if(!pc.gaps)return; const byEdge={}; pc.gaps.forEach(g=>{ (byEdge[g[4]]=byEdge[g[4]]||[]).push(g); });
       Object.values(byEdge).forEach(gs=>{ const a=gs[0][0], b=gs[0][1]; const t0=Math.min(...gs.map(g=>g[2])), t1=Math.max(...gs.map(g=>g[3])); const x0=a[0]+(b[0]-a[0])*t0, z0=a[1]+(b[1]-a[1])*t0, x1=a[0]+(b[0]-a[0])*t1, z1=a[1]+(b[1]-a[1])*t1;
         const G=Math.hypot(x1-x0,z1-z0); if(G<1.4)return; if(roadNear(x0,z0,.3)||roadNear(x1,z1,.3)||roadNear((x0+x1)/2,(z0+z1)/2,.3))return; const tx=(x1-x0)/G, tz=(z1-z0)/G; const cc=centroid(pc.p); let nx=-tz,nz=tx; if((cc[0]-x0)*nx+(cc[1]-z0)*nz<0){nx=-nx;nz=-nz;}
         GAPS.push({x0,z0,x1,z1,G,tx,tz,nx,nz,pc}); }); });
-    GAPS.length=0;   // stare furtki i bramy (usunięte płoty działek)
+    const KEEPG=GAPS.filter(g=>g.onlyBrama&&g.pc===null); GAPS.length=0;   // stare furtki i bramy (usunięte płoty działek) - zostaje brama w płocie naprzeciw przedszkola
+    KEEPG.forEach(g=>GAPS.push(g));
     window.__newg.forEach(g=>{ if(!roadNear(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2,.2)&&!noFence(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2)) GAPS.push(g); });   // brama + furtka w każdym nowym ogrodzeniu
     const fT=tex(64,32,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='rgba(50,56,52,1)'; for(let i=0;i<w;i+=6)x.fillRect(i,0,2,h); x.fillRect(0,2,w,3); x.fillRect(0,h-5,w,3); });
     const sT=tex(64,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='rgba(60,95,60,.95)'; x.lineWidth=1.4; for(let i=-w;i<w*2;i+=8){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } x.lineWidth=3; x.beginPath(); x.moveTo(0,1.5); x.lineTo(w,1.5); x.stroke(); });
@@ -1456,6 +1470,15 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     mkFence(front,new THREE.PlaneGeometry(1,1.3).translate(0,.9,0),fm,true);
     window.__fz={front,side};
     mkFence(side,new THREE.PlaneGeometry(1,1.25).translate(0,.62,0),sm,false);
+    /* ogrodzenia z prefabrykatów betonowych (jak przy Szkolnej): cokół z „cegiełek”, ażurowe łuki, betonowe słupki */
+    { const cT=tex(256,128,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='#8e8b83'; x.fillRect(0,0,w,h); noise(x,w,h,1800,110,175,.3,1.2);
+        x.globalCompositeOperation='destination-out'; for(let c=0;c<7;c++){ const cx=22+c*35; x.beginPath(); x.moveTo(cx-12,60); x.lineTo(cx-12,24); x.quadraticCurveTo(cx,6,cx+12,24); x.lineTo(cx+12,60); x.closePath(); x.fill(); }
+        x.globalCompositeOperation='source-over'; x.fillStyle='#8f8c84'; x.fillRect(0,64,w,5); x.strokeStyle='rgba(70,68,62,.55)'; x.lineWidth=2; for(let r=0;r<3;r++){ const y=72+r*19; x.beginPath(); x.moveTo(0,y); x.lineTo(w,y); x.stroke(); for(let c=(r%2)*18;c<w;c+=36){ x.beginPath(); x.moveTo(c,y); x.lineTo(c,y+19); x.stroke(); } } });
+      cT.generateMipmaps=false; cT.minFilter=THREE.LinearFilter; cT.needsUpdate=true;
+      const cm=new THREE.MeshLambertMaterial({map:cT,transparent:true,alphaTest:.4,side:THREE.DoubleSide});
+      mkFence(CONC,new THREE.PlaneGeometry(1,1.6).translate(0,.8,0),cm,false);
+      const pc=new THREE.InstancedMesh(new THREE.BoxGeometry(.22,1.75,.22).translate(0,.875,0),new THREE.MeshLambertMaterial({color:0xa19e95}),Math.max(1,CONC.length)); let k=0;
+      CONC.forEach(q=>{ const dx=Math.cos(q[2])*q[3]/2, dz=Math.sin(q[2])*q[3]/2; dum.position.set(q[0]-dx,H(q[0]-dx,q[1]-dz),q[1]-dz); dum.rotation.set(0,-q[2],0); dum.scale.set(1,1,1); dum.updateMatrix(); pc.setMatrixAt(k++,dum.matrix); }); pc.count=k; scene.add(pc); }
     // słupki
     const posts=[...front,...side].filter((_,i)=>i%2===0); const pim=new THREE.InstancedMesh(new THREE.BoxGeometry(.08,1.5,.08).translate(0,.75,0),new THREE.MeshLambertMaterial({color:0x3e4442}),Math.max(1,posts.length));
     posts.forEach((p,i)=>{ const x=p[0]+Math.cos(p[2])*p[3]/2, z=p[1]+Math.sin(p[2])*p[3]/2; dum.position.set(x,H(x,z),z); dum.rotation.set(0,0,0); dum.scale.set(1,1,1); dum.updateMatrix(); pim.setMatrixAt(i,dum.matrix); }); scene.add(pim); }
