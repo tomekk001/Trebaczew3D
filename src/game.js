@@ -2007,7 +2007,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const q=best.q, o=best.r.w/2+1.35; let nx=-q.tz, nz=q.tx; if((sc[0]-q.x)*nx+(sc[1]-q.z)*nz<0){ nx=-nx; nz=-nz; } let x=q.x+nx*o, z=q.z+nz*o; if(blocked(x,z,.5)){ x=q.x+nx*(best.r.w/4); z=q.z+nz*(best.r.w/4); }
     return {x,z,yaw:Math.atan2(x-ch[0],z-ch[1])}; })();
   // ostatnia pozycja z poprzedniej sesji (localStorage) - tylko gdy to wolne miejsce na zewnątrz
-  const LASTPOS=(()=>{ try{ const v=JSON.parse(localStorage.getItem('trebaczew-gra')||'null'); if(v&&isFinite(v.px)&&isFinite(v.pz)&&Math.abs(v.px)<2000&&Math.abs(v.pz)<2000&&!blocked(v.px,v.pz,.5)) return {x:+v.px,z:+v.pz,yaw:isFinite(v.pyaw)?+v.pyaw:SPAWN.yaw}; }catch(e){} return null; })();
+  const LASTPOS=(()=>{ try{ const v=JSON.parse(localStorage.getItem('trebaczew-gra')||'null'); if(v&&isFinite(v.px)&&isFinite(v.pz)&&v.px>X0+20&&v.px<X1-20&&v.pz>Z0+20&&v.pz<Z1-20&&!blocked(v.px,v.pz,.5)) return {x:+v.px,z:+v.pz,yaw:isFinite(v.pyaw)?+v.pyaw:SPAWN.yaw}; }catch(e){} return null; })();
   if(LASTPOS&&saved.x===undefined){ saved={...saved,x:LASTPOS.x,z:LASTPOS.z,yaw:LASTPOS.yaw}; }
   const st={x:saved.x??SPAWN.x, z:saved.z??SPAWN.z, yaw:saved.yaw??SPAWN.yaw, pitch:0.22, dist:6.5, mode:saved.mode??0, night:!!saved.night, face:saved.yaw===undefined?SPAWN.yaw+Math.PI:0, walk:0, run:false,
     money:saved.money??0, hp:100, wanted:0, wantedT:0, car:null, lastDrag:-9};
@@ -2472,7 +2472,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const bar=new THREE.Group(); const r=new THREE.Mesh(new THREE.BoxGeometry(.3,.15,.5),new THREE.MeshBasicMaterial({color:0xff2020})), b=new THREE.Mesh(new THREE.BoxGeometry(.3,.15,.5),new THREE.MeshBasicMaterial({color:0x2040ff})); r.position.z=.3; b.position.z=-.3; bar.add(r,b); bar.position.set(-.45,1.53,0); g.add(bar);
     const pt=tex(256,48,(x)=>{ x.fillStyle='#1f4fa3'; x.fillRect(0,0,256,48); x.fillStyle='#fff'; x.font='700 34px Barlow, Arial'; x.textAlign='center'; x.fillText('POLICJA',128,36); }); [.94,-.94].forEach(z=>{ const p=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.4),new THREE.MeshBasicMaterial({map:pt})); p.position.set(0,.66,z*.98); if(z<0)p.rotation.y=Math.PI; g.add(p); });
     const light=new THREE.PointLight(0xff2020,0,25,2); light.position.set(0,2.4,0); g.add(light); g.userData.bar=[r,b]; g.userData.light=light; return g; }
-  function spawnCop(){ for(let t=0;t<40;t++){ const r=pick(ROADS.filter(q=>q.t!=='track'&&q.L>60)); const s=sampleLine(r.pts,r.len,R(0,r.L)); const d=Math.hypot(s.x-st.x,s.z-st.z); if(d<45||d>200||blocked(s.x,s.z,2))continue; const g=makeCop(); scene.add(g); COPS.push({g,x:s.x,z:s.z,h:Math.atan2(st.z-s.z,st.x-s.x),v:0,hitT:-9,far:0}); return; } }
+  function spawnCop(){ for(let t=0;t<60;t++){ const an=R(0,6.28), dd=R(50,190), qx=st.x+Math.cos(an)*dd, qz=st.z+Math.sin(an)*dd; const sg=(RSEG.get(Math.floor(qx/30)+','+Math.floor(qz/30))||[]).filter(e=>e[0].t!=='track'&&e[0].t!=='rail'&&e[0].t!=='path'&&e[0].t!=='foot'&&e[0].t!=='footway'); if(!sg.length)continue; const e=pick(sg), a=e[1], b=e[2], ex=b[0]-a[0], ez=b[1]-a[1], l2=ex*ex+ez*ez||1, u=clamp(((qx-a[0])*ex+(qz-a[1])*ez)/l2,0,1); const s={x:a[0]+ex*u,z:a[1]+ez*u}; const d=Math.hypot(s.x-st.x,s.z-st.z); if(d<45||d>200||blocked(s.x,s.z,2))continue; const g=makeCop(); scene.add(g); COPS.push({g,x:s.x,z:s.z,h:Math.atan2(st.z-s.z,st.x-s.x),v:0,hitT:-9,far:0}); return; } }
   let copHitT=-9, trafficHitT=-9;
 
   await LP(86);
