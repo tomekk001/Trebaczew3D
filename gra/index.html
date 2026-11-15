@@ -852,6 +852,20 @@ async function boot(saved){
     ROADS.push({t,n,ref,w:n==='Zacisze'?3.6:(WIDTH[t]||4),pts,main:t==='primary'}); });
   if(typeof DATA_X!=='undefined'){ const dk=ROADS.find(r=>r.main); if(dk&&DATA_X.DK&&DATA_X.DK.length>4) dk.pts=dec(DATA_X.DK);
     DATA_X.R.forEach(([t,n,ref,d])=>{ const pts=dec(d); if(t.startsWith('rail')){ RAILS.push(pts); return; } ROADS.push({t,n:RENAME[n]||n,ref,w:WIDTH[t]||4,pts,main:false,ext:true}); }); }
+  /* rondo w Działoszynie (x -2887, z 1278 = 51.11864, 18.88027): w danych OSM pętla rond jest poszarpana i bez południowego łuku - budujemy je od nowa jako równy okrąg, z ramionami DK42, Dmowskiego i Mickiewicza */
+  try{ const RB={x:-2887,z:1278,r:14.2}; const dc=q=>Math.hypot(q[0]-RB.x,q[1]-RB.z); const ptOn=a=>[RB.x+Math.cos(a)*RB.r,RB.z+Math.sin(a)*RB.r]; const arc=(a0,a1)=>{ const o=[]; const n=Math.max(3,Math.ceil(Math.abs(a1-a0)/.12)); for(let k=0;k<=n;k++) o.push(ptOn(a0+(a1-a0)*k/n)); return o; };
+    const dk0=ROADS.find(r=>r.main); const P=dk0&&dk0.pts;
+    if(P){ const iA=P.findIndex(q=>dc(q)<RB.r+5); let iB=-1; for(let i=P.length-1;i>=0;i--){ if(dc(P[i])<RB.r+5){ iB=i; break; } }
+      if(iA>0&&iB>iA){ const tail=P.slice(iB+1).filter(q=>dc(q)>RB.r+20); const a0=Math.atan2(P[iA][1]-RB.z,P[iA][0]-RB.x)+(P[iA][1]-RB.z<0?Math.PI*2:0), aE=Math.PI*2-.61;
+        const head=P.slice(0,iA); dk0.pts=head.concat(arc(a0<Math.PI?a0+0:a0,aE>a0?aE:aE+Math.PI*2),tail);
+        ROADS.push({t:'primary',n:dk0.n,ref:dk0.ref,w:dk0.w,pts:arc(aE-.1,a0+Math.PI*2+.1),main:true,ext:true,rondo:true}); } }
+    const near=(q,x,z)=>q&&Math.hypot(q[0]-x,q[1]-z)<2.5;
+    for(let i=ROADS.length-1;i>=0;i--){ const r=ROADS[i]; if(!r.ext||!r.pts||r.pts.length<2||r.rondo) continue; const f=r.pts[0], l=r.pts[r.pts.length-1];
+      if(near(f,-2879,1302)&&near(l,-2879,1289)){ ROADS.splice(i,1); continue; }          // zdublowane ramię Dmowskiego
+      if(near(f,-2901,1241)&&near(l,-2897,1259)){ ROADS.splice(i,1); continue; }          // zdublowany pas Mickiewicza
+      if(near(f,-2888,1292)&&near(l,-2879,1302)) r.pts[0]=ptOn(Math.PI/2);                // Dmowskiego od południa
+      if(near(f,-2891,1258)&&near(l,-2901,1241)) r.pts.unshift(ptOn(-Math.PI/2)); }        // Mickiewicza od północy
+  }catch(e){}
   ROADS.forEach(r=>{ r.len=lineLen(r.pts); r.L=r.len[r.len.length-1]; });
   const DK=ROADS.find(r=>r.main);
   { const band=DK.w/2+.6; const extra=[]; const inB=q=>roadDist(DK,q[0],q[1])<band;
@@ -2190,6 +2204,20 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       /* wejścia do lokali (np. Euforia) muszą być dostępne - żadnych płotów w promieniu 11 m od drzwi */
       { const DOORS=[[-162.2,-334.4]]; [front,side].forEach(A=>{ for(let i=A.length-1;i>=0;i--){ const q=A[i]; if(DOORS.some(d=>Math.hypot(q[0]-d[0],q[1]-d[1])<11)) A.splice(i,1); } }); } }
     front.length=0; side.length=0;   // na życzenie: usunięte wszystkie generowane płoty działek i osiedli (zostają ogrodzenia szkoły, przedszkola, altanki, orlika, OSP i firm)
+    /* nowe ogrodzenia: tylko wokół domów i gospodarstw - równy prostokąt wokół budynku (front do drogi z furtką-przerwą, boki i tył), bez ogrodzeń na polach */
+    { const NOT=['track','rail','path','foot','footway','srv','service']; const seenP=new Map(); const cell=(x,z)=>Math.round(x/1.3)+','+Math.round(z/1.3);
+      const bl=BLD.filter(b=>!b.skip&&b.w&&b.d&&isFinite(b.x)); const bg=new Map(); bl.forEach(b=>{ const k=Math.floor(b.x/30)+','+Math.floor(b.z/30); (bg.get(k)||bg.set(k,[]).get(k)).push(b); });
+      const inB=(x,z,self,m)=>{ const gx=Math.floor(x/30), gz=Math.floor(z/30); for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++) for(const o of (bg.get((gx+i)+','+(gz+j))||[])){ if(o===self||o.kind==='out'&&Math.min(o.w,o.d)<4) continue; const c=Math.cos(o.a),s=Math.sin(o.a),dx=x-o.x,dz=z-o.z; if(Math.abs(dx*c+dz*s)<o.w/2+m&&Math.abs(-dx*s+dz*c)<o.d/2+m) return true; } return false; };
+      const put=(arr,x,z,ang,len)=>{ if(noFence(x,z)||roadNear(x,z,1.2)||x<X0+40||x>X1-40||z<Z0+40||z>Z1-40) return; const k=cell(x,z); const pr=seenP.get(k); if(pr&&pr.some(a=>Math.abs(Math.sin(a-ang))<.35)) return; if(inB(x,z,null,.35)) return; (seenP.get(k)||seenP.set(k,[]).get(k)).push(ang); arr.push([x,z,ang,len]); };
+      const edge=(arr,A,B,gap)=>{ const L=Math.hypot(B[0]-A[0],B[1]-A[1]); if(L<1) return; const n=Math.max(1,Math.round(L/2.6)), ang=Math.atan2(B[1]-A[1],B[0]-A[0]); for(let k=0;k<n;k++){ const t0=k/n,t1=(k+1)/n,tm=(t0+t1)/2; if(gap&&Math.abs(tm-.5)*L<gap/2+.01) continue; const x0=A[0]+(B[0]-A[0])*t0,z0=A[1]+(B[1]-A[1])*t0,x1=A[0]+(B[0]-A[0])*t1,z1=A[1]+(B[1]-A[1])*t1; put(arr,(x0+x1)/2,(z0+z1)/2,ang,L/n); } };
+      bl.forEach(b=>{ if(b.kind!=='house'&&b.kind!=='farm') return; if(Math.min(b.w,b.d)<4||b.w*b.d<40) return;
+        const nr=nearestRoad(b.x,b.z,r=>!NOT.includes(r.t)); const ux=Math.cos(b.a), uz=Math.sin(b.a), vx=-Math.sin(b.a), vz=Math.cos(b.a);
+        let fx=vx,fz=vz,hs=b.d/2,ht=b.w/2,gap=0; if(nr.r&&nr.d<70){ const a=nr.r.pts[nr.seg], c=nr.r.pts[nr.seg+1]; const dx=c[0]-a[0],dz=c[1]-a[1],l2=dx*dx+dz*dz||1, t=clamp(((b.x-a[0])*dx+(b.z-a[1])*dz)/l2,0,1); const qx=a[0]+dx*t,qz=a[1]+dz*t; const rx=qx-b.x,rz=qz-b.z; const pu=rx*ux+rz*uz, pv=rx*vx+rz*vz; if(Math.abs(pu)>Math.abs(pv)){ fx=Math.sign(pu)*ux; fz=Math.sign(pu)*uz; hs=b.w/2; ht=b.d/2; } else { fx=Math.sign(pv)*vx; fz=Math.sign(pv)*vz; hs=b.d/2; ht=b.w/2; } const gapRoad=nr.d-nr.r.w/2-hs; const dF=clamp(gapRoad-3.2,2.2,9); const tx=-fz, tz=fx; build(b,fx,fz,tx,tz,hs,ht,dF); } else { const tx=-fz, tz=fx; build(b,fx,fz,tx,tz,hs,ht,6); } });
+      function build(b,fx,fz,tx,tz,hs,ht,dF){ const sM=Math.max(4,Math.min(8,ht*.6)), bM=9, T=ht+sM, S0=-(hs+bM), S1=hs+dF; const P=(s,t)=>[b.x+fx*s+tx*t,b.z+fz*s+tz*t];
+        edge(front,P(S1,-T),P(S1,T),3.2);        // front od drogi, w środku furtka
+        edge(side,P(S1,T),P(S0,T),0); edge(side,P(S1,-T),P(S0,-T),0); edge(side,P(S0,-T),P(S0,T),0); }
+    }
+
     [...front,...side].forEach(p=>addSolid({x:p[0],z:p[1],hw:p[3]/2+.05,hd:.07,c:Math.cos(p[2]),s:Math.sin(p[2]),r:p[3]/2+.2}));
     // przerwy w płotach od ulicy -> furtka i brama
     FPARC.forEach(pc=>{ if(!pc.gaps)return; const byEdge={}; pc.gaps.forEach(g=>{ (byEdge[g[4]]=byEdge[g[4]]||[]).push(g); });
@@ -2209,6 +2237,9 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const posts=[...front,...side].filter((_,i)=>i%2===0); const pim=new THREE.InstancedMesh(new THREE.BoxGeometry(.08,1.5,.08).translate(0,.75,0),new THREE.MeshLambertMaterial({color:0x3e4442}),Math.max(1,posts.length));
     posts.forEach((p,i)=>{ const x=p[0]+Math.cos(p[2])*p[3]/2, z=p[1]+Math.sin(p[2])*p[3]/2; dum.position.set(x,H(x,z),z); dum.rotation.set(0,0,0); dum.scale.set(1,1,1); dum.updateMatrix(); pim.setMatrixAt(i,dum.matrix); }); scene.add(pim); }
 
+  /* wyspa środkowa ronda w Działoszynie: trawnik z obrzeżem */
+  { const C=[-2887,1278]; const mk=(g,mat,dy)=>{ g.rotateX(-Math.PI/2); const ps=g.attributes.position; for(let i=0;i<ps.count;i++){ const x=C[0]+ps.getX(i), z=C[1]+ps.getZ(i); ps.setX(i,x); ps.setZ(i,z); ps.setY(i,H(x,z)+dy); } g.computeVertexNormals(); const m=new THREE.Mesh(g,mat); m.receiveShadow=true; scene.add(m); };
+    mk(new THREE.CircleGeometry(9.6,48),new THREE.MeshLambertMaterial({color:0x5f9a45}),.16); mk(new THREE.RingGeometry(9.6,10.4,48),new THREE.MeshLambertMaterial({color:0xcfcac0}),.19); }
   /* ---------- furtki i bramy w przerwach płotów (otwierane klawiszem E) ---------- */
   ORLIK_GAPS.forEach(g=>GAPS.push(g)); OSP_REQ.forEach(g=>GAPS.push(g)); KG_REQ.forEach(g=>GAPS.push(g));
   { const gm=new THREE.MeshLambertMaterial({color:0x2f3532}), pm=new THREE.MeshLambertMaterial({color:0x8f8a82,map:plasterTex});
