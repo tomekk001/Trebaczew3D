@@ -1422,11 +1422,21 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       const inB=(x,z,self,m)=>{ const gx=Math.floor(x/30), gz=Math.floor(z/30); for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++) for(const o of (bg.get((gx+i)+','+(gz+j))||[])){ if(o===self||o.kind==='out'&&Math.min(o.w,o.d)<4) continue; const c=Math.cos(o.a),s=Math.sin(o.a),dx=x-o.x,dz=z-o.z; if(Math.abs(dx*c+dz*s)<o.w/2+m&&Math.abs(-dx*s+dz*c)<o.d/2+m) return true; } return false; };
       const put=(arr,x,z,ang,len)=>{ if(noFence(x,z)||roadNear(x,z,1.2)||x<X0+40||x>X1-40||z<Z0+40||z>Z1-40) return; const k=cell(x,z); const pr=seenP.get(k); if(pr&&pr.some(a=>Math.abs(Math.sin(a-ang))<.35)) return; if(inB(x,z,null,.35)) return; (seenP.get(k)||seenP.set(k,[]).get(k)).push(ang); arr.push([x,z,ang,len]); };
       const edge=(arr,A,B,gap)=>{ const L=Math.hypot(B[0]-A[0],B[1]-A[1]); if(L<1) return; const n=Math.max(1,Math.round(L/2.6)), ang=Math.atan2(B[1]-A[1],B[0]-A[0]); for(let k=0;k<n;k++){ const t0=k/n,t1=(k+1)/n,tm=(t0+t1)/2; if(gap&&Math.abs(tm-.5)*L<gap/2+.01) continue; const x0=A[0]+(B[0]-A[0])*t0,z0=A[1]+(B[1]-A[1])*t0,x1=A[0]+(B[0]-A[0])*t1,z1=A[1]+(B[1]-A[1])*t1; put(arr,(x0+x1)/2,(z0+z1)/2,ang,L/n); } };
+      const NEWG=[]; window.__newg=NEWG;
+      const gateAt=(A,B,nx,nz)=>{ const G=Math.hypot(B[0]-A[0],B[1]-A[1]); NEWG.push({x0:A[0],z0:A[1],x1:B[0],z1:B[1],G,tx:(B[0]-A[0])/G,tz:(B[1]-A[1])/G,nx,nz,pc:null}); };
       bl.forEach(b=>{ if(b.kind!=='house'&&b.kind!=='farm') return; if(Math.min(b.w,b.d)<4||b.w*b.d<40) return;
-        const nr=nearestRoad(b.x,b.z,r=>!NOT.includes(r.t)); const ux=Math.cos(b.a), uz=Math.sin(b.a), vx=-Math.sin(b.a), vz=Math.cos(b.a);
-        let fx=vx,fz=vz,hs=b.d/2,ht=b.w/2,gap=0; if(nr.r&&nr.d<70){ const a=nr.r.pts[nr.seg], c=nr.r.pts[nr.seg+1]; const dx=c[0]-a[0],dz=c[1]-a[1],l2=dx*dx+dz*dz||1, t=clamp(((b.x-a[0])*dx+(b.z-a[1])*dz)/l2,0,1); const qx=a[0]+dx*t,qz=a[1]+dz*t; const rx=qx-b.x,rz=qz-b.z; const pu=rx*ux+rz*uz, pv=rx*vx+rz*vz; if(Math.abs(pu)>Math.abs(pv)){ fx=Math.sign(pu)*ux; fz=Math.sign(pu)*uz; hs=b.w/2; ht=b.d/2; } else { fx=Math.sign(pv)*vx; fz=Math.sign(pv)*vz; hs=b.d/2; ht=b.w/2; } const gapRoad=nr.d-nr.r.w/2-hs; const dF=clamp(gapRoad-3.2,2.2,9); const tx=-fz, tz=fx; build(b,fx,fz,tx,tz,hs,ht,dF); } else { const tx=-fz, tz=fx; build(b,fx,fz,tx,tz,hs,ht,6); } });
+        const ux=Math.cos(b.a), uz=Math.sin(b.a), vx=-Math.sin(b.a), vz=Math.cos(b.a);
+        const nr=nearestRoad(b.x,b.z,r=>!NOT.includes(r.t)); let done=false;
+        if(nr.r&&nr.d<60){ const a=nr.r.pts[nr.seg], c=nr.r.pts[nr.seg+1]; const dx=c[0]-a[0],dz=c[1]-a[1],l2=dx*dx+dz*dz||1, tt=clamp(((b.x-a[0])*dx+(b.z-a[1])*dz)/l2,0,1); const q=[a[0]+dx*tt,a[1]+dz*tt]; const Ll=Math.sqrt(l2), Tx=dx/Ll, Tz=dz/Ll; let nx=-Tz, nz=Tx; if((b.x-q[0])*nx+(b.z-q[1])*nz<0){ nx=-nx; nz=-nz; }
+          const Lb=(b.x-q[0])*nx+(b.z-q[1])*nz, tb=(b.x-q[0])*Tx+(b.z-q[1])*Tz; const sup=(ax,az)=>Math.abs(ux*ax+uz*az)*b.w/2+Math.abs(vx*ax+vz*az)*b.d/2; const hn=sup(nx,nz), hT=sup(Tx,Tz);
+          const sw=(nr.r.sw||nr.r.main||SIDEWALK.has(nr.r.n))?2.5:.35; const Lmin=nr.r.w/2+sw+.15; let Lf=nr.r.w/2+sw+.9; if(Lb-hn-1.3<Lf) Lf=Math.max(Lmin,Lb-hn-1.3);
+          if(Lb-hn-Lf<26){ done=true; const sM=Math.max(4,Math.min(8,hT*.5)), Lback=Lb+hn+9, Tm=hT+sM; const P=(l,t)=>[q[0]+nx*l+Tx*(t-tb*0)+0,q[1]+nz*l+Tz*t];
+            const t0=-Tm+tb, t1=Tm+tb; const gt=tb; const GA=P(Lf,gt-2.6), GB=P(Lf,gt+2.6);
+            edge(front,P(Lf,t0),P(Lf,t1),5.2); gateAt(GA,GB,nx,nz);
+            edge(side,P(Lf,t1),P(Lback,t1),0); edge(side,P(Lf,t0),P(Lback,t0),0); edge(side,P(Lback,t0),P(Lback,t1),0); } }
+        if(!done){ build(b,vx,vz,-vz,vx,b.d/2,b.w/2,6); } });
       function build(b,fx,fz,tx,tz,hs,ht,dF){ const sM=Math.max(4,Math.min(8,ht*.6)), bM=9, T=ht+sM, S0=-(hs+bM), S1=hs+dF; const P=(s,t)=>[b.x+fx*s+tx*t,b.z+fz*s+tz*t];
-        edge(front,P(S1,-T),P(S1,T),3.2);        // front od drogi, w środku furtka
+        edge(front,P(S1,-T),P(S1,T),5.2); gateAt(P(S1,-2.6),P(S1,2.6),-fx,-fz);
         edge(side,P(S1,T),P(S0,T),0); edge(side,P(S1,-T),P(S0,-T),0); edge(side,P(S0,-T),P(S0,T),0); }
     }
 
@@ -1436,7 +1446,8 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       Object.values(byEdge).forEach(gs=>{ const a=gs[0][0], b=gs[0][1]; const t0=Math.min(...gs.map(g=>g[2])), t1=Math.max(...gs.map(g=>g[3])); const x0=a[0]+(b[0]-a[0])*t0, z0=a[1]+(b[1]-a[1])*t0, x1=a[0]+(b[0]-a[0])*t1, z1=a[1]+(b[1]-a[1])*t1;
         const G=Math.hypot(x1-x0,z1-z0); if(G<1.4)return; if(roadNear(x0,z0,.3)||roadNear(x1,z1,.3)||roadNear((x0+x1)/2,(z0+z1)/2,.3))return; const tx=(x1-x0)/G, tz=(z1-z0)/G; const cc=centroid(pc.p); let nx=-tz,nz=tx; if((cc[0]-x0)*nx+(cc[1]-z0)*nz<0){nx=-nx;nz=-nz;}
         GAPS.push({x0,z0,x1,z1,G,tx,tz,nx,nz,pc}); }); });
-    GAPS.length=0;   // furtki i bramy w usuniętych płotach działek też znikają
+    GAPS.length=0;   // stare furtki i bramy (usunięte płoty działek)
+    window.__newg.forEach(g=>{ if(!roadNear(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2,.2)&&!noFence(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2)) GAPS.push(g); });   // brama + furtka w każdym nowym ogrodzeniu
     const fT=tex(64,32,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='rgba(50,56,52,1)'; for(let i=0;i<w;i+=6)x.fillRect(i,0,2,h); x.fillRect(0,2,w,3); x.fillRect(0,h-5,w,3); });
     const sT=tex(64,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='rgba(60,95,60,.95)'; x.lineWidth=1.4; for(let i=-w;i<w*2;i+=8){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } x.lineWidth=3; x.beginPath(); x.moveTo(0,1.5); x.lineTo(w,1.5); x.stroke(); });
     const fm=new THREE.MeshLambertMaterial({map:fT,transparent:true,alphaTest:.4,side:THREE.DoubleSide}), sm=new THREE.MeshLambertMaterial({map:sT,transparent:true,alphaTest:.35,side:THREE.DoubleSide});
