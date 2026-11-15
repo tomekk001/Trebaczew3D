@@ -2189,12 +2189,14 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       for(let i=GAPS.length-1;i>=0;i--){ const q=GAPS[i]; if(q.pc===undefined) continue; if(onRoad(q.x0+q.tx*q.G/2,q.z0+q.tz*q.G/2)){ GAPS.splice(i,1); AUD.gate=(AUD.gate||0)+1; } } window.__audit=AUD; window.__fnc=[front,side,FPARC];
       /* wejścia do lokali (np. Euforia) muszą być dostępne - żadnych płotów w promieniu 11 m od drzwi */
       { const DOORS=[[-162.2,-334.4]]; [front,side].forEach(A=>{ for(let i=A.length-1;i>=0;i--){ const q=A[i]; if(DOORS.some(d=>Math.hypot(q[0]-d[0],q[1]-d[1])<11)) A.splice(i,1); } }); } }
+    front.length=0; side.length=0;   // na życzenie: usunięte wszystkie generowane płoty działek i osiedli (zostają ogrodzenia szkoły, przedszkola, altanki, orlika, OSP i firm)
     [...front,...side].forEach(p=>addSolid({x:p[0],z:p[1],hw:p[3]/2+.05,hd:.07,c:Math.cos(p[2]),s:Math.sin(p[2]),r:p[3]/2+.2}));
     // przerwy w płotach od ulicy -> furtka i brama
     FPARC.forEach(pc=>{ if(!pc.gaps)return; const byEdge={}; pc.gaps.forEach(g=>{ (byEdge[g[4]]=byEdge[g[4]]||[]).push(g); });
       Object.values(byEdge).forEach(gs=>{ const a=gs[0][0], b=gs[0][1]; const t0=Math.min(...gs.map(g=>g[2])), t1=Math.max(...gs.map(g=>g[3])); const x0=a[0]+(b[0]-a[0])*t0, z0=a[1]+(b[1]-a[1])*t0, x1=a[0]+(b[0]-a[0])*t1, z1=a[1]+(b[1]-a[1])*t1;
         const G=Math.hypot(x1-x0,z1-z0); if(G<1.4)return; if(roadNear(x0,z0,.3)||roadNear(x1,z1,.3)||roadNear((x0+x1)/2,(z0+z1)/2,.3))return; const tx=(x1-x0)/G, tz=(z1-z0)/G; const cc=centroid(pc.p); let nx=-tz,nz=tx; if((cc[0]-x0)*nx+(cc[1]-z0)*nz<0){nx=-nx;nz=-nz;}
         GAPS.push({x0,z0,x1,z1,G,tx,tz,nx,nz,pc}); }); });
+    GAPS.length=0;   // furtki i bramy w usuniętych płotach działek też znikają
     const fT=tex(64,32,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='rgba(50,56,52,1)'; for(let i=0;i<w;i+=6)x.fillRect(i,0,2,h); x.fillRect(0,2,w,3); x.fillRect(0,h-5,w,3); });
     const sT=tex(64,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='rgba(60,95,60,.95)'; x.lineWidth=1.4; for(let i=-w;i<w*2;i+=8){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } x.lineWidth=3; x.beginPath(); x.moveTo(0,1.5); x.lineTo(w,1.5); x.stroke(); });
     const fm=new THREE.MeshLambertMaterial({map:fT,transparent:true,alphaTest:.4,side:THREE.DoubleSide}), sm=new THREE.MeshLambertMaterial({map:sT,transparent:true,alphaTest:.35,side:THREE.DoubleSide});
