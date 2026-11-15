@@ -5506,7 +5506,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   $('mMulti').addEventListener('click',()=>{ if(MP.on){ $('mPlay').click(); return; } openPanel('pNick'); $('nickStart').value=myNick||''; $('nickErr').textContent=''; setTimeout(()=>{ try{ $('nickStart').focus(); }catch(e){} },60); });
   $('nickGo').addEventListener('click',nickGo); $('nickStart').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); nickGo(); } });
   let newArm=0; $('mNew').addEventListener('click',()=>{ if(Date.now()-newArm>3000){ newArm=Date.now(); $('mNew').firstChild.textContent='Na pewno? Kliknij jeszcze raz '; setTimeout(()=>{ $('mNew').firstChild.textContent='Nowa gra'; },3000); return; }
-    try{ localStorage.removeItem('trebaczew-gra'); }catch(e){} location.reload(); });
+    SAVE_LOCK=true; ['trebaczew-gra','trebaczew-wlasne','trebaczew-npc'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); location.reload(); });   // blokada zapisu: inaczej pagehide zapisałby stary stan z pamięci i "nowa gra" nic by nie zmieniała
   ['bMenu','bMenuT'].forEach(id=>$(id).addEventListener('click',()=>showMenu(true)));
   ['bLog','bLogT'].forEach(id=>$(id).addEventListener('click',()=>toggleLog()));
   $('bJump').addEventListener('pointerdown',()=>{ keys.add(' '); setTimeout(()=>keys.delete(' '),120); });
