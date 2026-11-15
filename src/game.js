@@ -1333,7 +1333,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const KBB=bbox(KINDER.pts); const nearSchool=(x,z,d)=>{ const P=SCHOOL.pts; for(let i=0;i<P.length-1;i++) if(segDist(x,z,P[i][0],P[i][1],P[i+1][0],P[i+1][1])<d) return true; return false; };
   const noFence=(x,z)=>nearSchool(x,z,16)||(x>KBB[0]-4&&x<KBB[2]+7&&z>KBB[1]-4&&z<KBB[3]+4)||LOTS.some(l=>inPoly(x,z,l))||LOCKERS.some(l=>Math.hypot(l.x-x,l.z-z)<7)||[B_LEW,B_ZAB].some(b=>Math.hypot(b.x-x,b.z-z)<Math.hypot(b.w,b.d)/2+7)||[SCHOOL,KINDER,PARK,CEM,OSPA].some(a=>inPoly(x,z,a.pts))||[COURT,PITCH2].some(a=>{const c=centroid(a.pts);return Math.hypot(x-c[0],z-c[1])<35;});
   const roadNear=(x,z,m)=>ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+m);
-  const GAPS=[], GATES=[], DRIVE_SPOTS=[];
+  const GAPS=[], GATES=[], DRIVE_SPOTS=[], GATE_GROUPS=[], GATE_ACT=new Set(); let gateVisT=0;
   SDK('a'); if(CAD.length) CAD.forEach(pc=>{ pc.res=false; if(!(pc.k===''||pc.k.indexOf('B')>=0)||/^(dr|Ls|W|K|Tk)/.test(pc.k)) return; const bl=BLD.filter(b=>b.x>pc.bb[0]&&b.x<pc.bb[2]&&b.z>pc.bb[1]&&b.z<pc.bb[3]&&inPoly(b.x,b.z,pc.p)); if(bl.length){ pc.res=true; pc.bl=bl; } });
   { const front=[], side=[], CONC=[]; const seen=new Set();
     // puste małe działki przy ulicy, graniczące z ogrodzonymi (np. naprzeciw przedszkola i Żabki), też dostają płot, żeby ogrodzenie nie urywało się w pół ulicy
@@ -1494,23 +1494,24 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const gmG=new THREE.MeshLambertMaterial({color:0x2f6b3c});
     GAPS.forEach(gp=>{ const {x0,z0,G,tx,tz,nx,nz}=gp; const y=H(x0+tx*G/2,z0+tz*G/2); const ang=Math.atan2(tz,tx);
       const g=new THREE.Group(); g.position.set(x0,y,z0); g.rotation.y=-ang; scene.add(g);
-      if(!gp.steel)[0,G].forEach(u=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.3,1.7,.3),pm); p.position.set(u,.85,0); p.castShadow=true; g.add(p); });
-      const leaves=[]; const mk=(u0,w,dir,kind)=>{ const piv=new THREE.Group(); piv.position.set(u0,0,0); g.add(piv); const m=new THREE.Mesh(leafGeo,gp.green?gmG:gm); m.scale.set(w*dir,gp.hs||1,1); m.castShadow=true; piv.add(m);
+      if(!gp.steel)[0,G].forEach(u=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.3,1.7,.3),pm); p.position.set(u,.85,0); p.castShadow=true; p.updateMatrix(); p.matrixAutoUpdate=false; g.add(p); });
+      const leaves=[]; const mk=(u0,w,dir,kind)=>{ const piv=new THREE.Group(); piv.position.set(u0,0,0); g.add(piv); const m=new THREE.Mesh(leafGeo,gp.green?gmG:gm); m.scale.set(w*dir,gp.hs||1,1); m.castShadow=true; m.updateMatrix(); m.matrixAutoUpdate=false; piv.updateMatrix(); piv.matrixAutoUpdate=false; piv.add(m);
         const cx=x0+tx*(u0+dir*w/2), cz=z0+tz*(u0+dir*w/2); const sol={x:cx,z:cz,hw:w/2,hd:.08,c:Math.cos(ang),s:Math.sin(ang),r:w/2+.2}; addSolid(sol); return {piv,dir,sol,kind,open:false,cur:0}; };
       const items=[];
       if(gp.onlyBrama){ const half=(G-.3)/2; items.push({kind:'brama',leaves:[mk(.15,half,1,'brama'),mk(G-.15,half,-1,'brama')],cx:x0+tx*G/2,cz:z0+tz*G/2}); }
       else if(G>=3.6){ const fw=1.0, bw=G-fw-.3; const half=bw/2; items.push({kind:'brama',leaves:[mk(.15,half,1,'brama'),mk(.15+bw,half,-1,'brama')],cx:x0+tx*(.15+bw/2),cz:z0+tz*(.15+bw/2)}); items.push({kind:'furtka',leaves:[mk(G-.15-fw,fw,1,'furtka')],cx:x0+tx*(G-.15-fw/2),cz:z0+tz*(G-.15-fw/2)});
         if(rnd()<.38){ const c=[x0+tx*(.15+bw/2)+nx*5.8, z0+tz*(.15+bw/2)+nz*5.8]; DRIVE_SPOTS.push({x:c[0],z:c[1],h:Math.atan2(nz,nx),gate:items[0]}); } }
       else items.push({kind:'furtka',leaves:[mk(.15,G-.3,1,'furtka')],cx:x0+tx*G/2,cz:z0+tz*G/2});
-      items.forEach(it=>{ it.g=g; it.nx=nx; it.nz=nz; it.sg=(nx*(-tz)+nz*tx)>0?1:-1; GATES.push(it); }); }); } SDK('b');
+      items.forEach(it=>{ it.leaves.forEach(l=>l.it=it); it.g=g; it.nx=nx; it.nz=nz; it.sg=(nx*(-tz)+nz*tx)>0?1:-1; GATES.push(it); }); g.updateMatrix(); g.matrixAutoUpdate=false; g.userData.gx=x0+tx*G/2; g.userData.gz=z0+tz*G/2; GATE_GROUPS.push(g); }); } SDK('b');
   /* chodniki i krawężniki nie przechodzą przez bramy ani furtki: kończą się przy słupku, a brama stoi na końcu chodnika */
   { const zs=GAPS.filter(q=>q.G>0); const inGate=(x,z,th)=>zs.some(q=>{ const dx=x-q.x0, dz=z-q.z0; const u=dx*q.tx+dz*q.tz; if(u<-.9||u>q.G+.9) return false; const v=dx*q.nx+dz*q.nz; return Math.abs(v)<th; });
     SWR.forEach(rec=>{ const pts=resample(rec.run,.6); const runs=[]; let cur=[], cut=false; pts.forEach(p=>{ if(inGate(p[0],p[1],rec.th)){ cut=true; if(cur.length>1) runs.push(cur); cur=[]; } else cur.push(p); }); if(cur.length>1) runs.push(cur); if(!cut) return;
       scene.remove(rec.m); rec.m.geometry.dispose(); if(rec.wk){ const i=WALKS.indexOf(rec.wk); if(i>=0) WALKS.splice(i,1); }
       runs.filter(r2=>lineLen(r2).pop()>1.5).forEach(r2=>{ const m=new THREE.Mesh(ribbon(r2,rec.w,rec.y,rec.rep),rec.mat); if(rec.wk!==undefined) m.receiveShadow=true; scene.add(m); if(rec.wk!==undefined&&lineLen(r2).pop()>12){ const w2={pts:resample(r2,4),road:rec.road}; w2.len=lineLen(w2.pts); WALKS.push(w2); } }); }); }
-  function toggleGate(it,force){ it.open=force===undefined?!it.open:force; it.leaves.forEach(l=>{ l.open=it.open; l.sol.off=it.open; }); if(AU.ctx&&AU.on){ const t=AU.ctx.currentTime; tone('square',it.open?420:300,t,.08,.03); noiseHit(t,.12,.05,'bandpass',900); } }
+  function toggleGate(it,force){ it.open=force===undefined?!it.open:force; it.leaves.forEach(l=>{ l.open=it.open; l.sol.off=it.open; GATE_ACT.add(l); }); if(AU.ctx&&AU.on){ const t=AU.ctx.currentTime; tone('square',it.open?420:300,t,.08,.03); noiseHit(t,.12,.05,'bandpass',900); } }
   function nearGate(){ const x=st.car?st.car.x:st.x, z=st.car?st.car.z:st.z, lim=st.car?4:2.6; let b=null,bd=lim; GATES.forEach(it=>{ if(st.car&&it.kind!=='brama')return; const d=Math.hypot(it.cx-x,it.cz-z); if(d<bd){bd=d;b=it;} }); return b; }
-  function gatesUpdate(dt){ GATES.forEach(it=>it.leaves.forEach(l=>{ const tgt=l.open?l.dir*1.45*it.sg:0; if(Math.abs(l.cur-tgt)<.001)return; l.cur+=(tgt-l.cur)*Math.min(1,dt*5); l.piv.rotation.y=-l.cur; })); }
+  function gatesUpdate(dt){ GATE_ACT.forEach(l=>{ const it=l.it; const tgt=l.open?l.dir*1.45*(l.it?l.it.sg:1):0; if(Math.abs(l.cur-tgt)<.001){ GATE_ACT.delete(l); return; } l.cur+=(tgt-l.cur)*Math.min(1,dt*5); l.piv.rotation.y=-l.cur; l.piv.updateMatrix(); });
+    gateVisT-=dt; if(gateVisT<=0){ gateVisT=.5; const px=st.car?st.car.x:st.x, pz=st.car?st.car.z:st.z; for(let i=0;i<GATE_GROUPS.length;i++){ const g=GATE_GROUPS[i]; const v=Math.abs(g.userData.gx-px)<170&&Math.abs(g.userData.gz-pz)<170; if(v){ if(!g.parent){ scene.add(g); g.matrixWorldNeedsUpdate=true; } } else if(g.parent) scene.remove(g); } } }
 
   /* ---------- park przy Zielonej (wg Street View) ---------- */
   const parkTrees=[];
