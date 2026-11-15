@@ -381,6 +381,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
         RD.forEach(r=>{ if(roadDist(r,b.x,b.z)>Math.hypot(b.w,b.d)/2+r.w/2+2)return; const clr=r.w/2+(r.t==='srv'?.3:.9); pts.forEach(q=>{ const np=nearPt(r,q[0],q[1]); const pen=clr-np[2]; if(pen>0&&(!worst||pen>worst.pen)) worst={pen,np,q}; }); });
         if(!worst)break; let nx=b.x-worst.np[0], nz=b.z-worst.np[1]; const l=Math.hypot(nx,nz)||1; nx/=l; nz/=l; const m=worst.pen+.15; b.x+=nx*m; b.z+=nz*m; if(b.parts) b.parts.forEach(q=>{ q.x+=nx*m; q.z+=nz*m; }); moved+=m; }
       if(moved>7) b.skip=true; }); }
+  BLD.forEach(b=>{ if(!b.skip&&Math.hypot(b.x+99,b.z+225)<2.5&&Math.abs(b.w-7.5)<1&&Math.abs(b.d-6)<1) b.skip=true; });   // przybudówka obok ośrodka zdrowia - usunięta na życzenie
   { /* duplikaty budynków (ten sam obrys dwa razy: migotanie ścian) - zostaje pierwszy */ const DG=new Map(); BLD.forEach(b=>{ if(b.skip||!b.w||!b.d) return; const gx=Math.floor(b.x/20), gz=Math.floor(b.z/20); let dupe=false; for(let i=gx-1;i<=gx+1&&!dupe;i++)for(let j=gz-1;j<=gz+1&&!dupe;j++) for(const a of (DG.get(i+','+j)||[])){ if(Math.hypot(a.x-b.x,a.z-b.z)<2.5&&((Math.abs(a.w-b.w)<2.5&&Math.abs(a.d-b.d)<2.5)||(Math.abs(a.w-b.d)<2.5&&Math.abs(a.d-b.w)<2.5))){ dupe=true; break; } } if(dupe){ b.skip=true; return; } const k=gx+','+gz; (DG.get(k)||DG.set(k,[]).get(k)).push(b); }); }
   BLD.forEach((b,bi)=>{ if(b.skip){ b.kind='skip'; return; } const ar=b.w*b.d, ratio=Math.max(b.w,b.d)/Math.min(b.w,b.d);
     // wysokość posadowienia: środek i najniższy narożnik
