@@ -5518,10 +5518,12 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const clock=new THREE.Clock(); const fwd=new THREE.Vector3();
   function animPerson(p,walk,amt){ const u=p.userData, sn=Math.sin(walk), cs=Math.cos(walk); if(u.idle){ u.idle.amt=Math.max(u.idle.amt,amt); if(u.chest&&amt>.05) u.chest.rotation.y=-sn*.09*amt; } u.lL.rotation.x=sn*.55*amt; u.lR.rotation.x=-sn*.55*amt; u.aL.rotation.x=-sn*.45*amt; u.aR.rotation.x=sn*.45*amt;
     if(u.kL){ u.kL.rotation.x=amt*(.12+.8*Math.max(0,-cs)); u.kR.rotation.x=amt*(.12+.8*Math.max(0,cs)); u.eL.rotation.x=-(.12+.3*amt+Math.max(0,sn)*.25*amt); u.eR.rotation.x=-(.12+.3*amt+Math.max(0,-sn)*.25*amt); } }
+  const DAILY={done:false};
   SDK('c'); function frame(){ const rawDt=clock.getDelta(); const dt=Math.min(rawDt,0.05); tAll+=dt; if(RAD.on&&(GAME.paused||!st.car)) radioFile(false); WINDU.value=tAll; if(CEMENT&&CEMENT.tick) CEMENT.tick();
     fpsAcc+=rawDt; fpsN++; if(fpsAcc>2){ const fps=fpsN/fpsAcc; fpsNow=fps; fpsAcc=0; fpsN=0; if(performance.now()-T_START<14000) lowN=0; else if(fps<27) lowN++; else lowN=0; const flo=IS_TOUCH?.85:.65; if(lowN>=3&&pr<=flo+.001){ if(ao&&ao.enabled){ ao.enabled=false; } else if(bloom&&bloom.enabled){ bloom.enabled=false; } else if(sun.shadow.mapSize.x>1024){ sun.shadow.mapSize.set(1024,1024); if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null; } } } const npr=lowN>=3?(lowN=0,Math.max(flo,pr-0.1)):fps>48?Math.min(DPR,pr+0.1):pr; if(npr!==pr){ pr=npr; renderer.setPixelRatio(pr); resize(); } }
     if(!mapView.hidden){ requestAnimationFrame(frame); return; }
     if(GAME.paused){ menuFrame(dt); requestAnimationFrame(frame); return; }
+    if(!DAILY.done){ DAILY.done=true; try{ const day=new Date().toISOString().slice(0,10), o=JSON.parse(localStorage.getItem('trebaczew-daily')||'{}'); if(o.d!==day){ const yd=new Date(Date.now()-864e5).toISOString().slice(0,10), sk=o.d===yd?Math.min(7,(o.s||0)+1):1, bonus=50+(sk-1)*25; localStorage.setItem('trebaczew-daily',JSON.stringify({d:day,s:sk})); st.money+=bonus; shownMoney=st.money; moneyEl.textContent=fmt(st.money); toast(`🎁 Codzienna nagroda: +${bonus} zł (dzień ${sk} z rzędu)`,4.5); } }catch(e){} }
     if(MG.on){ MG.frame(rawDt>0.1?0.016:rawDt); requestAnimationFrame(frame); return; }
     if(!logEl.hidden){ requestAnimationFrame(frame); return; }
     if(document.hasFocus&&!document.hasFocus()&&keys.size) keys.clear();
