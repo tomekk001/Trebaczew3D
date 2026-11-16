@@ -913,7 +913,7 @@ async function boot(saved){
   const TRK={lane:1.0,n:5,gap:.5};
   { const m0=mar(PITCH2.pts), c=Math.cos(m0.an), s=Math.sin(m0.an), hw=m0.d/2, hd=m0.w/2;
     const m=mar(PITCH2.pts), hs=PITCH2.pts.map(v=>hRaw(v[0],v[1])), h=hs.reduce((a,v)=>a+v,0)/hs.length, cc=Math.cos(m.an), ss=Math.sin(m.an);
-    const sw0=m.w>m.d, sh0=Math.min(m.w,m.d)/2+1, lg0=Math.max(m.w,m.d)/2+1, r00=sh0+TRK.gap, cz00=Math.max(0,lg0-Math.sqrt(Math.max(0,r00*r00-sh0*sh0))+.3), A0=r00+TRK.lane*TRK.n+1.5, B0=cz00+r00+TRK.lane*TRK.n+1.5, ow=sw0?B0:A0, od=sw0?A0:B0;
+    const sw0=m.w>m.d, sh0=Math.min(m.w,m.d)/2+1, lg0=Math.max(m.w,m.d)/2+1, r00=sh0+TRK.gap, cz00=Math.max(0,lg0-Math.sqrt(Math.max(0,r00*r00-sh0*sh0))+.3), A0=r00+TRK.lane*TRK.n+4.5, B0=cz00+r00+TRK.lane*TRK.n+4.5, ow=sw0?B0:A0, od=sw0?A0:B0;
     const pad=[[-ow,-od],[ow,-od],[ow,od],[-ow,od]].map(([u,v])=>[m.cx+u*cc-v*ss, m.cz+u*ss+v*cc]);
     FLAT.push({p:PITCH2.pts,bb:bbox(PITCH2.pts),fe:0,h}); FLAT.unshift({p:pad,bb:bbox(pad),fe:0,h}); }
   [COURT].forEach(a=>{ const hs=a.pts.map(v=>hRaw(v[0],v[1])); FLAT.push({p:a.pts,bb:bbox(a.pts),fe:0,h:hs.reduce((s,v)=>s+v,0)/hs.length}); });
@@ -1182,13 +1182,14 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     if((b.code===5||inSchool(b.x,b.z))&&b!==HALL_B&&b.w*b.d>300&&Math.max(b.w,b.d)/Math.min(b.w,b.d)>3){ b.kind='schoolW'; addSolid({x:b.x,z:b.z,hw:b.w/2,hd:b.d/2,c,s,r:Math.hypot(b.w,b.d)/2}); return; }   // długie skrzydło szkoły: model w stylu głównego budynku
     let h,rt,rh,wall,roof,kind='house';
     if(b===HALL_B){ kind='hall'; h=9.5; rt='barrel'; wall='#d4dbe1'; roof='#7b8794'; }
-    else if(b.code===5||inSchool(b.x,b.z)){ kind='school'; h=b.lv?b.lv*3.6:7.2; rt='hip'; rh=2.2; wall='#f1e3c4'; roof='#5f6670'; }
+    else if(b.code===5||inSchool(b.x,b.z)){ kind='school'; h=b.lv?b.lv*3.6:7.2; rt='hip'; rh=2.2; wall='#f1e3c4'; roof='#5f6670'; if(b.x<-2500){ rt='flat'; rh=.5; wall='#e0c46f'; roof='#4b4f55'; } }
     else if(inKinder(b.x,b.z)){ kind='kinder'; h=b.lv?b.lv*3.4:4; rt='hip'; rh=2.4; wall=pick(['#f4d36b','#f2a65a','#9ccfe0']); roof='#c0503a'; }
     else if(b.code===6&&ar>60){ kind='ind'; h=b.lv>1?b.lv*4.2:R(6.5,9); rt='flat'; rh=.5; wall=pick(['#d9dcdc','#c8ccce','#b9c3c9','#e2e0da','#9fa9ae']); roof=pick(['#6e7378','#5a5f66','#7d8389']); }
     else if(b.code===4||b.name){ kind='shop'; h=b.lv?Math.max(4.5,b.lv*3.8):4.8; rt='flat'; rh=.5; wall=pick(['#eceae4','#dcdcd8','#e8dfcf']); roof='#5b6066'; }
     else if(b.code===2){ kind='garage'; h=2.6; rt='gable'; rh=.8; wall=pick(['#bdb6a8','#c9c2b4','#d4cbbb']); roof=pick(['#5a5f66','#6e7378','#7a3226']); }
     else if(b.code===3||ar<42||(ratio>2.3&&ar<140)){ kind='out'; h=R(2.5,3.3); rt='gable'; rh=R(1,1.6); wall=pick(['#b8b0a2','#c9c2b4','#a39a8a','#d4cbbb','#c6b9a3','#9c8466']); roof=pick(['#8d9399','#6e7378','#7a3226','#5a5f66','#6b3a2a']); }
     else if(ar>320){ kind='farm'; h=6.5; rt='gable'; rh=2.4; wall=pick(['#b8bec4','#c9c2b4','#d9d4c8']); roof=pick(['#8d9399','#6e7378']); }
+    if(Math.hypot(b.x+2897,b.z-1625)<45&&(kind==='farm'||kind==='ind'||kind==='shop')&&ar>200){ wall='#e0c46f'; }
     else { h=b.lv?b.lv*2.9+0.5:(rnd()<.5?3.4:6); rt=rnd()<.6?'hip':'gable'; rh=Math.max(2.2,Math.min(4.2,Math.min(b.w,b.d)*.33)); wall=pick(WALLS); roof=pick(ROOFS); }
     { const rc=roofColor(bi); if(rc&&kind!=='hall'&&kind!=='school'&&kind!=='ind') roof=rc; }
     if(b.name==='Plebania'){ wall='#f2efe8'; roof='#5b3a2c'; }
@@ -1224,6 +1225,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const ge=new THREE.BufferGeometry(); ge.setAttribute('position',new THREE.Float32BufferAttribute(v,3)); ge.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); ge.computeVertexNormals(); return ge; })();
   const barrelGeo=new THREE.CylinderGeometry(.5,.5,1,18,1,false,0,Math.PI).rotateZ(Math.PI/2);
   const mkIM=(geo,count,map)=>{ const m=new THREE.InstancedMesh(geo,new THREE.MeshLambertMaterial({color:0xffffff,map:map||null}),Math.max(1,count)); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m; };
+  houses.forEach(h=>{ if(h.kind==='school'&&h.x<-2500){ h.wall='#e3c262'; h.roof='#464a50'; if(h.w*h.d>120){ h.rt='flat'; h.rh=.5; } } });   // Zespół Szkół w Działoszynie: żółte budynki, płaski dach
   const cnt=t=>houses.filter(h=>h.rt===t).length;
   const bodies=mkIM(boxGeo,houses.length,plasterTex), hips=mkIM(hipGeo,cnt('hip'),tileTex), gabs=mkIM(gabGeo,cnt('gable'),tileTex), flats=mkIM(boxGeo,cnt('flat')), barrels=mkIM(barrelGeo,cnt('barrel'));
   const ctr={hip:0,gable:0,flat:0,barrel:0};
@@ -1610,9 +1612,9 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     const ring=(o0,o1,y,mat)=>{ const A=loop(o0), B=loop(o1), pos=[]; for(let i=0;i<A.length;i++){ const j=(i+1)%A.length; [[A[i],B[i],B[j]],[A[i],B[j],A[j]]].forEach(t=>t.forEach(v=>pos.push(v[0],y,v[1]))); }
       const ge=new THREE.BufferGeometry(); ge.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); ge.computeVertexNormals(); const me=new THREE.Mesh(ge,mat); me.receiveShadow=true; g.add(me); };
     const W=TRK.lane*TRK.n, blue=po(new THREE.MeshLambertMaterial({color:0x3f7fb6,side:THREE.DoubleSide}),2), white=po(new THREE.MeshLambertMaterial({color:0xf2f2ea,side:THREE.DoubleSide}),3);
-    ring(0,W,.05,blue); for(let i=0;i<=TRK.n;i++) ring(i*TRK.lane-.04,i*TRK.lane+.04,.06,white);
+    ring(0,W,.09,blue); for(let i=0;i<=TRK.n;i++) ring(i*TRK.lane-.04,i*TRK.lane+.04,.1,white);
     // linia startu/mety na prostej
-    const sl=new THREE.Mesh(new THREE.PlaneGeometry(W,.12).rotateX(-Math.PI/2),white); sl.position.set(SW?0:ihw+W/2,.065,SW?ihw+W/2:0); sl.rotation.y=SW?Math.PI/2:0; g.add(sl); }
+    const sl=new THREE.Mesh(new THREE.PlaneGeometry(W,.12).rotateX(-Math.PI/2),white); sl.position.set(SW?0:ihw+W/2,.105,SW?ihw+W/2:0); sl.rotation.y=SW?Math.PI/2:0; g.add(sl); }
 
   /* ---------- powierzchnie utwardzone (parkingi, plac przy parku) ---------- */
   // przycinanie nawierzchni do krawędzi dróg (żadna kostka ani plac nie wchodzi na jezdnię)
@@ -2069,6 +2071,11 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   if(CB.autop) photoBld(CB.autop,'autopart',12,10,0xa3a9ae,0x555a60,6.6,{text:'AUTOPART',bg:'#2e3134',fg:'#ffffff',y:5.4,w:7.5,h:100,font:'800 64px Barlow, Arial',out:.12});
   if(CB.hgraf) photoBld(CB.hgraf,'autopart_hala',18.5,14,0x9da3a8,0x6b7075,5.6,null);
   if(CB.zuh) photoBld(CB.zuh,'zuh',16,40,0x464a50,0x3c4046,6.4,null);
+  // Zespół Szkół w Działoszynie: napis na głównym budynku (żółta elewacja, jak na zdjęciu)
+  { let zs=null,bd=1e9; BLD.forEach(b=>{ if(b.skip||b.kind!=='school'||b.x>-2500)return; const d=Math.hypot(b.x+2896,b.z-1602); if(d<40&&b.h>=8&&(!zs||b.h*Math.min(b.w,b.d)>zs.h*Math.min(zs.w,zs.d))) zs=b; });
+    if(zs){ const nr=nearestRoad(zs.x,zs.z,r=>r.t!=='track'&&r.t!=='srv'&&r.t!=='path'&&r.t!=='foot'&&r.t!=='footway'); const f=frontSide(zs,nr.r); const hc=zs.hc!==undefined?zs.hc:H(zs.x,zs.z);
+      const stripeT=tex(1024,160,(x,w,h)=>{ x.fillStyle='#7a2a2a'; x.fillRect(0,0,w,h); x.fillStyle='#f4efe2'; x.font='800 60px Barlow, Arial'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('ZESPÓŁ SZKÓŁ W DZIAŁOSZYNIE',w/2,h*.34); x.font='700 46px Barlow, Arial'; x.fillText('im. Marii Skłodowskiej-Curie',w/2,h*.72); });
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(10.5,1.64),new THREE.MeshLambertMaterial({map:stripeT})); pl.position.set(f.x+f.nx*.12,hc+Math.max(3.2,zs.h-2.4),f.z+f.nz*.12); pl.rotation.y=f.rot; scene.add(pl); } }
   if(CB.zabdom) photoBld(CB.zabdom,'dom_zabka',10,9,0x8e8d88,0x4a3329,3.1,null);
   if(CB.przed) photoBld(CB.przed,'przedszkole',18,8,0xd9d3b4,0x7a4636,6.3,null);
   if(CB.dstary) photoBld(CB.dstary,'dom_stary',10,9.5,0xc8ab8d,0x6d7378,5.4,null);
@@ -2120,8 +2127,11 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   await LP(44);
   /* ---------- ogrodzenia wzdłuż granic działek (ULDK) ---------- */
   const KBB=bbox(KINDER.pts); const nearSchool=(x,z,d)=>{ const P=SCHOOL.pts; for(let i=0;i<P.length-1;i++) if(segDist(x,z,P[i][0],P[i][1],P[i+1][0],P[i+1][1])<d) return true; return false; };
-  const noFence=(x,z)=>nearSchool(x,z,16)||(x>KBB[0]-4&&x<KBB[2]+7&&z>KBB[1]-4&&z<KBB[3]+4)||LOTS.some(l=>inPoly(x,z,l))||LOCKERS.some(l=>Math.hypot(l.x-x,l.z-z)<7)||[B_LEW,B_ZAB].some(b=>Math.hypot(b.x-x,b.z-z)<Math.hypot(b.w,b.d)/2+7)||[SCHOOL,KINDER,PARK,CEM,OSPA].some(a=>inPoly(x,z,a.pts))||[COURT,PITCH2].some(a=>{const c=centroid(a.pts);return Math.hypot(x-c[0],z-c[1])<35;});
+  const noFence=(x,z)=>nearSchool(x,z,16)||(x>KBB[0]-4&&x<KBB[2]+7&&z>KBB[1]-4&&z<KBB[3]+4)||LOTS.some(l=>inPoly(x,z,l)||nearPoly(x,z,l,1.6))||AREAS.some(a=>a.t==='am:parking'&&(inPoly(x,z,a.pts)||nearPoly(x,z,a.pts,1.6)))||LOCKERS.some(l=>Math.hypot(l.x-x,l.z-z)<7)||[B_LEW,B_ZAB].some(b=>Math.hypot(b.x-x,b.z-z)<Math.hypot(b.w,b.d)/2+7)||[SCHOOL,KINDER,PARK,CEM,OSPA].some(a=>inPoly(x,z,a.pts))||[COURT,PITCH2].some(a=>{const c=centroid(a.pts);return Math.hypot(x-c[0],z-c[1])<35;});
   const roadNear=(x,z,m)=>ROADS.some(r=>r.t!=='track'&&roadDist(r,x,z)<r.w/2+m);
+  const swLim=r=>r.w/2+((r.sw||r.main||SIDEWALK.has(r.n))?2.5:.35);   // zewnętrzna krawędź chodnika (lub pobocza)
+  const swNear=(x,z,e)=>ROADS.some(r=>r.t!=='track'&&r.t!=='rail'&&r.pts&&roadDist(r,x,z)<swLim(r)+e);
+  const nearPoly=(x,z,P,m)=>{ for(let i=0;i<P.length;i++){ const a=P[i],b=P[(i+1)%P.length]; if(segDist(x,z,a[0],a[1],b[0],b[1])<m) return true; } return false; };
   const GAPS=[], GATES=[], DRIVE_SPOTS=[], GATE_GROUPS=[], GATE_ACT=new Set(); let gateVisT=0;
   SDK('a'); if(CAD.length) CAD.forEach(pc=>{ pc.res=false; if(!(pc.k===''||pc.k.indexOf('B')>=0)||/^(dr|Ls|W|K|Tk)/.test(pc.k)) return; const bl=BLD.filter(b=>b.x>pc.bb[0]&&b.x<pc.bb[2]&&b.z>pc.bb[1]&&b.z<pc.bb[3]&&inPoly(b.x,b.z,pc.p)); if(bl.length){ pc.res=true; pc.bl=bl; } });
   { const front=[], side=[], CONC=[]; const seen=new Set();
@@ -2191,6 +2201,17 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
           for(let i=CONC.length-1;i>=0;i--){ const q=CONC[i]; if(Math.abs((q[0]-C[0])*tx+(q[1]-C[1])*tz)<GW/2+q[3]/2&&Math.abs(-(q[0]-C[0])*tz+(q[1]-C[1])*tx)<1.2) CONC.splice(i,1); }
           let nx=-tz, nz=tx; const sr=nearestRoad(C[0],C[1],r=>r.t!=='track'&&r.n==='Szkolna'); if(sr.r){ const a2=sr.r.pts[sr.seg], b2=sr.r.pts[sr.seg+1]; const dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((C[0]-a2[0])*dx+(C[1]-a2[1])*dz)/l2,0,1); if((a2[0]+dx*tt-C[0])*nx+(a2[1]+dz*tt-C[1])*nz<0){ nx=-nx; nz=-nz; } }
           GAPS.push({x0:C[0]-tx*GW/2,z0:C[1]-tz*GW/2,x1:C[0]+tx*GW/2,z1:C[1]+tz*GW/2,G:GW,tx,tz,nx,nz,pc:null,onlyBrama:true,steel:false}); } }
+    { /* płot naprzeciw Żabki (betonowy): x -101 z 14 → x -90 z 67 → x -136 z 88; nie wchodzi na chodnik, z bramą i furtką */
+      const Z=[[-101,14],[-90,67],[-136,88]], zp=[]; const N1=30;
+      for(let k=0;k<Z.length-1;k++){ const A=Z[k], B=Z[k+1], Ln=Math.hypot(B[0]-A[0],B[1]-A[1]), n=Math.max(2,Math.round(Ln/1.2)); for(let i=(k?1:0);i<=n;i++){ const t=i/n; let x=A[0]+(B[0]-A[0])*t, z=A[1]+(B[1]-A[1])*t;
+        for(let it=0;it<3;it++) for(const r of ROADS){ if(r.t==='track'||r.t==='rail'||!r.pts) continue; const d=roadDist(r,x,z), lim=swLim(r)+.35; if(d<lim){ let bd=1e9,bq=null; for(let j=0;j<r.pts.length-1;j++){ const a2=r.pts[j], b2=r.pts[j+1], dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((x-a2[0])*dx+(z-a2[1])*dz)/l2,0,1), qx=a2[0]+dx*tt, qz=a2[1]+dz*tt, dd=Math.hypot(x-qx,z-qz); if(dd<bd){ bd=dd; bq=[qx,qz]; } } if(bq&&bd>.01){ x=bq[0]+(x-bq[0])/bd*lim; z=bq[1]+(z-bq[1])/bd*lim; } } }
+        zp.push([x,z]); } }
+      const zs=[]; for(let i=0;i<zp.length-1;i++){ const A=zp[i], B=zp[i+1], l=Math.hypot(B[0]-A[0],B[1]-A[1]); if(l<.3) continue; const c=[(A[0]+B[0])/2,(A[1]+B[1])/2]; if(blocked(c[0],c[1],.15)) continue; zs.push([c[0],c[1],Math.atan2(B[1]-A[1],B[0]-A[0]),l]); }
+      // brama + furtka mniej więcej w środku pierwszego odcinka (od strony drogi)
+      const gi=Math.floor(zs.length*.3), gq=zs[gi]; let gx=null; if(gq){ const tx=Math.cos(gq[2]), tz=Math.sin(gq[2]), GW=5.2; for(let i=zs.length-1;i>=0;i--){ const q=zs[i]; if(Math.abs((q[0]-gq[0])*tx+(q[1]-gq[1])*tz)<GW/2+q[3]/2-.05&&Math.abs(-(q[0]-gq[0])*tz+(q[1]-gq[1])*tx)<1.2) zs.splice(i,1); }
+        let nx=-tz, nz=tx; const nr=nearestRoad(gq[0],gq[1],r=>r.t!=='track'&&r.t!=='rail'); if(nr.r){ const a2=nr.r.pts[nr.seg], b2=nr.r.pts[nr.seg+1], dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((gq[0]-a2[0])*dx+(gq[1]-a2[1])*dz)/l2,0,1); if((a2[0]+dx*tt-gq[0])*nx+(a2[1]+dz*tt-gq[1])*nz<0){ nx=-nx; nz=-nz; } }
+        window.__zgate={x0:gq[0]-tx*GW/2,z0:gq[1]-tz*GW/2,x1:gq[0]+tx*GW/2,z1:gq[1]+tz*GW/2,G:GW,tx,tz,nx,nz,pc:null}; }
+      zs.forEach(q=>CONC.push(q)); }
     { /* przegląd całej mapy: żaden odcinek płotu nie może stać na jezdni ani na chodniku (jezdnia + pas chodnika przy ulicach z chodnikiem), ani wchodzić w budynek */
       const RS=new Map(); ROADS.forEach(r=>{ if(r.t==='track'||!r.pts) return; const sw=(r.sw||r.main||SIDEWALK.has(r.n))?2.5:.35, lim=(r.w||4)/2+sw; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i], b=r.pts[i+1]; const x0=Math.floor((Math.min(a[0],b[0])-lim)/40), x1=Math.floor((Math.max(a[0],b[0])+lim)/40), z0=Math.floor((Math.min(a[1],b[1])-lim)/40), z1=Math.floor((Math.max(a[1],b[1])+lim)/40); for(let gx=x0;gx<=x1;gx++)for(let gz=z0;gz<=z1;gz++){ const k=gx+','+gz; (RS.get(k)||RS.set(k,[]).get(k)).push([a[0],a[1],b[0],b[1],lim]); } } });
       const onRoad=(x,z)=>{ const L=RS.get(Math.floor(x/40)+','+Math.floor(z/40)); if(!L) return false; for(const q of L) if(segDist(x,z,q[0],q[1],q[2],q[3])<q[4]) return true; return false; };
@@ -2209,7 +2230,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     { const NOT=['track','rail','path','foot','footway','srv','service']; const seenP=new Map(); const cell=(x,z)=>Math.round(x/1.3)+','+Math.round(z/1.3);
       const bl=BLD.filter(b=>!b.skip&&b.w&&b.d&&isFinite(b.x)); const bg=new Map(); bl.forEach(b=>{ const k=Math.floor(b.x/30)+','+Math.floor(b.z/30); (bg.get(k)||bg.set(k,[]).get(k)).push(b); });
       const inB=(x,z,self,m)=>{ const gx=Math.floor(x/30), gz=Math.floor(z/30); for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++) for(const o of (bg.get((gx+i)+','+(gz+j))||[])){ if(o===self||o.kind==='out'&&Math.min(o.w,o.d)<4) continue; const c=Math.cos(o.a),s=Math.sin(o.a),dx=x-o.x,dz=z-o.z; if(Math.abs(dx*c+dz*s)<o.w/2+m&&Math.abs(-dx*s+dz*c)<o.d/2+m) return true; } return false; };
-      const put=(arr,x,z,ang,len)=>{ if(noFence(x,z)||roadNear(x,z,1.2)||x<X0+40||x>X1-40||z<Z0+40||z>Z1-40) return; const k=cell(x,z); const pr=seenP.get(k); if(pr&&pr.some(a=>Math.abs(Math.sin(a-ang))<.35)) return; if(inB(x,z,null,.35)) return; (seenP.get(k)||seenP.set(k,[]).get(k)).push(ang); arr.push([x,z,ang,len]); };
+      const put=(arr,x,z,ang,len)=>{ if(noFence(x,z)||roadNear(x,z,1.2)||swNear(x,z,.05)||swNear(x+Math.cos(ang)*len/2,z+Math.sin(ang)*len/2,-.05)||swNear(x-Math.cos(ang)*len/2,z-Math.sin(ang)*len/2,-.05)||x<X0+40||x>X1-40||z<Z0+40||z>Z1-40) return; const k=cell(x,z); const pr=seenP.get(k); if(pr&&pr.some(a=>Math.abs(Math.sin(a-ang))<.35)) return; if(inB(x,z,null,.35)) return; (seenP.get(k)||seenP.set(k,[]).get(k)).push(ang); arr.push([x,z,ang,len]); };
       const edge=(arr,A,B,gap,off)=>{ const L=Math.hypot(B[0]-A[0],B[1]-A[1]); if(L<1) return; const n=Math.max(1,Math.round(L/2.6)), ang=Math.atan2(B[1]-A[1],B[0]-A[0]); for(let k=0;k<n;k++){ const t0=k/n,t1=(k+1)/n,tm=(t0+t1)/2; if(gap&&Math.abs((tm-.5)*L-(off||0))<gap/2+.01) continue; const x0=A[0]+(B[0]-A[0])*t0,z0=A[1]+(B[1]-A[1])*t0,x1=A[0]+(B[0]-A[0])*t1,z1=A[1]+(B[1]-A[1])*t1; put(arr,(x0+x1)/2,(z0+z1)/2,ang,L/n); } };
       const NEWG=[]; window.__newg=NEWG; const R=[];
       const gateAt=(A,B,nx,nz)=>{ const G=Math.hypot(B[0]-A[0],B[1]-A[1]); NEWG.push({x0:A[0],z0:A[1],x1:B[0],z1:B[1],G,tx:(B[0]-A[0])/G,tz:(B[1]-A[1])/G,nx,nz,pc:null}); };
@@ -2250,14 +2271,15 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
         GAPS.push({x0,z0,x1,z1,G,tx,tz,nx,nz,pc}); }); });
     const KEEPG=GAPS.filter(g=>g.onlyBrama&&g.pc===null); GAPS.length=0;   // stare furtki i bramy (usunięte płoty działek) - zostaje brama w płocie naprzeciw przedszkola
     KEEPG.forEach(g=>GAPS.push(g));
-    window.__newg.forEach(g=>{ if(!roadNear(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2,.2)&&!noFence(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2)) GAPS.push(g); });   // brama + furtka w każdym nowym ogrodzeniu
+    if(window.__zgate) GAPS.push(window.__zgate);
+    window.__newg.forEach(g=>{ if(!roadNear(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2,.2)&&!swNear(g.x0,g.z0,-.12)&&!swNear(g.x1,g.z1,-.12)&&!noFence(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2)) GAPS.push(g); });   // brama + furtka w każdym nowym ogrodzeniu
     const fT=tex(64,32,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='rgba(50,56,52,1)'; for(let i=0;i<w;i+=6)x.fillRect(i,0,2,h); x.fillRect(0,2,w,3); x.fillRect(0,h-5,w,3); });
     const sT=tex(64,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='rgba(60,95,60,.95)'; x.lineWidth=1.4; for(let i=-w;i<w*2;i+=8){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } x.lineWidth=3; x.beginPath(); x.moveTo(0,1.5); x.lineTo(w,1.5); x.stroke(); });
     const fm=new THREE.MeshLambertMaterial({map:fT,transparent:true,alphaTest:.4,side:THREE.DoubleSide}), sm=new THREE.MeshLambertMaterial({map:sT,transparent:true,alphaTest:.35,side:THREE.DoubleSide});
     const mkFence=(list,geo,mat,base)=>{ const im=new THREE.InstancedMesh(geo,mat,Math.max(1,list.length)); const bi=base?new THREE.InstancedMesh(new THREE.BoxGeometry(1,.3,.18).translate(0,.15,0),new THREE.MeshLambertMaterial({color:0xb5b0a6}),Math.max(1,list.length)):null;
       list.forEach((p,i)=>{ dum.position.set(p[0],H(p[0],p[1]),p[1]); dum.rotation.set(0,-p[2],0); dum.scale.set(p[3],1,1); dum.updateMatrix(); im.setMatrixAt(i,dum.matrix); if(bi)bi.setMatrixAt(i,dum.matrix); }); scene.add(im); if(bi)scene.add(bi); };
     mkFence(front,new THREE.PlaneGeometry(1,1.3).translate(0,.9,0),fm,true);
-    window.__fz={front,side};
+    window.__fz={front,side,CONC};
     mkFence(side,new THREE.PlaneGeometry(1,1.25).translate(0,.62,0),sm,false);
     /* ogrodzenia z prefabrykatów betonowych (jak przy Szkolnej): cokół z „cegiełek”, ażurowe łuki, betonowe słupki */
     { const cT=tex(256,128,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='#8e8b83'; x.fillRect(0,0,w,h); noise(x,w,h,1800,110,175,.3,1.2);
@@ -2385,7 +2407,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       grp.traverse(o=>{ if(o.isMesh)o.castShadow=true; }); scene.add(grp); });
     // drzewa parkowe z OSM (każde drzewo w swoim miejscu): lipy i klony, jarzębiny, modrzewie i świerki
     const edgeD=(x,z)=>{ let m=1e9; const P2=PARK.pts; for(let i=0;i<P2.length;i++){ const a=P2[i], b=P2[(i+1)%P2.length]; m=Math.min(m,segDist(x,z,a[0],a[1],b[0],b[1])); } return m; };
-    (typeof PARKD!=='undefined'?PARKD.trees:[]).forEach(([x,z,con],i)=>{ if(!inPoly(x,z,PARK.pts)&&edgeD(x,z)>8)return; if(resRoads.some(r=>roadDist(r,x,z)<r.w/2+1.2))return; if(onPath(x,z,.3)||inPoly(x,z,COURT.pts))return; if(parkTrees.some(t=>Math.hypot(t.x-x,t.z-z)<1.6))return;
+    (typeof PARKD!=='undefined'?PARKD.trees:[]).forEach(([x,z,con],i)=>{ if(!inPoly(x,z,PARK.pts)&&edgeD(x,z)>8)return; if(resRoads.some(r=>roadDist(r,x,z)<r.w/2+1.2))return; if(onPath(x,z,.3)||inPoly(x,z,COURT.pts))return; if(parkTrees.some(t=>Math.hypot(t.x-x,t.z-z)<4.6))return;
       const k=rnd(); parkTrees.push(con?{x,z,s:R(.75,1.05),con:true,col:k<.4?'#5a6a2e':null}:k<.08?{x,z,s:R(.62,.8),con:false,col:pick(['#c2502e','#b8432a','#cf6a33'])}:k<.17?{x,z,s:R(.9,1.3),con:false,col:pick(['#c8642c','#d9822f','#b8522a','#cf7a34','#a9a23a'])}:{x,z,s:R(1.05,1.6),con:false}); });
   }
 
@@ -3331,7 +3353,9 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   function makeCop(){ const g=makeCar(0xf2f2f0,''); const stripe=new THREE.Mesh(new THREE.BoxGeometry(3.9,.14,1.82),new THREE.MeshLambertMaterial({color:0x1f4fa3})); stripe.position.y=.66; g.add(stripe);
     const bar=new THREE.Group(); const r=new THREE.Mesh(new THREE.BoxGeometry(.3,.15,.5),new THREE.MeshBasicMaterial({color:0xff2020})), b=new THREE.Mesh(new THREE.BoxGeometry(.3,.15,.5),new THREE.MeshBasicMaterial({color:0x2040ff})); r.position.z=.3; b.position.z=-.3; bar.add(r,b); bar.position.set(-.45,1.53,0); g.add(bar);
     const pt=tex(256,48,(x)=>{ x.fillStyle='#1f4fa3'; x.fillRect(0,0,256,48); x.fillStyle='#fff'; x.font='700 34px Barlow, Arial'; x.textAlign='center'; x.fillText('POLICJA',128,36); }); [.94,-.94].forEach(z=>{ const p=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.4),new THREE.MeshBasicMaterial({map:pt})); p.position.set(0,.66,z*.98); if(z<0)p.rotation.y=Math.PI; g.add(p); });
-    const light=new THREE.PointLight(0xff2020,0,25,2); light.position.set(0,2.4,0); g.add(light); g.userData.bar=[r,b]; g.userData.light=light; return g; }
+    g.userData.bar=[r,b]; return g; }
+  // jedno stałe światło radiowozów w scenie od startu: dodanie/usunięcie światła w trakcie gry przekompilowałoby wszystkie materiały (ścinka po wezwaniu policji)
+  const COPLIGHT=new THREE.PointLight(0xff2020,0,25,2); scene.add(COPLIGHT);
   function spawnCop(){ for(let t=0;t<60;t++){ const an=R(0,6.28), dd=R(50,190), qx=st.x+Math.cos(an)*dd, qz=st.z+Math.sin(an)*dd; const sg=(RSEG.get(Math.floor(qx/30)+','+Math.floor(qz/30))||[]).filter(e=>e[0].t!=='track'&&e[0].t!=='rail'&&e[0].t!=='path'&&e[0].t!=='foot'&&e[0].t!=='footway'); if(!sg.length)continue; const e=pick(sg), a=e[1], b=e[2], ex=b[0]-a[0], ez=b[1]-a[1], l2=ex*ex+ez*ez||1, u=clamp(((qx-a[0])*ex+(qz-a[1])*ez)/l2,0,1); const s={x:a[0]+ex*u,z:a[1]+ez*u}; const d=Math.hypot(s.x-st.x,s.z-st.z); if(d<45||d>200||blocked(s.x,s.z,2))continue; const g=makeCop(); scene.add(g); COPS.push({g,x:s.x,z:s.z,h:Math.atan2(st.z-s.z,st.x-s.x),v:0,hitT:-9,far:0}); return; } }
   let copHitT=-9, trafficHitT=-9;
 
@@ -3368,7 +3392,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     ENV.wTimer-=dt; if(ENV.wTimer<0){ ENV.wTimer=R(180,360); const r=rnd(); ENV.weather=ENV.season===3?(r<.5?3:r<.75?0:2):(r<.55?0:r<.8?1:2); updButtons(); toast('Pogoda: '+WEATHERS[ENV.weather],2.5); }
     const hh=Math.floor(ENV.time), mm=Math.floor((ENV.time-hh)*60); clockEl.textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
     // rutyna mieszkańców: w nocy na ulicach mniej ludzi
-    const frac=(ENV.time<5.5||ENV.time>22.5)?.15:(ENV.time<7||ENV.time>20.5)?.5:1; peds.forEach((p,i)=>{ p.g.visible=hash(i)<frac; });
+    const frac=(ENV.time<5.5||ENV.time>22.5)?.15:(ENV.time<7||ENV.time>20.5)?.5:1; peds.forEach((p,i)=>{ p.g.userData.nh=!(hash(i)<frac); if(p.g.userData.nh) p.g.visible=false; });
     BUS.day=ENV.time>5&&ENV.time<23; }
   toggleNight=function(){ if(ENV.fixed){ toast('W trybie wieloosobowym pora dnia jest wspólna dla wszystkich',2); return; } ENV.time=(ENV.time>=6&&ENV.time<16.5)?17.6:11; toast(ENV.time>12?'Przewinięto do wieczora':'Przewinięto do południa',2); };
 
@@ -3888,6 +3912,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     if(st.car&&!['bike'].includes(st.car.kind)){ cars.forEach(t=>{ if(Math.hypot(t.x-st.car.x,t.z-st.car.z)<3.8&&tAll-trafficHitT>4){ trafficHitT=tAll; if(rnd()<.5) setWanted(Math.max(st.wanted,1)); } }); }
     if(st.wanted>0&&PARK&&inPoly(st.car?st.car.x:st.x,st.car?st.car.z:st.z,PARK.pts)){ setWanted(0); toast('🌳 Zgubiłeś policję w parku - przestali Cię gonić',3.2); }
     const want=Math.min(3,st.wanted); if(COPS.length<want&&rnd()<dt*2) spawnCop();
+    COPLIGHT.intensity=0;
     for(let i=COPS.length-1;i>=0;i--){ const c=COPS[i]; const tx=st.car?st.car.x:st.x, tz=st.car?st.car.z:st.z; const dx=tx-c.x,dz=tz-c.z, d=Math.hypot(dx,dz);
       if(st.wanted===0){ c.far+=dt; c.v*=1-dt; if(c.far>4||d>200){ scene.remove(c.g); COPS.splice(i,1); continue; } }
       else { const want=Math.atan2(dz,dx); let dh=want-c.h; dh=Math.atan2(Math.sin(dh),Math.cos(dh)); c.h+=clamp(dh,-1.6*dt,1.6*dt); const vmax=Math.min(26,15+st.wanted*3)*(d<10?.4:1); c.v+=(vmax-c.v)*dt*.8;
@@ -3895,7 +3920,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
         if((c.sk>5||d>260)&&d>40){ scene.remove(c.g); COPS.splice(i,1); continue; }   // radiowóz utknął albo został daleko - zniknie, w pobliżu pojawi się nowy
         if(d<80) st.wantedT=0;
         if(!st.car&&d<2.6&&!st.dead){ st.busted=true; st.dead=2.5; deadEl.textContent='ZATRZYMANY'; deadEl.hidden=false; OWN.clean=0; const fine=Math.min(st.money,Math.min(5000,Math.max(100,Math.round(st.money*.1/10)*10))); st.money-=fine; shownMoney=st.money; moneyEl.textContent=fmt(st.money); toast(`Mandat: ${fine} zł`,3); COPS.forEach(q=>scene.remove(q.g)); COPS.length=0; if(ACTIVE) endMission(false); return; } }
-      seatCar(c.g,c.x,c.z,c.h,.05); const fl=Math.floor(tAll*6)%2; c.g.userData.bar[0].visible=!!fl; c.g.userData.bar[1].visible=!fl; c.g.userData.light.color.set(fl?0xff2020:0x2040ff); c.g.userData.light.intensity=st.wanted?1.5:0; }
+      seatCar(c.g,c.x,c.z,c.h,.05); const fl=Math.floor(tAll*6)%2; c.g.userData.bar[0].visible=!!fl; c.g.userData.bar[1].visible=!fl; if(st.wanted){ COPLIGHT.position.set(c.x,H(c.x,c.z)+2.4,c.z); COPLIGHT.color.set(fl?0xff2020:0x2040ff); COPLIGHT.intensity=1.5; } }
     if(st.car){ COPS.forEach(c=>{ if(Math.hypot(c.x-st.car.x,c.z-st.car.z)<3.6&&tAll-copHitT>3){ copHitT=tAll; setWanted(st.wanted+1); } }); }
     if(!st.dead&&st.busted){ st.busted=false; deadEl.textContent='ZGINĄŁEŚ'; }
     saveT-=dt; if(saveT<0){ saveT=10; saveGame(); }
@@ -5104,7 +5129,12 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const smoke=new THREE.Group(); { const sm=new THREE.MeshLambertMaterial({color:0x555555,transparent:true,opacity:.55,depthWrite:false}); for(let i=0;i<14;i++){ const s=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),sm); s.userData.o=i/14; smoke.add(s); } smoke.visible=false; scene.add(smoke); }
   function walkSpot(p,car){ if(!p||!isFinite(p[0])||!isFinite(p[1]))return p; const r0=car?1.4:.5; if(!blocked(p[0],p[1],r0,car)) return p; for(let r=.5;r<=30;r+=.5) for(let a=0;a<6.28;a+=.3){ const x=p[0]+Math.cos(a)*r, z=p[1]+Math.sin(a)*r; if(!blocked(x,z,r0,car)&&!ROADS.some(q=>q.t==='rail'&&roadDist(q,x,z)<3)) return [x,z]; } return p; }
   function avail(m){ if(m.req&&!m.req()) return false; if(m.main){ if(DONE.has(m.id))return false; const idx=CAMPAIGN.indexOf(m); if(idx>0&&!DONE.has(CAMPAIGN[idx-1].id))return false; return st.level>=m.lvl; } const t=SIDE_T[m.id]; return !t||Date.now()-t>SIDE_CD*1000; }
-  function refreshMarks(){ MISSIONS.forEach(m=>{ const a=!ACTIVE&&avail(m); if(a){ try{ m.sp=walkSpot(m.start(),false); }catch(e){ m.sp=[0,0]; } m.mk.position.set(m.sp[0],H(m.sp[0],m.sp[1]),m.sp[1]); } m.mk.visible=a; }); }
+  // kółka startu misji nie mogą stać zbyt blisko siebie (min. 9 m) - rozsuwamy je po chodnikowych punktach
+  function spreadMarks(){ const v=MISSIONS.filter(m=>m.mk.visible&&m.sp&&(m.sp[0]||m.sp[1])); for(let it=0;it<6;it++){ let moved=false; for(let i=0;i<v.length;i++)for(let j=i+1;j<v.length;j++){ const a=v[i], b=v[j]; const dx=b.sp[0]-a.sp[0], dz=b.sp[1]-a.sp[1], d=Math.hypot(dx,dz); if(d>=9)continue; const ux=d>.01?dx/d:1, uz=d>.01?dz/d:0, k=(9-d)/2+.2; moved=true;
+        [[b,ux,uz],[a,-ux,-uz]].forEach(([m,x,z])=>{ let q=[m.sp[0]+x*k,m.sp[1]+z*k]; try{ q=walkSpot(q,false)||q; }catch(e){} m.sp=q; }); }
+      if(!moved)break; }
+    v.forEach(m=>m.mk.position.set(m.sp[0],H(m.sp[0],m.sp[1]),m.sp[1])); }
+  function refreshMarks(){ MISSIONS.forEach(m=>{ const a=!ACTIVE&&avail(m); if(a){ try{ m.sp=walkSpot(m.start(),false); }catch(e){ m.sp=[0,0]; } m.mk.position.set(m.sp[0],H(m.sp[0],m.sp[1]),m.sp[1]); } m.mk.visible=a; }); spreadMarks(); }
   function startMission(m){ if(!m||ACTIVE)return; if(m.needCar&&!(st.car&&st.car.kind!=='bike')){ toast('Do tej misji potrzebujesz auta',3); return; }
     const steps=(typeof m.steps==='function'?m.steps.call(m):m.steps).filter(s=>s&&(s.p||s.escape)); steps.forEach(s=>{ if(s.p&&!s.buy) s.p=walkSpot(s.p,!!s.car&&!s.onfoot); }); ACTIVE={m,steps,i:0,t:m.time||0,w:0,t0:tAll}; MISSIONS.forEach(q=>q.mk.visible=false); toast(`<b>${m.n}</b><br>${m.desc}`,4.5); stepBegin(); }
   function stepBegin(){ const s=ACTIVE.steps[ACTIVE.i]; ACTIVE.w=0; ACTIVE.ts=tAll; if(s.escape){ setWanted(Math.max(st.wanted,s.escape)); ACTIVE.hadW=true; cpMark.visible=false; } else { cpMark.position.set(s.p[0],H(s.p[0],s.p[1]),s.p[1]); cpMark.visible=true; }
@@ -5453,7 +5483,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   // haki misji: zlecenia dnia, ranking wyścigu, dom
   function missionHook(A,ok){ if(!A||!ok) return; const m=A.m; if(!m.main) dailyOn(m.id); if(m.id==='s4') rankTick(true,tAll-A.t0); if(m.id==='m20') setTimeout(()=>toast('Dom jest twój! Wejdź do środka i urządź go - katalog mebli jest na laptopie przy wejściu.',6),5000); }
 
-  let sideRef=0; function sideRefresh(dt){ sideRef-=dt; if(sideRef<0){ sideRef=5; if(!ACTIVE) MISSIONS.forEach(m=>{ if(!m.main&&!m.mk.visible&&avail(m)){ try{ m.sp=walkSpot(m.start(),false); }catch(e){} m.mk.position.set(m.sp[0],H(m.sp[0],m.sp[1]),m.sp[1]); m.mk.visible=true; } }); } }
+  let sideRef=0; function sideRefresh(dt){ sideRef-=dt; if(sideRef<0){ sideRef=5; if(!ACTIVE) MISSIONS.forEach(m=>{ if(!m.main&&!m.mk.visible&&avail(m)){ try{ m.sp=walkSpot(m.start(),false); }catch(e){} m.mk.position.set(m.sp[0],H(m.sp[0],m.sp[1]),m.sp[1]); m.mk.visible=true; } }); spreadMarks(); } }
 
   /* ---------- ukrywanie drobnych obiektów w oddali (bramy, auta na podwórkach, zwierzęta, przechodnie) ---------- */
   const CULL=[]; let cullI=0;
@@ -5462,7 +5492,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   peds.forEach(p=>CULL.push({o:p.g,ped:p,r:IS_TOUCH?120:200}));
   function cullUpdate(){ if(!CULL.length)return; let fx=st.inside&&CUR.ret?CUR.ret.x:(st.car?st.car.x:st.x), fz=st.inside&&CUR.ret?CUR.ret.z:(st.car?st.car.z:st.z); if(GAME.paused&&!GAME.started&&MENU.c){ fx=MENU.c[0]; fz=MENU.c[1]; } const far=st.mode===2?1.8:1, n=Math.min(CULL.length,IS_TOUCH?220:360);
     for(let k=0;k<n;k++){ cullI=(cullI+1)%CULL.length; const c=CULL[cullI]; let x=c.x,z=c.z; if(c.car){ x=c.car.x; z=c.car.z; if(c.car===st.car){ c.o.visible=true; continue; } } else if(c.ped){ x=c.o.position.x; z=c.o.position.z; }
-      const r=c.r*far; c.o.visible=!st.inside&&((x-fx)*(x-fx)+(z-fz)*(z-fz)<r*r); } chunkUpdate(fx,fz); }
+      const r=c.r*far, d2=(x-fx)*(x-fx)+(z-fz)*(z-fz), was=c.o.visible; c.o.visible=!st.inside&&!(c.o.userData&&c.o.userData.nh)&&(d2<r*r||(was&&d2<r*r*1.15)); } chunkUpdate(fx,fz); }
   // duże InstancedMesh (drzewa, lasy, płoty, słupki…) dzielone na kwadraty 120 m, żeby kamera i cienie pomijały to, czego nie widać
   const CHUNKS=[], CHUNK_SRC=new Map();
   function chunkIM(im,cell){ const n=im.count, m=new THREE.Matrix4(), p=new THREE.Vector3(), q=new THREE.Quaternion(), sc=new THREE.Vector3(); const buckets=new Map();
