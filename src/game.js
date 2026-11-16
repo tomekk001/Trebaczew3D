@@ -1701,6 +1701,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   for(let i=0;i<9000&&trees.length<3400;i++){ const b=pick(BLD); const a=R(0,6.28), d=R(7,26); const x=b.x+Math.cos(a)*d, z=b.z+Math.sin(a)*d; if(blocked(x,z,1.5))continue; if(roadNear(x,z,3.8))continue; if(inPoly(x,z,COURT.pts)||inPoly(x,z,PITCH2.pts)||inPoly(x,z,TRACK.pts)||inPoly(x,z,PARK.pts)||LOTS.some(l=>inPoly(x,z,l))||inPoly(x,z,PLAC.pts))continue; trees.push({x,z,s:R(.6,1.3),con:rnd()<.33}); }
   RAILS.slice(0,2).forEach(pts=>{ const len=lineLen(pts); const L=len[len.length-1]; for(let d=0;d<L;d+=R(6,10)){ const s=sampleLine(pts,len,d); if(s.x<X0||s.x>X1||s.z<Z0||s.z>Z1)continue; [1,-1].forEach(sd=>{ if(rnd()<.7){ const o=R(10,16)*sd; trees.push({x:s.x-s.tz*o,z:s.z+s.tx*o,s:R(.9,1.5),con:rnd()<.3}); } }); } });
   for(let i=0;i<300;i++){ const x=R(-240,-80),z=R(290,470); if(!inPoly(x,z,CEM.pts))continue; trees.push({x,z,s:R(.5,.8),con:true}); }
+  { let pk=0; for(let i=0;i<trees.length;i++){ const t=trees[i]; if(inPoly(t.x,t.z,PARK.pts)&&(pk++)%4){ trees.splice(i,1); i--; } } }   // park obok orlika: zostaje co czwarte drzewo
   for(let i=trees.length-1;i>=0;i--){ const t=trees[i]; if(!(t.con&&t.cem)&&BLD.some(b=>{ if(b.skip||!b.w||!b.d)return false; const c=Math.cos(b.a||0),s=Math.sin(b.a||0),dx=t.x-b.x,dz=t.z-b.z; return Math.abs(dx*c+dz*s)<b.w/2+.5&&Math.abs(-dx*s+dz*c)<b.d/2+.5; })) trees.splice(i,1); }   // drzewa wewnątrz obrysu budynku (dane OSM) - usuń
   // korona drzewa nie może zachodzić na żaden budynek
   function nearBuilding(x,z,R){ const gx=Math.floor(x/CELL), gz=Math.floor(z/CELL); for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){ const L=grid.get((gx+i)+','+(gz+j)); if(!L)continue; for(const o of L){ if(o.tree||o.off)continue;
@@ -2561,9 +2562,10 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     else if(!st.car&&!st.inside&&BUS.g.visible&&tAll-BUSR.note>25){ for(const sd of BUS_STOPS){ const s=sampleLine(DK.pts,DK.len,sd); if(Math.hypot(s.x-st.x,s.z-st.z)<14){ const e=busEta(sd); if(e!==null){ BUSR.note=tAll; toast(`🚌 Przystanek PKS · autobus Gepard ${BUS.wait>0&&Math.abs(BUS.d-sd)<3?'stoi teraz - wsiądź (E)':'przyjedzie za '+Math.round(e)+' s'} · bilet ${BUS_FARE} zł`,4); } break; } } } }
   /* ---------- policja ---------- */
   const COPS=[];
+  let COPTEX=null;
   function makeCop(){ const g=makeCar(0xf2f2f0,''); const stripe=new THREE.Mesh(new THREE.BoxGeometry(3.9,.14,1.82),new THREE.MeshLambertMaterial({color:0x1f4fa3})); stripe.position.y=.66; g.add(stripe);
     const bar=new THREE.Group(); const r=new THREE.Mesh(new THREE.BoxGeometry(.3,.15,.5),new THREE.MeshBasicMaterial({color:0xff2020})), b=new THREE.Mesh(new THREE.BoxGeometry(.3,.15,.5),new THREE.MeshBasicMaterial({color:0x2040ff})); r.position.z=.3; b.position.z=-.3; bar.add(r,b); bar.position.set(-.45,1.53,0); g.add(bar);
-    const pt=tex(256,48,(x)=>{ x.fillStyle='#1f4fa3'; x.fillRect(0,0,256,48); x.fillStyle='#fff'; x.font='700 34px Barlow, Arial'; x.textAlign='center'; x.fillText('POLICJA',128,36); }); [.94,-.94].forEach(z=>{ const p=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.4),new THREE.MeshBasicMaterial({map:pt})); p.position.set(0,.66,z*.98); if(z<0)p.rotation.y=Math.PI; g.add(p); });
+    const pt=COPTEX||(COPTEX=tex(256,48,(x)=>{ x.fillStyle='#1f4fa3'; x.fillRect(0,0,256,48); x.fillStyle='#fff'; x.font='700 34px Barlow, Arial'; x.textAlign='center'; x.fillText('POLICJA',128,36); })); [.94,-.94].forEach(z=>{ const p=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.4),new THREE.MeshBasicMaterial({map:pt})); p.position.set(0,.66,z*.98); if(z<0)p.rotation.y=Math.PI; g.add(p); });
     g.userData.bar=[r,b]; return g; }
   // jedno stałe światło radiowozów w scenie od startu: dodanie/usunięcie światła w trakcie gry przekompilowałoby wszystkie materiały (ścinka po wezwaniu policji)
   const COPLIGHT=new THREE.PointLight(0xff2020,0,25,2); scene.add(COPLIGHT);
@@ -5573,6 +5575,8 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     requestAnimationFrame(frame); }
   hot && hot.snapshot && hot.snapshot(()=>({x:st.x,z:st.z,yaw:st.yaw,mode:st.mode,night:st.night,money:st.money}));
   moneyEl.textContent=fmt(st.money);
+  // rozgrzewka: radiowóz (materiały, tekstura, shadery) kompiluje się przed grą, a nie w chwili pierwszego pościgu
+  try{ const wc=makeCop(); wc.position.set(st.x,-80,st.z); scene.add(wc); camera.updateMatrixWorld(); wc.traverse(o=>{ if(o.material&&o.material.map&&renderer.initTexture) renderer.initTexture(o.material.map); }); renderer.compile(scene,camera); scene.remove(wc); }catch(e){}
   await LP(100);
   document.getElementById('load').hidden=true;
   showMenu(true); updHud(); frame();
