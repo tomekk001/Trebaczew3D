@@ -1229,12 +1229,12 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const cnt=t=>houses.filter(h=>h.rt===t).length;
   const bodies=mkIM(boxGeo,houses.length,plasterTex), hips=mkIM(hipGeo,cnt('hip'),tileTex), gabs=mkIM(gabGeo,cnt('gable'),tileTex), flats=mkIM(boxGeo,cnt('flat')), barrels=mkIM(barrelGeo,cnt('barrel'));
   const ctr={hip:0,gable:0,flat:0,barrel:0};
-  houses.forEach((h,i)=>{ const base=h.hmin-0.5, top=h.hc+h.h; dum.position.set(h.x,base,h.z); dum.rotation.set(0,-h.a,0); dum.scale.set(h.w,top-base,h.d); dum.updateMatrix(); bodies.setMatrixAt(i,dum.matrix); bodies.setColorAt(i,col.set(h.wall));
+  houses.forEach((h,i)=>{ const base=h.hmin-0.5, top=h.hc+h.h; dum.position.set(h.x,base,h.z); dum.rotation.set(0,-h.a,0); dum.scale.set(h.w,top-base,h.d); if(h.kind==='hall') dum.scale.set(.001,.001,.001); dum.updateMatrix(); bodies.setMatrixAt(i,dum.matrix); bodies.setColorAt(i,col.set(h.wall));
     dum.position.y=top; const k=ctr[h.rt]++;
     if(h.rt==='hip'){ dum.scale.set(h.w+1,h.rh,h.d+1); dum.updateMatrix(); hips.setMatrixAt(k,dum.matrix); hips.setColorAt(k,col.set(h.roof)); }
     else if(h.rt==='gable'){ const along=h.w>=h.d; dum.rotation.set(0,-h.a+(along?0:Math.PI/2),0); dum.scale.set((along?h.w:h.d)+.8,h.rh,(along?h.d:h.w)+.8); dum.updateMatrix(); gabs.setMatrixAt(k,dum.matrix); gabs.setColorAt(k,col.set(h.roof)); }
     else if(h.rt==='flat'){ dum.scale.set(h.w+.5,h.rh,h.d+.5); dum.updateMatrix(); flats.setMatrixAt(k,dum.matrix); flats.setColorAt(k,col.set(h.roof)); }
-    else if(h.rt==='barrel'){ dum.position.y=top-0.01; dum.scale.set(h.w,h.d*0.42,h.d); dum.updateMatrix(); barrels.setMatrixAt(k,dum.matrix); barrels.setColorAt(k,col.set(h.roof)); } });
+    else if(h.rt==='barrel'){ dum.position.y=top-0.01; dum.scale.set(h.w,h.d*0.42,h.d); if(h.kind==='hall') dum.scale.set(.001,.001,.001); dum.updateMatrix(); barrels.setMatrixAt(k,dum.matrix); barrels.setColorAt(k,col.set(h.roof)); } });
   /* budynki z ewidencji (EGiB), których nie było w dotychczasowych danych: prosta bryła z dachem dwuspadowym, osobno od głównej listy budynków */
   const CADB=[]; if(typeof DATA_CADB==='string'&&DATA_CADB){ const hsh=(a,b)=>{ const v=Math.sin(a*12.9898+b*78.233)*43758.5453; return v-Math.floor(v); };
     DATA_CADB.split(';').forEach(t=>{ const v=t.split(','); const x=+v[0], z=+v[1], w=+v[2], d=+v[3], a=+v[4]*Math.PI/180, kind=v[5], lv=+v[6]||1; if(blocked(x,z,0)||houses.some(h=>Math.abs(h.x-x)<Math.max(h.w,h.d)/2+1&&Math.abs(h.z-z)<Math.max(h.w,h.d)/2+1&&Math.hypot(h.x-x,h.z-z)<Math.min(h.w,h.d)/2+Math.min(w,d)/2)) return;
@@ -1251,11 +1251,37 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     x.fillStyle='rgba(235,232,220,.28)'; x.beginPath(); x.moveTo(10,h*.42); x.quadraticCurveTo(w*.3,h*.5,w*.28,h-10); x.lineTo(10,h-10); x.fill(); x.beginPath(); x.moveTo(w-10,h*.42); x.quadraticCurveTo(w*.7,h*.5,w*.72,h-10); x.lineTo(w-10,h-10); x.fill();
     x.fillStyle='rgba(255,255,255,.2)'; x.beginPath(); x.moveTo(14,14); x.lineTo(52,14); x.lineTo(14,66); x.fill(); x.fillStyle='#eeeeea'; x.fillRect(w/2-4,6,8,h-12); x.fillRect(6,h*.36,w-12,6); x.fillStyle='rgba(0,0,0,.18)'; x.fillRect(10,10,w-20,3); x.fillRect(10,h*.36+6,w-20,2); x.fillStyle='#dcdcd6'; x.fillRect(0,h-6,w,6); }); winTex.__nonm=1;
   const wins=[], doors=[];
-  houses.forEach(h=>{ if(['out','garage','farm','ind'].includes(h.kind)||(h.isPart&&Math.min(h.w,h.d)<3))return; const floors=Math.max(1,Math.round(h.h/3)); const along=h.w>=h.d; const L=along?h.w:h.d, D=along?h.d:h.w;
+  houses.forEach(h=>{ if(['out','garage','farm','ind','hall'].includes(h.kind)||(h.isPart&&Math.min(h.w,h.d)<3))return; const floors=Math.max(1,Math.round(h.h/3)); const along=h.w>=h.d; const L=along?h.w:h.d, D=along?h.d:h.w;
     const ww=h.kind==='school'||h.kind==='hall'?2.2:1.2;
     let sdDoor=1; if(h.kind==='house'&&!h.isPart){ const nr=nearestRoad(h.x,h.z,r=>r.t!=='track'); if(nr.r){ const q0=nr.r.pts[nr.seg], q1=nr.r.pts[nr.seg+1]; const ex=q1[0]-q0[0], ez=q1[1]-q0[1], EL=ex*ex+ez*ez||1; const tt=clamp(((h.x-q0[0])*ex+(h.z-q0[1])*ez)/EL,0,1); const vx=q0[0]+ex*tt-h.x, vz=q0[1]+ez*tt-h.z; const cc=Math.cos(h.a), ss=Math.sin(h.a); const nlx=along?0:1, nlz=along?1:0; sdDoor=((nlx*cc-nlz*ss)*vx+(nlx*ss+nlz*cc)*vz)>=0?1:-1; } }
     for(let f=0;f<floors;f++){ if(h.kind==='hall'&&f>0)break; const y=h.hc+(h.kind==='hall'?5.8:1.25+f*3); const n=Math.max(2,Math.floor(L/(h.kind==='school'?3.2:3.8)));
       for(let k=0;k<n;k++){ const t=-L/2+(k+.5)*(L/n); [1,-1].forEach(sd=>{ const lx=along?t:sd*(D/2+.03), lz=along?sd*(D/2+.03):t; if(f===0&&k===Math.floor(n/2)&&sd===sdDoor&&h.kind==='house'&&!h.isPart){ doors.push({h,lx,lz,rot:along?(sd>0?0:Math.PI):(sd>0?Math.PI/2:-Math.PI/2)}); return; } wins.push({h,lx,lz,y,rot:along?(sd>0?0:Math.PI):(sd>0?Math.PI/2:-Math.PI/2),ww}); }); } } });
+  /* hala sportowa „Olimpia”: ściany z drewnianymi opaskami, biała łukowa powłoka, drewniane żebra szczytów, szyldy */
+  if(HALL_B){ const h=HALL_B, L=Math.max(h.w,h.d), S=Math.min(h.w,h.d), al=h.w>=h.d, Hw=4.8, Rv=Math.min(4.6,S*.3), g=new THREE.Group();
+    g.position.set(h.x,h.hc-.3,h.z); g.rotation.y=-h.a+(al?0:Math.PI/2);
+    const wall=new THREE.MeshLambertMaterial({color:0xe3e6e8}), wood=new THREE.MeshLambertMaterial({color:0xc58d4c}), memb=new THREE.MeshLambertMaterial({color:0xf3f3ef,side:THREE.DoubleSide});
+    const add=(geo,m,x,y,z)=>{ const o=new THREE.Mesh(geo,m); o.position.set(x,y,z); o.castShadow=true; o.receiveShadow=true; g.add(o); return o; };
+    add(new THREE.BoxGeometry(L,Hw,S),wall,0,Hw/2,0);
+    add(new THREE.BoxGeometry(L+.12,.35,S+.12),wood,0,Hw,0); add(new THREE.BoxGeometry(L+.12,.3,S+.12),wood,0,.6,0);
+    for(let k=0;k<=Math.round(L/4.5);k++){ const x=-L/2+k*L/Math.round(L/4.5); [1,-1].forEach(sd=>add(new THREE.BoxGeometry(.28,Hw,.14),wood,x,Hw/2,sd*(S/2+.04))); }
+    // pas okien (niebieskie, w drewnianych ramach) po obu długich bokach
+    const wt=tex(256,128,(x,W,Hh)=>{ x.fillStyle='#2f5fa8'; x.fillRect(0,0,W,Hh); x.fillStyle='#8fb8e8'; x.fillRect(0,0,W,Hh*.22); x.strokeStyle='#d99a4a'; x.lineWidth=5; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*W/8,0); x.lineTo(i*W/8,Hh); x.stroke(); } for(let j=0;j<=4;j++){ x.beginPath(); x.moveTo(0,j*Hh/4); x.lineTo(W,j*Hh/4); x.stroke(); } });
+    const wm=new THREE.MeshLambertMaterial({map:wt}); const nW=Math.max(2,Math.floor(L/6));
+    for(let k=0;k<nW;k++){ const x=-L/2+(k+.5)*L/nW; [1,-1].forEach(sd=>{ const o=add(new THREE.PlaneGeometry(L/nW-1.6,2.4),wm,x,2.5,sd*(S/2+.08)); if(sd<0) o.rotation.y=Math.PI; }); }
+    // powłoka: pół-elipsa wyciągnięta wzdłuż hali
+    const sh=new THREE.Shape(); sh.absellipse(0,0,S/2+.15,Rv,0,Math.PI,false,0); sh.closePath();
+    const vg=new THREE.ExtrudeGeometry(sh,{depth:L+.2,bevelEnabled:false,curveSegments:24}); vg.translate(0,0,-(L+.2)/2); vg.rotateY(Math.PI/2); const vault=add(vg,memb,0,Hw,0);
+    // drewniany łuk na obu szczytach + pionowe listwy
+    const rim=new THREE.Shape(); rim.absellipse(0,0,S/2+.3,Rv+.15,0,Math.PI,false,0); rim.closePath(); const hole=new THREE.Path(); hole.absellipse(0,0,S/2-.35,Rv-.4,0,Math.PI,false,0); hole.closePath(); rim.holes.push(hole);
+    const rg=new THREE.ExtrudeGeometry(rim,{depth:.3,bevelEnabled:false,curveSegments:24}); rg.rotateY(Math.PI/2);
+    [1,-1].forEach(sd=>{ add(rg,wood,sd*(L/2+.02)-(sd>0?0:.3),Hw,0); for(let k=-3;k<=3;k++){ if(!k) continue; const zz=k*S/8, hh=Rv*Math.sqrt(Math.max(0,1-(zz/(S/2))**2)); if(hh>.3) add(new THREE.BoxGeometry(.12,hh+Hw*.0,.14),wood,sd*(L/2+.1),Hw+hh/2,zz); } });
+    // szyld „olimpia” na szczycie + wejście
+    const st=tex(512,256,(x,W,Hh)=>{ x.fillStyle='#f6f6f4'; x.fillRect(0,0,W,Hh); x.fillStyle='#d9534f'; x.beginPath(); x.arc(110,150,50,Math.PI,0); x.fill(); x.fillStyle='#fff'; x.beginPath(); x.arc(110,150,34,Math.PI,0); x.fill(); x.fillStyle='#d9534f'; x.beginPath(); x.arc(110,150,20,Math.PI,0); x.fill(); x.fillStyle='#777'; x.font='700 78px Barlow, Arial'; x.textAlign='left'; x.fillText('olimpia',172,150); x.fillStyle='#999'; x.font='600 22px Barlow, Arial'; x.fillText('Hala sportowa · Trębaczew',172,190); x.fillStyle='#c33'; x.fillRect(20,224,W-40,6); });
+    const sm=new THREE.MeshLambertMaterial({map:st});
+    const dt=tex(128,128,(x,W,Hh)=>{ x.fillStyle='#244f9a'; x.fillRect(0,0,W,Hh); x.fillStyle='#7fb0e8'; x.fillRect(6,6,W-12,Hh*.5); x.strokeStyle='#d99a4a'; x.lineWidth=5; x.strokeRect(2,2,W-4,Hh-4); x.beginPath(); x.moveTo(W/2,0); x.lineTo(W/2,Hh); x.stroke(); }); const dm=new THREE.MeshLambertMaterial({map:dt});
+    [1,-1].forEach(sd=>{ const sg=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(8,S*.5),Math.min(4,S*.5)/2),sm); sg.position.set(sd*(L/2+.12),Hw+Rv*.55,S*.18*-sd); sg.rotation.y=sd>0?Math.PI/2:-Math.PI/2; g.add(sg);
+      const dr=new THREE.Mesh(new THREE.PlaneGeometry(S*.3,2.6),dm); dr.position.set(sd*(L/2+.13),1.4,0); dr.rotation.y=sd>0?Math.PI/2:-Math.PI/2; g.add(dr); });
+    scene.add(g); HALL_B.model=g; }
   const winMat=new THREE.MeshPhongMaterial({color:0xffffff,map:winTex,emissive:0x000000,shininess:80,specular:0x666666}); if(winMat.roughness!==undefined){ winMat.roughness=.16; winMat.envMapIntensity=1.5; }
   const winIM=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1.35),winMat,Math.max(1,wins.length)); scene.add(winIM);
   const placeOnWall=(h,lx,lz,y,rot,sx)=>{ const c=Math.cos(h.a), s=Math.sin(h.a); dum.position.set(h.x+lx*c-lz*s,y,h.z+lx*s+lz*c); dum.rotation.set(0,-h.a+rot,0); dum.scale.set(sx,1,1); dum.updateMatrix(); return dum.matrix; };
