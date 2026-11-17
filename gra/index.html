@@ -2551,7 +2551,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
     F.forEach(f=>{ if(f[3]===1||f[2]>.8) addSolid({x:f[0],z:f[1],hw:.35,hd:.35,c:1,s:0,r:.5,tree:true}); }); }
 
   /* ---------- latarnie ---------- */
-  const lamps=[]; ROADS.filter(r=>r.main||SIDEWALK.has(r.n)).forEach(r=>{ for(let d=12;d<r.L;d+=36){ const s=sampleLine(r.pts,r.len,d); if(s.x<-720||s.x>720)continue; const o=r.w/2+2.6; const x=s.x-s.tz*o, z=s.z+s.tx*o; if(roadNearF(x,z,.4)) continue; lamps.push({x,z,y:H(x,z),a:Math.atan2(s.tz,s.tx)}); } });
+  const lamps=[]; ROADS.filter(r=>r.main||SIDEWALK.has(r.n)).forEach(r=>{ for(let d=12;d<r.L;d+=36){ const s=sampleLine(r.pts,r.len,d); if(s.x<-720||s.x>720)continue; const o=r.w/2+2.6; const x=s.x-s.tz*o, z=s.z+s.tx*o; if(roadNearF(x,z,.4)) continue; if(BLD.some(b=>{ if(b.skip||!b.w||!b.d)return false; const c=Math.cos(b.a||0), sn=Math.sin(b.a||0), dx=x-b.x, dz=z-b.z; return Math.abs(dx*c+dz*sn)<b.w/2+.4&&Math.abs(-dx*sn+dz*c)<b.d/2+.4; })) continue; lamps.push({x,z,y:H(x,z),a:Math.atan2(s.tz,s.tx)}); } });
   const poleIM=new THREE.InstancedMesh(new THREE.CylinderGeometry(.08,.12,8,6).translate(0,4,0),new THREE.MeshLambertMaterial({color:0x8a9096}),lamps.length);
   const headMat=new THREE.MeshLambertMaterial({color:0xdedcd4,emissive:0x000000});
   const headIM=new THREE.InstancedMesh(new THREE.BoxGeometry(.9,.18,.38),headMat,lamps.length);
