@@ -1412,17 +1412,21 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
           for(let i=CONC.length-1;i>=0;i--){ const q=CONC[i]; if(Math.abs((q[0]-C[0])*tx+(q[1]-C[1])*tz)<GW/2+q[3]/2&&Math.abs(-(q[0]-C[0])*tz+(q[1]-C[1])*tx)<1.2) CONC.splice(i,1); }
           let nx=-tz, nz=tx; const sr=nearestRoad(C[0],C[1],r=>r.t!=='track'&&r.n==='Szkolna'); if(sr.r){ const a2=sr.r.pts[sr.seg], b2=sr.r.pts[sr.seg+1]; const dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((C[0]-a2[0])*dx+(C[1]-a2[1])*dz)/l2,0,1); if((a2[0]+dx*tt-C[0])*nx+(a2[1]+dz*tt-C[1])*nz<0){ nx=-nx; nz=-nz; } }
           GAPS.push({x0:C[0]-tx*GW/2,z0:C[1]-tz*GW/2,x1:C[0]+tx*GW/2,z1:C[1]+tz*GW/2,G:GW,tx,tz,nx,nz,pc:null,onlyBrama:true,steel:false}); } }
-    { /* płot naprzeciw Żabki (betonowy): x -101 z 14 → x -90 z 67 → x -136 z 88; nie wchodzi na chodnik, z bramą i furtką */
-      const Z=[[-101,14],[-90,67],[-136,88]], zp=[]; const N1=30;
+    /* płot wzdłuż podanej łamanej: nie wchodzi na chodnik, opcjonalnie z bramą i furtką (gf = miejsce bramy 0..1, <0 = bez), arc = podąża łukiem za ulicą */
+    const polyFence=(Z,arr,gf,arc)=>{ const zp=[];
       for(let k=0;k<Z.length-1;k++){ const A=Z[k], B=Z[k+1], Ln=Math.hypot(B[0]-A[0],B[1]-A[1]), n=Math.max(2,Math.round(Ln/1.2)); for(let i=(k?1:0);i<=n;i++){ const t=i/n; let x=A[0]+(B[0]-A[0])*t, z=A[1]+(B[1]-A[1])*t;
         for(let it=0;it<3;it++) for(const r of ROADS){ if(r.t==='track'||r.t==='rail'||!r.pts) continue; const d=roadDist(r,x,z), lim=swLim(r)+.35; if(d<lim){ let bd=1e9,bq=null; for(let j=0;j<r.pts.length-1;j++){ const a2=r.pts[j], b2=r.pts[j+1], dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((x-a2[0])*dx+(z-a2[1])*dz)/l2,0,1), qx=a2[0]+dx*tt, qz=a2[1]+dz*tt, dd=Math.hypot(x-qx,z-qz); if(dd<bd){ bd=dd; bq=[qx,qz]; } } if(bq&&bd>.01){ x=bq[0]+(x-bq[0])/bd*lim; z=bq[1]+(z-bq[1])/bd*lim; } } }
+        if(arc){ let bd=1e9,bq=null,br=null; for(const r of ROADS){ if(r.t==='track'||r.t==='rail'||!r.pts) continue; for(let j=0;j<r.pts.length-1;j++){ const a2=r.pts[j], b2=r.pts[j+1], dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((x-a2[0])*dx+(z-a2[1])*dz)/l2,0,1), qx=a2[0]+dx*tt, qz=a2[1]+dz*tt, dd=Math.hypot(x-qx,z-qz); if(dd<bd){ bd=dd; bq=[qx,qz]; br=r; } } } if(br&&bd<60&&bd>.01){ const lim=swLim(br)+.35; x=bq[0]+(x-bq[0])/bd*lim; z=bq[1]+(z-bq[1])/bd*lim; } }
         zp.push([x,z]); } }
       const zs=[]; for(let i=0;i<zp.length-1;i++){ const A=zp[i], B=zp[i+1], l=Math.hypot(B[0]-A[0],B[1]-A[1]); if(l<.3) continue; const c=[(A[0]+B[0])/2,(A[1]+B[1])/2]; if(blocked(c[0],c[1],.15)) continue; zs.push([c[0],c[1],Math.atan2(B[1]-A[1],B[0]-A[0]),l]); }
       // brama + furtka mniej więcej w środku pierwszego odcinka (od strony drogi)
-      const gi=Math.floor(zs.length*.3), gq=zs[gi]; let gx=null; if(gq){ const tx=Math.cos(gq[2]), tz=Math.sin(gq[2]), GW=5.2; for(let i=zs.length-1;i>=0;i--){ const q=zs[i]; if(Math.abs((q[0]-gq[0])*tx+(q[1]-gq[1])*tz)<GW/2+q[3]/2-.05&&Math.abs(-(q[0]-gq[0])*tz+(q[1]-gq[1])*tx)<1.2) zs.splice(i,1); }
+      const gi=Math.floor(zs.length*gf), gq=gf>=0?zs[gi]:null; let gx=null; if(gq){ const tx=Math.cos(gq[2]), tz=Math.sin(gq[2]), GW=5.2; for(let i=zs.length-1;i>=0;i--){ const q=zs[i]; if(Math.abs((q[0]-gq[0])*tx+(q[1]-gq[1])*tz)<GW/2+q[3]/2-.05&&Math.abs(-(q[0]-gq[0])*tz+(q[1]-gq[1])*tx)<1.2) zs.splice(i,1); }
         let nx=-tz, nz=tx; const nr=nearestRoad(gq[0],gq[1],r=>r.t!=='track'&&r.t!=='rail'); if(nr.r){ const a2=nr.r.pts[nr.seg], b2=nr.r.pts[nr.seg+1], dx=b2[0]-a2[0], dz=b2[1]-a2[1], l2=dx*dx+dz*dz||1, tt=clamp(((gq[0]-a2[0])*dx+(gq[1]-a2[1])*dz)/l2,0,1); if((a2[0]+dx*tt-gq[0])*nx+(a2[1]+dz*tt-gq[1])*nz<0){ nx=-nx; nz=-nz; } }
-        window.__zgate={x0:gq[0]-tx*GW/2,z0:gq[1]-tz*GW/2,x1:gq[0]+tx*GW/2,z1:gq[1]+tz*GW/2,G:GW,tx,tz,nx,nz,pc:null}; }
-      zs.forEach(q=>CONC.push(q)); }
+        (window.__zgates=window.__zgates||[]).push({x0:gq[0]-tx*GW/2,z0:gq[1]-tz*GW/2,x1:gq[0]+tx*GW/2,z1:gq[1]+tz*GW/2,G:GW,tx,tz,nx,nz,pc:null}); }
+      zs.forEach(q=>arr.push(q)); };
+    polyFence([[-101,14],[-90,67],[-136,88]],CONC,.3,false);   // naprzeciw Żabki (betonowy, z bramą i furtką)
+    polyFence([[-66,-175],[-114,-146]],CONC,-1,true);          // naprzeciw przedszkola: betonowy płot po łuku ulicy Szkolnej
+
     { /* przegląd całej mapy: żaden odcinek płotu nie może stać na jezdni ani na chodniku (jezdnia + pas chodnika przy ulicach z chodnikiem), ani wchodzić w budynek */
       const RS=new Map(); ROADS.forEach(r=>{ if(r.t==='track'||!r.pts) return; const sw=(r.sw||r.main||SIDEWALK.has(r.n))?2.5:.35, lim=(r.w||4)/2+sw; for(let i=0;i<r.pts.length-1;i++){ const a=r.pts[i], b=r.pts[i+1]; const x0=Math.floor((Math.min(a[0],b[0])-lim)/40), x1=Math.floor((Math.max(a[0],b[0])+lim)/40), z0=Math.floor((Math.min(a[1],b[1])-lim)/40), z1=Math.floor((Math.max(a[1],b[1])+lim)/40); for(let gx=x0;gx<=x1;gx++)for(let gz=z0;gz<=z1;gz++){ const k=gx+','+gz; (RS.get(k)||RS.set(k,[]).get(k)).push([a[0],a[1],b[0],b[1],lim]); } } });
       const onRoad=(x,z)=>{ const L=RS.get(Math.floor(x/40)+','+Math.floor(z/40)); if(!L) return false; for(const q of L) if(segDist(x,z,q[0],q[1],q[2],q[3])<q[4]) return true; return false; };
@@ -1482,7 +1486,8 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
         GAPS.push({x0,z0,x1,z1,G,tx,tz,nx,nz,pc}); }); });
     const KEEPG=GAPS.filter(g=>g.onlyBrama&&g.pc===null); GAPS.length=0;   // stare furtki i bramy (usunięte płoty działek) - zostaje brama w płocie naprzeciw przedszkola
     KEEPG.forEach(g=>GAPS.push(g));
-    if(window.__zgate) GAPS.push(window.__zgate);
+    polyFence([[-136,-5],[-144,-39],[-166,-30]],front,.3,false);   // zwykły płot z bramą i furtką
+    (window.__zgates||[]).forEach(g=>GAPS.push(g));
     window.__newg.forEach(g=>{ if(!roadNear(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2,.2)&&!swNear(g.x0,g.z0,-.12)&&!swNear(g.x1,g.z1,-.12)&&!noFence(g.x0+g.tx*g.G/2,g.z0+g.tz*g.G/2)) GAPS.push(g); });   // brama + furtka w każdym nowym ogrodzeniu
     const fT=tex(64,32,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle='rgba(50,56,52,1)'; for(let i=0;i<w;i+=6)x.fillRect(i,0,2,h); x.fillRect(0,2,w,3); x.fillRect(0,h-5,w,3); });
     const sT=tex(64,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle='rgba(60,95,60,.95)'; x.lineWidth=1.4; for(let i=-w;i<w*2;i+=8){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } x.lineWidth=3; x.beginPath(); x.moveTo(0,1.5); x.lineTo(w,1.5); x.stroke(); });
