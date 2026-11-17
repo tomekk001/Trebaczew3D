@@ -5499,15 +5499,17 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   peds.forEach(p=>CULL.push({o:p.g,ped:p,r:IS_TOUCH?120:200}));
   // odcinanie dalekich (>1,25 km, czyli całkowicie we mgle) statycznych obiektów: wyłączamy je z warstwy 0 kamery (niezależnie od .visible, więc nie koliduje z resztą logiki)
   const FARC={list:[],seen:new WeakSet(),t:-9,n:-1};
-  function farSet(e,on){ if(e.hid===!on) return; e.hid=!on; for(let i=0;i<e.ms.length;i++){ if(on) e.ms[i].layers.enable(0); else e.ms[i].layers.disable(0); } }
+  function farApply(e,i,on){ if(e.vs[i]===on) return; e.vs[i]=on; if(on) e.ms[i].layers.enable(0); else e.ms[i].layers.disable(0); }
+  function farSet(e,on){ e.hid=!on; for(let i=0;i<e.ms.length;i++) farApply(e,i,on); }
   function farBuild(){ const skip=new Set(CULL.map(c=>c.o)); const bx=new THREE.Box3(), cv=new THREE.Vector3(), sv=new THREE.Vector3();
     scene.children.forEach(o=>{ if(FARC.seen.has(o))return; FARC.seen.add(o); if(o===sky||o.isLight||o.isCamera||o.isSprite||o.isInstancedMesh||o.isPoints||o.isLine||skip.has(o))return; if(!o.isMesh&&!o.isGroup)return;
       bx.makeEmpty(); bx.setFromObject(o); if(bx.isEmpty())return; bx.getCenter(cv); bx.getSize(sv); const r=sv.length()/2; if(!(r<140))return;
-      let ok=true; const ms=[]; o.traverse(m=>{ if(m.isMesh||m.isLine||m.isPoints||m.isSprite){ ms.push(m); const mt=m.material; if(mt&&(Array.isArray(mt)?mt:[mt]).some(q=>q.fog===false)) ok=false; } if(m.isLight) ok=false; }); if(!ok||!ms.length)return;
-      FARC.list.push({o,cx:cv.x,cz:cv.z,r,px:o.position.x,pz:o.position.z,py:o.position.y,ms,hid:false}); }); FARC.n=scene.children.length; }
-  function farCull(fx,fz){ if(tAll-FARC.t<.5)return; FARC.t=tAll; if(scene.children.length!==FARC.n) farBuild(); const R=(st.mode===2?1.8:1)*1250; const L=FARC.list;
+      let ok=true; const ms=[], mr=[]; o.traverse(m=>{ if(m.isMesh||m.isLine||m.isPoints||m.isSprite){ ms.push(m); const mt=m.material; if(mt&&(Array.isArray(mt)?mt:[mt]).some(q=>q.fog===false)) ok=false; let rr=1e3; if(m.isMesh&&!m.isInstancedMesh&&m.geometry){ if(!m.geometry.boundingSphere) m.geometry.computeBoundingSphere(); m.updateWorldMatrix(true,false); rr=m.geometry.boundingSphere.radius*m.matrixWorld.getMaxScaleOnAxis(); } mr.push(rr); } if(m.isLight) ok=false; }); if(!ok||!ms.length)return;
+      FARC.list.push({o,cx:cv.x,cz:cv.z,r,px:o.position.x,pz:o.position.z,py:o.position.y,ms,mr,vs:ms.map(()=>true),hid:false}); }); FARC.n=scene.children.length; }
+  function farCull(fx,fz){ if(tAll-FARC.t<.5)return; FARC.t=tAll; if(scene.children.length!==FARC.n) farBuild(); const R=(st.mode===2?1.8:1)*Math.max(380,Math.min(1250,(scene.fog&&scene.fog.far?scene.fog.far:1000)+200)); const L=FARC.list;   // poza mgłą (far+200 m) nic nie widać
     for(let i=L.length-1;i>=0;i--){ const e=L[i]; const o=e.o; if(Math.abs(o.position.x-e.px)>.5||Math.abs(o.position.z-e.pz)>.5||Math.abs(o.position.y-e.py)>.5||!o.parent){ farSet(e,true); L.splice(i,1); continue; }   // obiekt się porusza lub zdjęty ze sceny - nie dotykamy
-      const dx=e.cx-fx, dz=e.cz-fz; farSet(e,Math.sqrt(dx*dx+dz*dz)-e.r<R); } }
+      const dx=e.cx-fx, dz=e.cz-fz, d=Math.sqrt(dx*dx+dz*dz)-e.r; if(d>=R){ if(!e.hid) farSet(e,false); continue; } e.hid=false;
+      const dd=Math.max(d,12); for(let k=0;k<e.ms.length;k++) farApply(e,k,e.mr[k]/dd>.0018); } }   // drobiazgi mniejsze niż ~3,5 px też pomijamy
   function cullUpdate(){ if(!CULL.length)return; let fx=st.inside&&CUR.ret?CUR.ret.x:(st.car?st.car.x:st.x), fz=st.inside&&CUR.ret?CUR.ret.z:(st.car?st.car.z:st.z); if(GAME.paused&&!GAME.started&&MENU.c){ fx=MENU.c[0]; fz=MENU.c[1]; } const far=st.mode===2?1.8:1, n=Math.min(CULL.length,IS_TOUCH?220:360);
     for(let k=0;k<n;k++){ cullI=(cullI+1)%CULL.length; const c=CULL[cullI]; let x=c.x,z=c.z; if(c.car){ x=c.car.x; z=c.car.z; if(c.car===st.car){ c.o.visible=true; continue; } } else if(c.ped){ x=c.o.position.x; z=c.o.position.z; }
       const r=c.r*far, d2=(x-fx)*(x-fx)+(z-fz)*(z-fz), was=c.o.visible; c.o.visible=!st.inside&&!(c.o.userData&&c.o.userData.nh)&&(d2<r*r||(was&&d2<r*r*1.15)); } chunkUpdate(fx,fz); farCull(fx,fz); }
