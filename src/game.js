@@ -4709,7 +4709,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   parked.forEach(c=>{ CULL.push({o:c.g,car:c,r:IS_TOUCH?170:260}); });
   peds.forEach(p=>CULL.push({o:p.g,ped:p,r:IS_TOUCH?120:200}));
   // odcinanie dalekich (>1,25 km, czyli całkowicie we mgle) statycznych obiektów: wyłączamy je z warstwy 0 kamery (niezależnie od .visible, więc nie koliduje z resztą logiki)
-  const FARC={list:[],seen:new WeakSet(),t:-9,n:-1};
+  const FARC={list:[],seen:new WeakSet(),t:-9,n:-1,in:false};
   function farApply(e,i,on){ if(e.vs[i]===on) return; e.vs[i]=on; if(on) e.ms[i].layers.enable(0); else e.ms[i].layers.disable(0); }
   function farSet(e,on){ e.hid=!on; for(let i=0;i<e.ms.length;i++) farApply(e,i,on); }
   function farBuild(){ const skip=new Set(CULL.map(c=>c.o)); const bx=new THREE.Box3(), cv=new THREE.Vector3(), sv=new THREE.Vector3();
@@ -4723,7 +4723,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       const dd=Math.max(d,12); for(let k=0;k<e.ms.length;k++) farApply(e,k,e.mr[k]/dd>.0018); } }   // drobiazgi mniejsze niż ~3,5 px też pomijamy
   function cullUpdate(){ if(!CULL.length)return; let fx=st.inside&&CUR.ret?CUR.ret.x:(st.car?st.car.x:st.x), fz=st.inside&&CUR.ret?CUR.ret.z:(st.car?st.car.z:st.z); if(GAME.paused&&!GAME.started&&MENU.c){ fx=MENU.c[0]; fz=MENU.c[1]; } const far=st.mode===2?1.8:1, n=Math.min(CULL.length,IS_TOUCH?220:360);
     for(let k=0;k<n;k++){ cullI=(cullI+1)%CULL.length; const c=CULL[cullI]; let x=c.x,z=c.z; if(c.car){ x=c.car.x; z=c.car.z; if(c.car===st.car){ c.o.visible=true; continue; } } else if(c.ped){ x=c.o.position.x; z=c.o.position.z; }
-      const r=c.r*far, d2=(x-fx)*(x-fx)+(z-fz)*(z-fz), was=c.o.visible; c.o.visible=!st.inside&&!(c.o.userData&&c.o.userData.nh)&&(d2<r*r||(was&&d2<r*r*1.15)); } chunkUpdate(fx,fz); farCull(fx,fz); }
+      const r=c.r*far, d2=(x-fx)*(x-fx)+(z-fz)*(z-fz), was=c.o.visible; c.o.visible=!st.inside&&!(c.o.userData&&c.o.userData.nh)&&(d2<r*r||(was&&d2<r*r*1.15)); } chunkUpdate(fx,fz); if(!!st.inside!==FARC.in){ FARC.in=!!st.inside; FARC.t=-9; } if(st.inside) farCull(st.x,st.z); else farCull(fx,fz); }
   // duże InstancedMesh (drzewa, lasy, płoty, słupki…) dzielone na kwadraty 120 m, żeby kamera i cienie pomijały to, czego nie widać
   const CHUNKS=[], CHUNK_SRC=new Map();
   function chunkIM(im,cell){ const n=im.count, m=new THREE.Matrix4(), p=new THREE.Vector3(), q=new THREE.Quaternion(), sc=new THREE.Vector3(); const buckets=new Map();
@@ -4744,6 +4744,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
   const menuEl=$('menu'), MENU={t:0,view:'',c:null,ca:0};
   { const cc=centroid(CHURCH.pts); MENU.c=[cc[0]+40,cc[1]+30]; MENU.a0=0; MENU.r=110;
     try{ const P=[[B_LEW.x,B_LEW.z],[B_ZAB.x,B_ZAB.z],[SCHOOL_P[0],SCHOOL_P[1]],cc]; const c=[P.reduce((t,q)=>t+q[0],0)/4,P.reduce((t,q)=>t+q[1],0)/4]; const nr=nearestRoad(c[0],c[1],r=>r.n==='Wyzwolenia'); if(nr.r){ const q=nr.r.pts[nr.seg], q2=nr.r.pts[nr.seg+1]; const dx=q2[0]-q[0], dz=q2[1]-q[1], L=dx*dx+dz*dz||1, t=clamp(((c[0]-q[0])*dx+(c[1]-q[1])*dz)/L,0,1); const rx=q[0]+dx*t, rz=q[1]+dz*t; MENU.a0=Math.atan2(rx-c[0],rz-c[1])+Math.PI; MENU.c=c; MENU.r=Math.max(80,Math.max(...P.map(v=>Math.hypot(v[0]-c[0],v[1]-c[1])))*1.1); } }catch(e){} }
+  MENU.cam={p:[-95,-90],t:[-110,90],h:95,ty:0,dr:[10,0]};
   const ACTIONS=[['w','Do przodu / gaz'],['s','Do tyłu / hamulec'],['a','W lewo'],['d','W prawo'],['shift','Sprint'],[' ','Skok / ręczny'],['f','Wsiądź / wysiądź'],['e','Akcja (misja, sklep, brama)'],['q','Dziennik misji'],['m','Mapa'],['c','Kamera'],['r','Radio w aucie']];
   const keyName=c=>({Space:'Spacja',ShiftLeft:'L Shift',ShiftRight:'P Shift',ControlLeft:'L Ctrl',ControlRight:'P Ctrl',AltLeft:'L Alt',Tab:'Tab',Enter:'Enter',Backspace:'Backspace',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',CapsLock:'Caps Lock'})[c]||c.replace(/^Key|^Digit|^Numpad/,'');
   let WAITKEY=null;
@@ -4854,6 +4855,7 @@ void main(){vec4 col=texture2D(tDiffuse,vUv);float d=ld(vUv);if(d>260.||str<.01)
       const a=MENU.ca; camera.position.set(st.x+Math.sin(a)*d,fy+1.05,st.z+Math.cos(a)*d); camera.lookAt(st.x,fy+.95,st.z);
       camera.setViewOffset(Wd,Hd,Wd/2-(fx0+fw/2),Hd/2-(fy0+fh/2),Wd,Hd); MENU.vo=true; if(st.inside) inCam2();
       sun.position.set(st.x+SUNDIR.x*220,fy+SUNDIR.y*220,st.z+SUNDIR.z*220); sun.target.position.set(st.x,fy,st.z); }
+    else if(!GAME.started&&MENU.cam){ const C=MENU.cam, k=Math.sin(MENU.t*.1)*.5, y0=H(C.t[0],C.t[1]); camera.position.set(C.p[0]+k*C.dr[0],y0+C.h,C.p[1]+k*C.dr[1]); camera.lookAt(C.t[0],y0+C.ty,C.t[1]); sun.position.set(C.t[0]+SUNDIR.x*220,y0+SUNDIR.y*220,C.t[1]+SUNDIR.z*220); sun.target.position.set(C.t[0],y0,C.t[1]); }
     else if(!GAME.started){ const a=MENU.a0+Math.sin(MENU.t*.12)*.2, r=MENU.r, c=MENU.c, y=H(c[0],c[1]), off=-r*.22; camera.position.set(c[0]+Math.sin(a)*r,y+Math.max(62,r*.5),c[1]+Math.cos(a)*r); camera.lookAt(c[0]-Math.cos(a)*off,y+2,c[1]+Math.sin(a)*off); sun.position.set(c[0]+SUNDIR.x*220,y+SUNDIR.y*220,c[1]+SUNDIR.z*220); sun.target.position.set(c[0],y,c[1]); }
     else return false;
     cullUpdate(); sky.position.copy(camera.position); renderer.shadowMap.needsUpdate=true; if(composer) composer.render(dt); else renderer.render(scene,camera); return true; }
